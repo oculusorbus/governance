@@ -348,7 +348,6 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .col-content_lead,
         .col-tech_lead,
         .col-admin_contact      { min-width:110px; max-width:110px; }
-        .col-support_platform   { min-width:140px; max-width:140px; }
         .col-support_intake_url,
         .col-datastudio_url     { min-width:62px;  max-width:62px;  text-align:center; }
         .col-server             { min-width:130px; max-width:130px; }
@@ -532,7 +531,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 $toggleCols = [
     'description','vp_area','vp_lead','college_dept',
     'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
-    'support_platform','support_intake_url','datastudio_url',
+    'support_intake_url','datastudio_url',
     'server','platform','audience','category','second_category',
     'db-score','db-accessibility','db-badlinks','db-seo',
     'db-spelling','db-bestpractices','db-webgovernance','db-pages',
@@ -541,7 +540,7 @@ $colLabels = [
     'description'=>'Description','vp_area'=>'VP Area','vp_lead'=>'VP Lead',
     'college_dept'=>'College/Dept','college_communicator'=>'Communicator',
     'site_owner'=>'Site Owner','content_lead'=>'Content Lead','tech_lead'=>'Tech Lead',
-    'admin_contact'=>'Admin Contact','support_platform'=>'Support Platform',
+    'admin_contact'=>'Admin Contact',
     'support_intake_url'=>'Intake URL','datastudio_url'=>'Datastudio',
     'server'=>'Server','platform'=>'Platform','audience'=>'Audience',
     'category'=>'Category','second_category'=>'2nd Category',
@@ -572,7 +571,7 @@ foreach ($toggleCols as $key):
         <th colspan="1" class="grp-identity col-description">&#8203;</th>
         <th colspan="3" class="grp-governance">Governance</th>
         <th colspan="5" class="grp-people">People</th>
-        <th colspan="2" class="grp-support">Support</th>
+        <th colspan="1" class="grp-support">Support</th>
         <th colspan="3" class="grp-technical">Technical</th>
         <th colspan="3" class="grp-classification">Classification</th>
         <th colspan="8" class="grp-dubbot" id="grp-dubbot">DubBot <?php if ($dbLastUpdated): ?><span class="db-hdr-status">Updated <?= h(date('M j, Y', strtotime($dbLastUpdated))) ?></span><?php endif; ?> <button class="db-refresh-btn" id="db-refresh-btn" onclick="loadDubBotData()" title="Refresh DubBot data from API">↻ Refresh</button></th>
@@ -589,7 +588,6 @@ foreach ($toggleCols as $key):
         <th class="col-content_lead">Content Lead <?= filterBtn('content_lead') ?></th>
         <th class="col-tech_lead">Tech Lead <?= filterBtn('tech_lead') ?></th>
         <th class="col-admin_contact">Admin Contact <?= filterBtn('admin_contact') ?></th>
-        <th class="col-support_platform">Support Platform <?= filterBtn('support_platform') ?></th>
         <th class="col-support_intake_url">Intake</th>
         <th class="col-datastudio_url">Studio</th>
         <th class="col-server">Server <?= filterBtn('server') ?></th>
@@ -620,7 +618,6 @@ foreach ($toggleCols as $key):
         'data-description="'      . h(strtolower($site['description'] ?? ''))       . '"',
         'data-vp_area="'          . h(strtolower($site['vp_area'] ?? ''))           . '"',
         'data-college_dept="'     . h(strtolower($site['college_dept'] ?? ''))      . '"',
-        'data-support_platform="' . h(strtolower($site['support_platform'] ?? ''))  . '"',
         'data-server="'           . h(strtolower($site['server'] ?? ''))            . '"',
         'data-platform="'         . h(strtolower($site['platform'] ?? ''))          . '"',
         'data-audience="'         . h(strtolower($site['audience'] ?? ''))          . '"',
@@ -703,20 +700,18 @@ foreach ($toggleCols as $key):
         </td>
         <?php endforeach; ?>
 
-        <!-- Support Platform -->
-        <td class="col-support_platform editable"
-            data-site-id="<?= $sid ?>" data-field="support_platform" data-fk-field="support_platform_id"
-            data-type="fk" data-lookup="support_platforms"
-            data-fk-id="<?= (int)$site['support_platform_id'] ?>"
-            data-value="<?= h($site['support_platform']) ?>">
-            <?= h($site['support_platform']) ?>
-        </td>
-
         <!-- Support Intake URL -->
-        <?php $intakeUrl = $site['support_intake_url'] ?? ''; $intakeJ = json_encode($intakeUrl, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
+        <?php
+        $intakeUrl  = $site['support_intake_url'] ?? '';
+        $intakeJ    = json_encode($intakeUrl, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT);
+        $spId       = (int)($site['support_platform_id'] ?? 0);
+        $spName     = $site['support_platform'] ?? '';
+        $spJ        = json_encode(['id' => $spId, 'name' => $spName], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT);
+        ?>
         <td class="col-support_intake_url link-cell" data-link-type="intake" data-site-id="<?= $sid ?>"
-            data-url="<?= h($intakeUrl) ?>" onclick="editLink(<?= $sid ?>, 'intake', <?= h($intakeJ) ?>)"
-            title="<?= $intakeUrl ? h($intakeUrl) : 'Set intake URL' ?>">
+            data-url="<?= h($intakeUrl) ?>" data-sp-id="<?= $spId ?>"
+            onclick="editLink(<?= $sid ?>, 'intake', <?= h($intakeJ) ?>, <?= h($spJ) ?>)"
+            title="<?= $intakeUrl ? h($intakeUrl) . ($spName ? ' · ' . h($spName) : '') : 'Set intake URL' ?>">
             <?php if ($intakeUrl): ?>
                 <span class="link-cell-icon"><?= str_contains($intakeUrl, '/') ? '🔗' : '✉' ?></span>
             <?php else: ?>
@@ -844,6 +839,15 @@ foreach ($toggleCols as $key):
                style="font-size:12px;color:#265BF7;word-break:break-all;text-decoration:none;">
             </a>
         </div>
+        <div id="link-platform-wrap" style="display:none;margin-bottom:14px">
+            <label style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px">Support Platform</label>
+            <select id="link-platform-select" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;outline:none;background:#fff">
+                <option value="">— none —</option>
+                <?php foreach ($lookups['support_platforms'] as $sp): ?>
+                <option value="<?= $sp['id'] ?>"><?= h($sp['label']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <label style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px" id="link-input-label">New URL</label>
         <input id="link-input" type="text" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;margin-bottom:12px;outline:none;box-sizing:border-box"
                placeholder="https://…">
@@ -912,7 +916,7 @@ const PEOPLE_OPTIONS = <?= $filterPeopleJson ?>;
 // ── Column visibility ──────────────────────────────────────────────────────
 const ALL_TOGGLE_COLS = ['description','vp_area','vp_lead','college_dept',
     'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
-    'support_platform','support_intake_url','datastudio_url',
+    'support_intake_url','datastudio_url',
     'server','platform','audience','category','second_category',
     'db-score','db-accessibility','db-badlinks','db-seo',
     'db-spelling','db-bestpractices','db-webgovernance','db-pages'];
@@ -969,7 +973,6 @@ const FILTER_COLS = {
     content_lead:         { type:'people' },
     tech_lead:            { type:'people' },
     admin_contact:        { type:'people' },
-    support_platform:     { type:'set',    lookup:'support_platforms' },
     server:               { type:'set',    lookup:'servers' },
     platform:             { type:'set',    lookup:'platforms' },
     audience:             { type:'set',    lookup:'audiences' },
@@ -1352,8 +1355,8 @@ async function saveFkEdit(td, val, lookupKey, fkField) {
 // ── Link editing ───────────────────────────────────────────────────────────
 let linkState = {};
 
-function editLink(siteId, linkType, currentUrl) {
-    linkState = { siteId, linkType, currentUrl: currentUrl || '' };
+function editLink(siteId, linkType, currentUrl, platform) {
+    linkState = { siteId, linkType, currentUrl: currentUrl || '', platform: platform || null };
     const label = linkType === 'intake' ? 'Support Intake URL' : 'Datastudio URL';
     document.getElementById('link-modal-title').textContent = label;
 
@@ -1373,6 +1376,16 @@ function editLink(siteId, linkType, currentUrl) {
         curWrap.style.display = 'none';
     }
 
+    // Support Platform selector (intake only)
+    const platWrap = document.getElementById('link-platform-wrap');
+    const platSel  = document.getElementById('link-platform-select');
+    if (linkType === 'intake') {
+        platSel.value      = platform?.id || '';
+        platWrap.style.display = 'block';
+    } else {
+        platWrap.style.display = 'none';
+    }
+
     // Label and clear button
     document.getElementById('link-input-label').textContent = currentUrl ? 'Replace with new URL' : 'URL';
     document.getElementById('link-clear-btn').style.display = currentUrl ? '' : 'none';
@@ -1389,29 +1402,40 @@ function closeLinkModal() {
 
 async function clearLinkModal() {
     const { siteId, linkType } = linkState;
-    const res = await api({ action: 'update_link', site_id: siteId, link_type: linkType, url: '' });
-    if (res.success) updateLinkCell(siteId, linkType, '');
+    const ops = [api({ action: 'update_link', site_id: siteId, link_type: linkType, url: '' })];
+    if (linkType === 'intake') ops.push(api({ action: 'update_site', site_id: siteId, field: 'support_platform_id', value: '' }));
+    await Promise.all(ops);
+    updateLinkCell(siteId, linkType, '', null);
     closeLinkModal();
 }
 
 async function saveLinkModal() {
     const url = document.getElementById('link-input').value.trim();
     const { siteId, linkType, currentUrl } = linkState;
-    const finalUrl = url || currentUrl;   // empty input = keep current
-    if (!finalUrl) { closeLinkModal(); return; }
-    const res = await api({ action: 'update_link', site_id: siteId, link_type: linkType, url: finalUrl });
-    if (res.success) updateLinkCell(siteId, linkType, finalUrl);
+    const finalUrl = url || currentUrl;
+    const platId   = linkType === 'intake' ? (document.getElementById('link-platform-select').value || '') : null;
+
+    const ops = [];
+    if (finalUrl) ops.push(api({ action: 'update_link', site_id: siteId, link_type: linkType, url: finalUrl }));
+    if (platId !== null) ops.push(api({ action: 'update_site', site_id: siteId, field: 'support_platform_id', value: platId }));
+    await Promise.all(ops);
+
+    if (finalUrl || platId !== null) {
+        const platName = platId ? document.getElementById('link-platform-select').selectedOptions[0]?.text : '';
+        updateLinkCell(siteId, linkType, finalUrl, platId ? { id: platId, name: platName } : null);
+    }
     closeLinkModal();
 }
 
-function updateLinkCell(siteId, linkType, url) {
+function updateLinkCell(siteId, linkType, url, platform) {
     const col = linkType === 'intake' ? 'col-support_intake_url' : 'col-datastudio_url';
     const td  = document.querySelector(`tr[data-id="${siteId}"] td.${col}`);
     if (!td) return;
-    td.dataset.url = url;
-    td.title       = url || (linkType === 'intake' ? 'Set intake URL' : 'Set Datastudio URL');
-    // Update onclick to pass new url
-    td.onclick = () => editLink(parseInt(siteId), linkType, url);
+    td.dataset.url  = url;
+    td.dataset.spId = platform?.id || '';
+    const platHint  = platform?.name ? ' · ' + platform.name : '';
+    td.title = url ? url + platHint : (linkType === 'intake' ? 'Set intake URL' : 'Set Datastudio URL');
+    td.onclick = () => editLink(parseInt(siteId), linkType, url, platform);
     if (url) {
         const icon = linkType === 'datastudio' ? '📊' : (url.includes('/') ? '🔗' : '✉');
         td.innerHTML = `<span class="link-cell-icon">${icon}</span>`;
