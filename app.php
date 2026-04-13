@@ -1034,14 +1034,14 @@ const EMPLOYEES      = <?= $employeesJson ?>;
 const PEOPLE_OPTIONS = <?= $filterPeopleJson ?>;
 
 // ── Column visibility ──────────────────────────────────────────────────────
-const ALL_TOGGLE_COLS = ['description','vp_area','vp_lead','college_dept',
+const ALL_TOGGLE_COLS = ['url','description','vp_area','vp_lead','college_dept',
     'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
     'support_intake_url','datastudio_url',
     'server','platform','audience','category','second_category',
     'db-score','db-accessibility','db-badlinks','db-seo',
     'db-spelling','db-bestpractices','db-webgovernance','db-pages'];
 
-const DEFAULT_HIDDEN = ['description'];
+const DEFAULT_HIDDEN = ['url', 'description'];
 const storedCols     = localStorage.getItem('hiddenCols');
 const hiddenCols     = new Set(storedCols !== null ? JSON.parse(storedCols) : DEFAULT_HIDDEN);
 
