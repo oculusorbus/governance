@@ -2008,30 +2008,69 @@ async function loadDubBotData() {
         return;
     }
 
-    // ── Step 4: single request to PHP — server handles batching via curl_multi
-    // dubbot.php tries everything in one GraphQL request; if it hits a complexity
-    // limit it parses the error, calculates batch size, and fires all batches in
-    // parallel with curl_multi — one browser round trip regardless.
+    // ── Step 4: fetch stats with adaptive parallel batching ──────────────
+    const DB_FRAGMENT = `
+      pagesCount online
+      latestStatsSnapshot {
+        score
+        accessibility  { score total }
+        bestPractices  { score total }
+        webGovernance  { score total }
+        seo            { score total }
+        badLinks       { score total }
+        spelling       { score total }
+      }
+    `;
+
+    async function fetchBatch(batch, offset) {
+        const aliases = batch.map((r, j) =>
+            `s_${offset + j}: site(siteId:"${r.siteId}", accountId:"${r.accountId}") { ${DB_FRAGMENT} }`
+        ).join('\n');
+        return dbGql(`{ ${aliases} }`);
+    }
+
+    function applyBatch(data, batch, offset) {
+        batch.forEach((r, j) => dbFillRow(r.row, data?.[`s_${offset + j}`] ?? null));
+    }
+
     dbSetStatus('loading', `Fetching stats for ${matched.length} matched site${matched.length !== 1 ? 's' : ''}…`);
 
     try {
-        const res = await fetch('dubbot.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'fetchAllStats',
-                sites:  matched.map(r => ({ siteId: r.siteId, accountId: r.accountId })),
-            }),
-        });
-        const json = await res.json();
-        if (json.error) throw new Error(json.error);
+        // First attempt: all sites in one request
+        const first = await fetchBatch(matched, 0);
+        const complexErr = (first?.errors || []).find(e => /complexity/i.test(e.message));
 
-        const data = json.data || {};
-        matched.forEach((r, j) => dbFillRow(r.row, data[`s_${j}`] ?? null));
+        if (!complexErr) {
+            applyBatch(first, matched, 0);
+            dbSetStatus('done', `${matched.length} / ${allRows.length} sites matched`);
+            return;
+        }
+
+        // Parse complexity error → calculate safe batch size
+        let batchSize = 5;
+        const cm = complexErr.message.match(/complexity of (\d+).*max complexity of (\d+)/i);
+        if (cm) {
+            const perItem = parseInt(cm[1]) / matched.length;
+            batchSize = Math.max(1, Math.floor(parseInt(cm[2]) / perItem));
+        }
+
+        dbSetStatus('loading', `Fetching in batches of ${batchSize}…`);
+
+        // Split and fire ALL batches in parallel
+        const batches = [];
+        for (let i = 0; i < matched.length; i += batchSize)
+            batches.push({ rows: matched.slice(i, i + batchSize), offset: i });
+
+        const results = await Promise.all(
+            batches.map(b => fetchBatch(b.rows, b.offset).catch(() => null))
+        );
+        results.forEach((data, bi) => {
+            if (data) applyBatch(data, batches[bi].rows, batches[bi].offset);
+        });
         dbSetStatus('done', `${matched.length} / ${allRows.length} sites matched`);
 
     } catch (e) {
-        console.error('DubBot stats load failed:', e);
+        console.error('DubBot load failed:', e);
         dbSetStatus('error', e.message);
         matched.forEach(r => dbFillRow(r.row, null));
     }
