@@ -273,13 +273,13 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         /* Column widths */
         .col-description        { min-width:240px; max-width:240px; }
         .col-vp_area            { min-width:100px; max-width:100px; }
-        .col-vp_lead            { min-width:110px; max-width:110px; }
+        .col-vp_lead            { min-width:120px; max-width:120px; }
         .col-college_dept       { min-width:140px; max-width:140px; }
         .col-college_communicator,
         .col-site_owner,
         .col-content_lead,
         .col-tech_lead,
-        .col-admin_contact      { min-width:100px; max-width:100px; }
+        .col-admin_contact      { min-width:110px; max-width:110px; }
         .col-support_platform   { min-width:140px; max-width:140px; }
         .col-support_intake_url,
         .col-datastudio_url     { min-width:62px;  max-width:62px;  text-align:center; }
