@@ -321,10 +321,11 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .col-second_category    { min-width:130px; max-width:130px; }
 
         /* Editable cells */
-        td.editable { cursor:pointer; }
+        td.editable { cursor:pointer; position:relative; }
         td.editable:hover { background:rgba(200,220,255,.2) !important; }
         td.editable:not(.editing):hover::after { content:'✎'; font-size:10px; color:#D5CFC8;
-                                                margin-left:4px; float:right; }
+                                                position:absolute; right:4px; top:50%;
+                                                transform:translateY(-50%); pointer-events:none; }
 
         /* Editing state */
         td.editing { padding:2px 4px; overflow:visible; }
