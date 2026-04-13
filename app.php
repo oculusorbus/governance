@@ -635,7 +635,7 @@ $defaultHidden = ['url', 'description'];
     <!-- Column headers -->
     <tr class="headers">
         <th class="sticky-1 col-site">Site <?= sortBtn('site') ?><?= filterBtn('site') ?></th>
-        <th class="col-url">URL</th>
+        <th class="col-url">URL <?= sortBtn('url') ?><?= filterBtn('url') ?></th>
         <th class="col-description">Description <?= sortBtn('description') ?><?= filterBtn('description') ?></th>
         <th class="col-vp_area">VP Area <?= sortBtn('vp_area') ?><?= filterBtn('vp_area') ?></th>
         <th class="col-vp_lead">VP Lead <?= sortBtn('vp_lead') ?><?= filterBtn('vp_lead') ?></th>
@@ -1136,6 +1136,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // type:'people' → pipe-delimited emp IDs; row shown if any ID is in selected Set
 const FILTER_COLS = {
     site:                 { type:'text' },   // searches both data-url and data-site_name
+    url:                  { type:'text' },
     description:          { type:'text' },
     vp_area:              { type:'set',    lookup:'vp_areas' },
     vp_lead:              { type:'people' },
