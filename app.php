@@ -557,8 +557,9 @@ foreach ($toggleCols as $key):
         <?php
         $display   = $site['site_name'] ?: $site['url'];
         $href      = $site['url'] ? 'https://' . h($site['url']) : '';
-        $siteNameJ = json_encode((string)($site['site_name'] ?? ''));
-        $urlJ      = json_encode((string)($site['url']       ?? ''));
+        $flags     = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT;
+        $siteNameJ = json_encode((string)($site['site_name'] ?? ''), $flags);
+        $urlJ      = json_encode((string)($site['url']       ?? ''), $flags);
         ?>
         <td class="sticky-1 col-site" data-site-id="<?= $sid ?>"
             title="<?= h($display) ?>">
