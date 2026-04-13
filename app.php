@@ -18,6 +18,22 @@ try {
     die('Database connection failed.');
 }
 
+// ── Ensure dubbot_stats table exists ─────────────────────────────────────
+$pdo->exec("
+    CREATE TABLE IF NOT EXISTS dubbot_stats (
+        site_id         INT PRIMARY KEY,
+        score           DECIMAL(6,2),
+        accessibility   DECIMAL(6,2),
+        best_practices  DECIMAL(6,2),
+        web_governance  DECIMAL(6,2),
+        seo             DECIMAL(6,2),
+        bad_links       DECIMAL(6,2),
+        spelling        DECIMAL(6,2),
+        pages_count     INT,
+        updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+");
+
 // ── Fetch all sites with joined display values ────────────────────────────
 $sites = $pdo->query("
     SELECT s.id, s.url, s.site_name, s.description,
@@ -30,7 +46,16 @@ $sites = $pdo->query("
         s.platform_id,           pl.name  AS platform,
         s.audience_id,           au.name  AS audience,
         s.category_id,           cat.name AS category,
-        s.second_category_id,    cat2.name AS second_category
+        s.second_category_id,    cat2.name AS second_category,
+        db.score           AS db_score,
+        db.accessibility   AS db_accessibility,
+        db.best_practices  AS db_best_practices,
+        db.web_governance  AS db_web_governance,
+        db.seo             AS db_seo,
+        db.bad_links       AS db_bad_links,
+        db.spelling        AS db_spelling,
+        db.pages_count     AS db_pages_count,
+        db.updated_at      AS db_updated_at
     FROM sites s
     LEFT JOIN vp_areas va           ON s.vp_area_id            = va.id
     LEFT JOIN colleges_depts cd     ON s.college_dept_id        = cd.id
@@ -42,6 +67,7 @@ $sites = $pdo->query("
     LEFT JOIN audiences au          ON s.audience_id            = au.id
     LEFT JOIN categories cat        ON s.category_id            = cat.id
     LEFT JOIN categories cat2       ON s.second_category_id     = cat2.id
+    LEFT JOIN dubbot_stats db       ON s.id                     = db.site_id
     ORDER BY s.url
 ")->fetchAll();
 
@@ -85,9 +111,17 @@ $employees = $pdo->query("
     FROM employees ORDER BY last_name, first_name
 ")->fetchAll();
 
+// ── Most recent DubBot sync timestamp ────────────────────────────────────
+$dbLastUpdated = $pdo->query("SELECT MAX(updated_at) FROM dubbot_stats")->fetchColumn();
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 function h(mixed $v): string {
     return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
+}
+
+function dbScoreBadge(float $score): string {
+    $cls = $score >= 90 ? 'db-good' : ($score >= 70 ? 'db-ok' : 'db-poor');
+    return '<span class="db-score ' . $cls . '">' . number_format($score, 1) . '%</span>';
 }
 
 function initials(string $first, string $last): string {
@@ -456,6 +490,11 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                        vertical-align:middle; margin:0 3px; }
         .db-hdr-status { font-size:10px; font-weight:400; letter-spacing:0; opacity:.85; }
         .db-hdr-error  { font-size:10px; font-weight:400; letter-spacing:0; color:#fca5a5; }
+        .db-refresh-btn { margin-left:6px; padding:1px 7px; font-size:10px; font-weight:600;
+                          background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.4);
+                          border-radius:4px; cursor:pointer; vertical-align:middle; }
+        .db-refresh-btn:hover:not(:disabled) { background:rgba(255,255,255,.3); }
+        .db-refresh-btn:disabled { opacity:.4; cursor:not-allowed; }
 
         /* ── Cell tooltip ─────────────────────────────────────────────── */
         #cell-tooltip { position:fixed; pointer-events:none; z-index:99998;
@@ -532,7 +571,7 @@ foreach ($toggleCols as $key):
         <th colspan="2" class="grp-support">Support</th>
         <th colspan="3" class="grp-technical">Technical</th>
         <th colspan="3" class="grp-classification">Classification</th>
-        <th colspan="8" class="grp-dubbot" id="grp-dubbot">DubBot</th>
+        <th colspan="8" class="grp-dubbot" id="grp-dubbot">DubBot <?php if ($dbLastUpdated): ?><span class="db-hdr-status">Updated <?= h(date('M j, Y', strtotime($dbLastUpdated))) ?></span><?php endif; ?> <button class="db-refresh-btn" id="db-refresh-btn" onclick="loadDubBotData()" title="Refresh DubBot data from API">↻ Refresh</button></th>
     </tr>
     <!-- Column headers -->
     <tr class="headers">
@@ -741,15 +780,29 @@ foreach ($toggleCols as $key):
             <?= h($site['second_category']) ?>
         </td>
 
-        <!-- DubBot (populated asynchronously by JS) -->
-        <td class="col-db-score"         data-db-col="score"></td>
-        <td class="col-db-accessibility" data-db-col="accessibility"></td>
-        <td class="col-db-badlinks"      data-db-col="badLinks"></td>
-        <td class="col-db-seo"           data-db-col="seo"></td>
-        <td class="col-db-spelling"      data-db-col="spelling"></td>
-        <td class="col-db-bestpractices" data-db-col="bestPractices"></td>
-        <td class="col-db-webgovernance" data-db-col="webGovernance"></td>
-        <td class="col-db-pages"         data-db-col="pages"></td>
+        <!-- DubBot (pre-populated from DB; refreshable via JS) -->
+        <?php
+        // Build a pseudo site-stats object mirroring what the JS API returns
+        $dbHas = $site['db_score'] !== null;
+        function dbScoreAttr($val) { return $val !== null ? ' data-db-saved="' . (float)$val . '"' : ''; }
+        ?>
+        <td class="col-db-score"         data-db-col="score"<?= dbScoreAttr($site['db_score']) ?>><?php
+            if ($dbHas) echo dbScoreBadge((float)$site['db_score']); ?></td>
+        <td class="col-db-accessibility" data-db-col="accessibility"<?= dbScoreAttr($site['db_accessibility']) ?>><?php
+            if ($dbHas) echo dbScoreBadge((float)$site['db_accessibility']); ?></td>
+        <td class="col-db-badlinks"      data-db-col="badLinks"<?= dbScoreAttr($site['db_bad_links']) ?>><?php
+            if ($dbHas) echo dbScoreBadge((float)$site['db_bad_links']); ?></td>
+        <td class="col-db-seo"           data-db-col="seo"<?= dbScoreAttr($site['db_seo']) ?>><?php
+            if ($dbHas) echo dbScoreBadge((float)$site['db_seo']); ?></td>
+        <td class="col-db-spelling"      data-db-col="spelling"<?= dbScoreAttr($site['db_spelling']) ?>><?php
+            if ($dbHas) echo dbScoreBadge((float)$site['db_spelling']); ?></td>
+        <td class="col-db-bestpractices" data-db-col="bestPractices"<?= dbScoreAttr($site['db_best_practices']) ?>><?php
+            if ($dbHas) echo dbScoreBadge((float)$site['db_best_practices']); ?></td>
+        <td class="col-db-webgovernance" data-db-col="webGovernance"<?= dbScoreAttr($site['db_web_governance']) ?>><?php
+            if ($dbHas) echo dbScoreBadge((float)$site['db_web_governance']); ?></td>
+        <td class="col-db-pages"         data-db-col="pages"><?php
+            if ($dbHas && $site['db_pages_count'] !== null)
+                echo number_format((int)$site['db_pages_count']); ?></td>
 
     </tr>
 <?php endforeach; ?>
@@ -893,7 +946,6 @@ window.addEventListener('DOMContentLoaded', () => {
         // restores scroll position, which itself fires this scroll event)
         if (activeCell && !activeTomSelect) cancelEdit();
     });
-    loadDubBotData();
 });
 
 // ── Column filters ─────────────────────────────────────────────────────────
@@ -1882,14 +1934,16 @@ function dbNorm(url) {
 }
 
 function dbSetStatus(type, msg) {
-    const el = document.getElementById('grp-dubbot');
+    const el  = document.getElementById('grp-dubbot');
+    const btn = document.getElementById('db-refresh-btn');
     if (!el) return;
+    const btnHtml = `<button class="db-refresh-btn" id="db-refresh-btn" onclick="loadDubBotData()" title="Refresh DubBot data from API">↻ Refresh</button>`;
     if (type === 'loading') {
-        el.innerHTML = `DubBot <span class="db-hdr-spin"></span><span class="db-hdr-status">${escHtml(msg)}</span>`;
+        el.innerHTML = `DubBot <span class="db-hdr-spin"></span><span class="db-hdr-status">${escHtml(msg)}</span> <button class="db-refresh-btn" id="db-refresh-btn" disabled>↻ Refresh</button>`;
     } else if (type === 'error') {
-        el.innerHTML = `DubBot <span class="db-hdr-error">⚠ ${escHtml(msg)}</span>`;
+        el.innerHTML = `DubBot <span class="db-hdr-error">⚠ ${escHtml(msg)}</span> ${btnHtml}`;
     } else {
-        el.innerHTML = `DubBot <span class="db-hdr-status">${escHtml(msg)}</span>`;
+        el.innerHTML = `DubBot <span class="db-hdr-status">${escHtml(msg)}</span> ${btnHtml}`;
     }
 }
 
@@ -2049,7 +2103,8 @@ async function loadDubBotData() {
 
         if (!complexErr) {
             applyBatch(first.data, matched, 0);
-            dbSetStatus('done', `${matched.length} / ${allRows.length} sites matched`);
+            await dbSaveStats(matched);
+            dbSetStatus('done', `${matched.length} / ${allRows.length} matched — saved`);
             return;
         }
 
@@ -2074,12 +2129,70 @@ async function loadDubBotData() {
         results.forEach((json, bi) => {
             if (json?.data) applyBatch(json.data, batches[bi].rows, batches[bi].offset);
         });
-        dbSetStatus('done', `${matched.length} / ${allRows.length} sites matched`);
+        await dbSaveStats(matched);
+        dbSetStatus('done', `${matched.length} / ${allRows.length} matched — saved`);
 
     } catch (e) {
         console.error('DubBot load failed:', e);
         dbSetStatus('error', e.message);
         matched.forEach(r => dbFillRow(r.row, null));
+    }
+}
+
+// ── Persist DubBot stats for changed rows ──────────────────────────────────
+async function dbSaveStats(matched) {
+    // Collect rows where any value differs from the data-db-saved attribute
+    const COL_MAP = {
+        score: 'score', accessibility: 'accessibility', badLinks: 'bad_links',
+        seo: 'seo', spelling: 'spelling', bestPractices: 'best_practices',
+        webGovernance: 'web_governance',
+    };
+
+    const updates = [];
+    for (const { row } of matched) {
+        const siteId = row.dataset.id;
+        const stats  = { site_id: parseInt(siteId) };
+        let   changed = false;
+
+        // Score-type columns
+        for (const [dbCol, dbField] of Object.entries(COL_MAP)) {
+            const td  = row.querySelector(`td[data-db-col="${dbCol}"]`);
+            if (!td) continue;
+            const span = td.querySelector('.db-score');
+            const newVal = span ? parseFloat(span.textContent) : null;
+            const oldVal = td.dataset.dbSaved !== undefined ? parseFloat(td.dataset.dbSaved) : null;
+            stats[dbField] = newVal;
+            if (newVal !== oldVal) changed = true;
+        }
+
+        // Pages
+        const pagesTd = row.querySelector('td[data-db-col="pages"]');
+        const pagesNew = pagesTd?.textContent.trim().replace(/,/g, '');
+        const pagesVal = pagesNew ? parseInt(pagesNew) : null;
+        const pagesOld = pagesTd?.dataset.dbSaved !== undefined ? parseInt(pagesTd.dataset.dbSaved) : null;
+        stats.pages_count = pagesVal;
+        if (pagesVal !== pagesOld) changed = true;
+
+        if (changed) updates.push(stats);
+    }
+
+    if (!updates.length) return;
+
+    await api({ action: 'save_dubbot_stats', stats: updates });
+
+    // Update data-db-saved attrs so next refresh detects changes correctly
+    for (const { row } of matched) {
+        for (const dbCol of [...Object.keys(COL_MAP), 'pages']) {
+            const td   = row.querySelector(`td[data-db-col="${dbCol}"]`);
+            if (!td) continue;
+            if (dbCol === 'pages') {
+                const v = td.textContent.trim().replace(/,/g, '');
+                td.dataset.dbSaved = v ? parseInt(v) : '';
+            } else {
+                const span = td.querySelector('.db-score');
+                td.dataset.dbSaved = span ? parseFloat(span.textContent) : '';
+            }
+        }
     }
 }
 

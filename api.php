@@ -268,6 +268,46 @@ try { switch ($action) {
         echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
         break;
 
+    // ── Save DubBot stats (upsert, only changed rows sent from JS) ───────
+    case 'save_dubbot_stats':
+        $rows = $input['stats'] ?? [];
+        if (empty($rows)) { echo json_encode(['success' => true, 'saved' => 0]); break; }
+        $stmt = $pdo->prepare("
+            INSERT INTO dubbot_stats
+                (site_id, score, accessibility, best_practices, web_governance,
+                 seo, bad_links, spelling, pages_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                score          = VALUES(score),
+                accessibility  = VALUES(accessibility),
+                best_practices = VALUES(best_practices),
+                web_governance = VALUES(web_governance),
+                seo            = VALUES(seo),
+                bad_links      = VALUES(bad_links),
+                spelling       = VALUES(spelling),
+                pages_count    = VALUES(pages_count),
+                updated_at     = CURRENT_TIMESTAMP
+        ");
+        $saved = 0;
+        foreach ($rows as $r) {
+            $siteId = (int)($r['site_id'] ?? 0);
+            if (!$siteId) continue;
+            $stmt->execute([
+                $siteId,
+                isset($r['score'])          ? (float)$r['score']          : null,
+                isset($r['accessibility'])  ? (float)$r['accessibility']  : null,
+                isset($r['best_practices']) ? (float)$r['best_practices'] : null,
+                isset($r['web_governance']) ? (float)$r['web_governance'] : null,
+                isset($r['seo'])            ? (float)$r['seo']            : null,
+                isset($r['bad_links'])      ? (float)$r['bad_links']      : null,
+                isset($r['spelling'])       ? (float)$r['spelling']       : null,
+                isset($r['pages_count'])    ? (int)$r['pages_count']      : null,
+            ]);
+            $saved++;
+        }
+        echo json_encode(['success' => true, 'saved' => $saved]);
+        break;
+
     // ── Add a new site row ────────────────────────────────────────────────
     case 'add_site':
         $url = trim($input['url'] ?? '');
