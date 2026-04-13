@@ -196,11 +196,11 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         #col-panel input[type=checkbox] { accent-color:#3b82f6; }
 
         /* ── Column filter buttons ────────────────────────────────────── */
-        .filter-btn { display:inline-flex; align-items:center; background:none; border:none;
-                      cursor:pointer; padding:2px 3px; margin-left:3px; opacity:.35;
-                      color:inherit; vertical-align:middle; border-radius:3px;
-                      transition:opacity .15s, color .15s; }
-        .filter-btn:hover { opacity:.75; }
+        .filter-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
+                      display:inline-flex; align-items:center; background:none; border:none;
+                      cursor:pointer; padding:2px; opacity:.35; color:inherit;
+                      border-radius:3px; transition:opacity .15s, color .15s; }
+        .filter-btn:hover { opacity:.8; }
         .filter-btn.filter-active { opacity:1; color:#3b82f6; }
 
         /* ── Filter popover ───────────────────────────────────────────── */
@@ -253,9 +253,9 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* Column header row */
         thead tr.headers th { font-size:11px; font-weight:600; color:#475569;
-                              background:#f8fafc; padding:6px 8px; white-space:nowrap;
+                              background:#f8fafc; padding:6px 20px 6px 8px; white-space:nowrap;
                               border-bottom:2px solid #e2e8f0; border-right:1px solid #e2e8f0;
-                              position:sticky; top:28px; z-index:10; }
+                              position:sticky; top:28px; z-index:10; overflow:hidden; }
 
         /* Data cells */
         td { padding:5px 8px; border-bottom:1px solid #f1f5f9;
