@@ -163,37 +163,54 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Website Governance</title>
 
+    <!-- UTSA Brand Fonts (Arsenal = headline, Libre Franklin = body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Arsenal:wght@400;700&family=Libre+Franklin:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
     <!-- Tom Select -->
     <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
     <style>
+        /*
+         * UTSA Brand Colors
+         * Midnight       #032044   River Mist   #C8DCFF
+         * UTSA Orange    #F15A22   Talavera Blue #265BF7
+         * Access. Orange #D3430D   Mission Clay  #DBB485
+         * Brass          #A06620   Limestone     #F8F4F1
+         * Concrete       #EBE6E2   Smoke         #D5CFC8
+         * Brand Black    #332F21
+         */
+
         *, *::before, *::after { box-sizing: border-box; }
 
-        body { margin: 0; font-family: system-ui, sans-serif; font-size: 13px;
-               background: #f8fafc; color: #1e293b; }
+        body { margin: 0; font-family: 'Libre Franklin', system-ui, sans-serif; font-size: 13px;
+               background: #F8F4F1; color: #332F21; }
 
         /* ── Header ───────────────────────────────────────────────────── */
         #topbar { display:flex; align-items:center; gap:12px; padding:10px 16px;
-                  background:#1e3a5f; color:#fff; position:sticky; top:0; z-index:50; }
-        #topbar h1 { font-size:15px; font-weight:700; margin:0; flex:1; }
+                  background:#032044; color:#fff; position:sticky; top:0; z-index:50; }
+        #topbar h1 { font-family:'Arsenal', system-ui, sans-serif; font-size:16px;
+                     font-weight:700; margin:0; flex:1; letter-spacing:-.01em; }
         #topbar button { font-size:12px; padding:5px 12px; border:none; border-radius:6px;
-                         cursor:pointer; font-weight:600; transition:background .15s; }
-        #btn-cols  { background:#2d5282; color:#fff; }
-        #btn-cols:hover  { background:#2c4a7c; }
-        #btn-add   { background:#16a34a; color:#fff; }
-        #btn-add:hover   { background:#15803d; }
+                         cursor:pointer; font-weight:600; transition:background .15s;
+                         font-family:'Libre Franklin', system-ui, sans-serif; }
+        #btn-cols  { background:#1B3A6B; color:#fff; }
+        #btn-cols:hover  { background:#254e8f; }
+        #btn-add   { background:#D3430D; color:#fff; }
+        #btn-add:hover   { background:#B94700; }
         #btn-logout { background:#dc2626; color:#fff; }
         #btn-logout:hover { background:#b91c1c; }
-        #row-count { font-size:12px; color:#93c5fd; }
+        #row-count { font-size:12px; color:#C8DCFF; }
 
         /* ── Column visibility panel ──────────────────────────────────── */
-        #col-panel { display:none; background:#fff; border-bottom:1px solid #e2e8f0;
+        #col-panel { display:none; background:#fff; border-bottom:1px solid #EBE6E2;
                      padding:12px 16px; flex-wrap:wrap; gap:8px; }
         #col-panel.open { display:flex; }
         #col-panel label { display:flex; align-items:center; gap:5px; font-size:12px;
                            cursor:pointer; user-select:none; }
-        #col-panel input[type=checkbox] { accent-color:#3b82f6; }
+        #col-panel input[type=checkbox] { accent-color:#D3430D; }
 
         /* ── Column filter buttons ────────────────────────────────────── */
         .filter-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
@@ -201,34 +218,34 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                       cursor:pointer; padding:2px; opacity:.35; color:inherit;
                       border-radius:3px; transition:opacity .15s, color .15s; }
         .filter-btn:hover { opacity:.8; }
-        .filter-btn.filter-active { opacity:1; color:#3b82f6; }
+        .filter-btn.filter-active { opacity:1; color:#D3430D; }
 
         /* ── Filter popover ───────────────────────────────────────────── */
         #filter-popover { display:none; position:fixed; background:#fff;
-                          border:1px solid #e2e8f0; border-radius:8px;
-                          box-shadow:0 6px 20px rgba(0,0,0,.13); z-index:10000;
+                          border:1px solid #EBE6E2; border-radius:8px;
+                          box-shadow:0 6px 20px rgba(3,32,68,.12); z-index:10000;
                           padding:10px; width:230px; max-height:360px;
                           flex-direction:column; }
         #filter-popover.open { display:flex; }
         #filter-pop-search, #filter-pop-text {
-            width:100%; padding:5px 8px; border:1px solid #cbd5e1; border-radius:6px;
+            width:100%; padding:5px 8px; border:1px solid #D5CFC8; border-radius:6px;
             font-size:12px; outline:none; margin-bottom:6px; box-sizing:border-box; }
-        #filter-pop-search:focus, #filter-pop-text:focus { border-color:#3b82f6; }
+        #filter-pop-search:focus, #filter-pop-text:focus { border-color:#265BF7; }
         .filter-pop-list { overflow-y:auto; max-height:200px; margin-bottom:6px; }
         .filter-pop-item { display:flex; align-items:center; gap:6px; padding:3px 4px;
                            border-radius:4px; cursor:pointer; font-size:12px; user-select:none; }
-        .filter-pop-item:hover { background:#f1f5f9; }
-        .filter-pop-item input { flex-shrink:0; cursor:pointer; accent-color:#3b82f6; }
-        .filter-pop-sep { height:1px; background:#e2e8f0; margin:4px 0; flex-shrink:0; }
+        .filter-pop-item:hover { background:#F8F4F1; }
+        .filter-pop-item input { flex-shrink:0; cursor:pointer; accent-color:#D3430D; }
+        .filter-pop-sep { height:1px; background:#EBE6E2; margin:4px 0; flex-shrink:0; }
         .filter-pop-actions { display:flex; gap:6px; padding-top:8px;
-                              border-top:1px solid #e2e8f0; flex-shrink:0; }
+                              border-top:1px solid #EBE6E2; flex-shrink:0; }
         .filter-pop-actions button { flex:1; padding:5px; border-radius:6px; border:none;
                                      cursor:pointer; font-size:12px; font-weight:600; }
-        .filter-pop-actions .btn-clear { background:#f1f5f9; color:#475569; }
-        .filter-pop-actions .btn-clear:hover { background:#e2e8f0; }
-        .filter-pop-actions .btn-apply { background:#3b82f6; color:#fff; }
-        .filter-pop-actions .btn-apply:hover { background:#2563eb; }
-        #btn-clear-filters { background:#f59e0b; color:#fff; }
+        .filter-pop-actions .btn-clear { background:#EBE6E2; color:#332F21; }
+        .filter-pop-actions .btn-clear:hover { background:#D5CFC8; }
+        .filter-pop-actions .btn-apply { background:#265BF7; color:#fff; }
+        .filter-pop-actions .btn-apply:hover { background:#1847BF; }
+        #btn-clear-filters { background:#D3430D; color:#fff; }
 
         /* ── Table wrapper ────────────────────────────────────────────── */
         /* position:relative + z-index:1 creates a stacking context that
@@ -241,36 +258,37 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         table { border-collapse:collapse; width:max-content; }
 
         /* Group header row */
-        thead tr.groups th { font-size:11px; font-weight:700; text-transform:uppercase;
-                              letter-spacing:.05em; color:#fff; padding:5px 8px;
-                              border-right:2px solid rgba(255,255,255,.3); }
-        .grp-identity       { background:#1e3a5f; }
-        .grp-governance     { background:#1e4d5f; }
-        .grp-people         { background:#3b4f6d; }
-        .grp-support        { background:#4a5568; }
-        .grp-technical      { background:#2d4a3e; }
-        .grp-classification { background:#4a3728; }
+        thead tr.groups th { font-family:'Arsenal', system-ui, sans-serif;
+                              font-size:11px; font-weight:700; text-transform:uppercase;
+                              letter-spacing:.06em; color:#fff; padding:5px 8px;
+                              border-right:2px solid rgba(255,255,255,.25); }
+        .grp-identity       { background:#032044; } /* Midnight */
+        .grp-governance     { background:#032044; } /* Midnight */
+        .grp-people         { background:#265BF7; } /* Talavera Blue */
+        .grp-support        { background:#D3430D; } /* Accessible Orange */
+        .grp-technical      { background:#032044; } /* Midnight */
+        .grp-classification { background:#A06620; } /* Brass */
 
         /* Column header row */
-        thead tr.headers th { font-size:11px; font-weight:600; color:#475569;
-                              background:#f8fafc; padding:6px 20px 6px 8px; white-space:nowrap;
-                              border-bottom:2px solid #e2e8f0; border-right:1px solid #e2e8f0;
+        thead tr.headers th { font-size:11px; font-weight:600; color:#6B6355;
+                              background:#F8F4F1; padding:6px 20px 6px 8px; white-space:nowrap;
+                              border-bottom:2px solid #EBE6E2; border-right:1px solid #EBE6E2;
                               position:sticky; top:28px; z-index:10; overflow:hidden; }
 
         /* Data cells */
-        td { padding:5px 8px; border-bottom:1px solid #f1f5f9;
-             border-right:1px solid #f1f5f9; vertical-align:middle;
+        td { padding:5px 8px; border-bottom:1px solid #EBE6E2;
+             border-right:1px solid #EBE6E2; vertical-align:middle;
              max-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-        tr:hover td { background:#f0f7ff; }
-        tr:hover td.sticky { background:#e8f0fe; }
+        tr:hover td { background:rgba(200,220,255,.2); }
+        tr:hover td.sticky { background:rgba(200,220,255,.3); }
 
         /* Sticky columns */
         .sticky-1 { position:sticky; left:0;     z-index:5; background:#fff; min-width:220px; max-width:220px; }
         .sticky-2 { position:sticky; left:220px; z-index:5; background:#fff; min-width:200px; max-width:200px; }
         thead .sticky-1, thead .sticky-2 { z-index:15; }
-        thead tr.groups .sticky-1 { background:#1e3a5f; }
-        thead tr.groups .sticky-2 { background:#1e3a5f; }
+        thead tr.groups .sticky-1 { background:#032044; }
+        thead tr.groups .sticky-2 { background:#032044; }
 
         /* Column widths */
         .col-description        { min-width:240px; max-width:240px; }
@@ -293,14 +311,14 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* Editable cells */
         td.editable { cursor:pointer; }
-        td.editable:hover { background:#eff6ff !important; }
-        td.editable:hover::after { content:'✎'; font-size:10px; color:#93c5fd;
+        td.editable:hover { background:rgba(200,220,255,.2) !important; }
+        td.editable:hover::after { content:'✎'; font-size:10px; color:#D5CFC8;
                                     margin-left:4px; float:right; }
 
         /* Editing state */
         td.editing { padding:2px 4px; overflow:visible; }
         td.editing input[type=text] {
-            width:100%; font-size:13px; border:2px solid #3b82f6; border-radius:4px;
+            width:100%; font-size:13px; border:2px solid #265BF7; border-radius:4px;
             padding:3px 6px; outline:none; background:#fff; }
 
         /* Badges */
@@ -309,86 +327,87 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                  font-size:10px; font-weight:700; cursor:pointer;
                  margin:1px; transition:transform .1s; }
         .badge:hover { transform:scale(1.15); }
-        .empty-cell { color:#cbd5e1; }
+        .empty-cell { color:#D5CFC8; }
 
         /* Link icon */
         .link-icon { display:inline-flex; align-items:center; justify-content:center;
-                     width:26px; height:26px; border-radius:6px; background:#e0f2fe;
-                     color:#0284c7; font-size:14px; cursor:pointer; text-decoration:none; }
-        .link-icon:hover { background:#bae6fd; }
+                     width:26px; height:26px; border-radius:6px; background:#C8DCFF;
+                     color:#032044; font-size:14px; cursor:pointer; text-decoration:none; }
+        .link-icon:hover { background:#afc8f5; }
         .link-edit-btn { display:inline-flex; align-items:center; justify-content:center;
-                         width:26px; height:26px; border-radius:6px; background:#f1f5f9;
-                         color:#94a3b8; font-size:14px; cursor:pointer; border:none; }
-        .link-edit-btn:hover { background:#e2e8f0; color:#64748b; }
+                         width:26px; height:26px; border-radius:6px; background:#EBE6E2;
+                         color:#A09080; font-size:14px; cursor:pointer; border:none; }
+        .link-edit-btn:hover { background:#D5CFC8; color:#332F21; }
 
         /* ── Tom Select overrides ─────────────────────────────────────── */
         .ts-wrapper { min-width:100%; }
-        .ts-control  { font-size:12px; border:2px solid #3b82f6 !important;
+        .ts-control  { font-size:12px; border:2px solid #265BF7 !important;
                        border-radius:4px !important; min-height:28px !important;
                        padding:2px 6px !important; box-shadow:none !important; }
         .ts-dropdown { font-size:12px; z-index:99999 !important; background:#fff !important; }
         .ts-dropdown .option:hover,
-        .ts-dropdown .option.active { background:#eff6ff !important; color:#1e293b !important; cursor:pointer; }
+        .ts-dropdown .option.active { background:#C8DCFF !important; color:#032044 !important; cursor:pointer; }
 
         /* ── Modal ────────────────────────────────────────────────────── */
-        #modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45);
+        #modal-overlay { display:none; position:fixed; inset:0; background:rgba(3,32,68,.5);
                          z-index:200; align-items:center; justify-content:center; }
         #modal-overlay.open { display:flex; }
         #modal-box { background:#fff; border-radius:12px; padding:24px; width:460px;
-                     max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); }
-        #modal-box h2 { margin:0 0 4px; font-size:15px; font-weight:700; }
-        #modal-box .subtitle { color:#94a3b8; font-size:12px; margin-bottom:16px; }
+                     max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(3,32,68,.3); }
+        #modal-box h2 { font-family:'Arsenal', system-ui, sans-serif;
+                        margin:0 0 4px; font-size:17px; font-weight:700; color:#032044; }
+        #modal-box .subtitle { color:#A09080; font-size:12px; margin-bottom:16px; }
         .modal-person { display:flex; align-items:center; gap:8px; padding:6px 0;
-                        border-bottom:1px solid #f1f5f9; }
+                        border-bottom:1px solid #EBE6E2; }
         .modal-person:last-child { border:none; }
         .modal-person-info { flex:1; }
         .modal-person-info .name { font-weight:600; font-size:13px; }
-        .modal-person-info .email { font-size:11px; color:#94a3b8; }
+        .modal-person-info .email { font-size:11px; color:#A09080; }
         .btn-remove { background:none; border:none; color:#ef4444; font-size:18px;
                       cursor:pointer; padding:0 4px; line-height:1; }
         .btn-remove:hover { color:#b91c1c; }
         .modal-add { margin-top:16px; }
         .modal-add label { display:block; font-size:12px; font-weight:600;
-                           color:#64748b; margin-bottom:6px; }
-        #modal-close { width:100%; margin-top:16px; padding:8px; background:#f1f5f9;
+                           color:#6B6355; margin-bottom:6px; }
+        #modal-close { width:100%; margin-top:16px; padding:8px; background:#EBE6E2;
                        border:none; border-radius:8px; cursor:pointer; font-size:13px;
-                       font-weight:600; color:#475569; }
-        #modal-close:hover { background:#e2e8f0; }
+                       font-weight:600; color:#332F21; }
+        #modal-close:hover { background:#D5CFC8; }
 
         /* Editable employee name/email spans */
         .emp-editable { cursor:pointer; padding:1px 3px; border-radius:3px;
                         transition:background .1s; display:inline; }
-        .emp-editable:hover { background:#eff6ff; }
-        .emp-editable.emp-email { color:#94a3b8; font-size:11px; }
-        .emp-editable.emp-no-email { color:#cbd5e1; font-size:10px; }
+        .emp-editable:hover { background:#C8DCFF; }
+        .emp-editable.emp-email { color:#A09080; font-size:11px; }
+        .emp-editable.emp-no-email { color:#D5CFC8; font-size:10px; }
         .emp-editable.emp-no-email::after { content:'+ email'; }
-        .emp-field-input { font-size:13px; border:1px solid #3b82f6; border-radius:3px;
+        .emp-field-input { font-size:13px; border:1px solid #265BF7; border-radius:3px;
                            padding:1px 5px; outline:none; min-width:80px; max-width:160px; }
-        .emp-field-input[data-field="email"] { font-size:11px; color:#94a3b8; max-width:200px; }
+        .emp-field-input[data-field="email"] { font-size:11px; color:#A09080; max-width:200px; }
 
         /* New person form */
         .modal-new-toggle { margin-top:10px; text-align:center; }
-        #btn-new-person-toggle { background:none; border:none; color:#3b82f6; font-size:12px;
+        #btn-new-person-toggle { background:none; border:none; color:#265BF7; font-size:12px;
                                  cursor:pointer; padding:0; font-weight:600; }
         #btn-new-person-toggle:hover { text-decoration:underline; }
-        #new-person-form { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+        #new-person-form { background:#F8F4F1; border:1px solid #EBE6E2; border-radius:8px;
                            padding:12px; margin-top:8px; }
         .new-person-fields { display:grid; grid-template-columns:1fr 1fr; gap:6px;
                              margin-bottom:10px; }
-        .new-person-fields input { padding:5px 8px; border:1px solid #cbd5e1; border-radius:6px;
+        .new-person-fields input { padding:5px 8px; border:1px solid #D5CFC8; border-radius:6px;
                                    font-size:12px; outline:none; }
-        .new-person-fields input:focus { border-color:#3b82f6; }
+        .new-person-fields input:focus { border-color:#265BF7; }
         .new-person-fields input.full-width { grid-column:1/-1; }
-        #btn-create-emp { width:100%; padding:7px; background:#3b82f6; color:#fff; border:none;
+        #btn-create-emp { width:100%; padding:7px; background:#D3430D; color:#fff; border:none;
                           border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; }
-        #btn-create-emp:hover:not(:disabled) { background:#2563eb; }
-        #btn-create-emp:disabled { background:#93c5fd; cursor:not-allowed; }
+        #btn-create-emp:hover:not(:disabled) { background:#B94700; }
+        #btn-create-emp:disabled { background:#DBB485; cursor:not-allowed; }
 
         /* Zebra stripe */
-        tbody tr:nth-child(even) td { background:#fafbfc; }
-        tbody tr:nth-child(even) td.sticky { background:#f5f7fa; }
-        tbody tr:hover td { background:#eff6ff !important; }
-        tbody tr:hover td.sticky { background:#e8f0fe !important; }
+        tbody tr:nth-child(even) td        { background:#F8F4F1; }
+        tbody tr:nth-child(even) td.sticky { background:#F2EDE9; }
+        tbody tr:hover td        { background:rgba(200,220,255,.2) !important; }
+        tbody tr:hover td.sticky { background:rgba(200,220,255,.3) !important; }
     </style>
 </head>
 <body>
@@ -506,7 +525,7 @@ foreach ($toggleCols as $key):
             title="<?= h($site['url']) ?>">
             <?php if ($site['url']): ?>
                 <a href="https://<?= h($site['url']) ?>" target="_blank"
-                   style="color:#0284c7;text-decoration:none"
+                   style="color:#265BF7;text-decoration:none"
                    onclick="event.stopPropagation()"><?= h($site['url']) ?></a>
             <?php endif; ?>
         </td>
@@ -1064,7 +1083,7 @@ function restoreCellDisplay(td) {
     const val = td.dataset.value || '';
     if (td.dataset.field === 'url' && val) {
         td.innerHTML = `<a href="https://${escHtml(val)}" target="_blank"
-            style="color:#0284c7;text-decoration:none"
+            style="color:#265BF7;text-decoration:none"
             onclick="event.stopPropagation()">${escHtml(val)}</a>`;
     } else {
         td.textContent = val;
@@ -1556,8 +1575,9 @@ function initials(first, last) {
 }
 
 function badgeColor(name) {
-    const palette = ['#3B82F6','#10B981','#8B5CF6','#EF4444','#F59E0B',
-                     '#EC4899','#6366F1','#14B8A6','#F97316','#06B6D4'];
+    // Palette anchored to UTSA brand colors, filled out with accessible complements
+    const palette = ['#032044','#265BF7','#D3430D','#A06620','#F15A22',
+                     '#8B5CF6','#10B981','#EC4899','#6366F1','#0891B2'];
     let h = 0;
     for (const c of String(name||'')) h = (h * 31 + c.charCodeAt(0)) & 0x7fffffff;
     return palette[h % palette.length];
