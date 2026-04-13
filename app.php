@@ -294,11 +294,13 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .filter-pop-actions .btn-clear:hover { background:#D5CFC8; }
         .filter-pop-actions .btn-apply { background:#265BF7; color:#fff; }
         .filter-pop-actions .btn-apply:hover { background:#1847BF; }
-        #filter-pop-copy-btn { width:100%; padding:5px; border-radius:6px; border:none;
+        #filter-pop-copy-row { display:flex; gap:6px; }
+        #filter-pop-copy-btn, #filter-pop-copy-btn2 {
+                               flex:1; padding:5px; border-radius:6px; border:none;
                                cursor:pointer; font-size:12px; font-weight:600;
                                background:#F8F4F1; color:#332F21; transition:background .15s, color .15s; }
-        #filter-pop-copy-btn:hover { background:#EBE6E2; }
-        #filter-pop-copy-btn.copied { background:#15803d !important; color:#fff; }
+        #filter-pop-copy-btn:hover, #filter-pop-copy-btn2:hover { background:#EBE6E2; }
+        #filter-pop-copy-btn.copied, #filter-pop-copy-btn2.copied { background:#15803d !important; color:#fff; }
         #btn-clear-filters { background:#D3430D; color:#fff; }
 
         /* ── Table wrapper ────────────────────────────────────────────── */
@@ -1005,7 +1007,10 @@ $defaultHidden = ['description'];
         <button class="btn-apply" onclick="applyFilterFromPop()">Apply</button>
     </div>
     <div class="filter-pop-sep"></div>
-    <button id="filter-pop-copy-btn" onclick="copyColumnData(filterPopCol)">Copy column</button>
+    <div id="filter-pop-copy-row">
+        <button id="filter-pop-copy-btn"  onclick="copyColumnData(filterPopCol, 'name')">Copy column</button>
+        <button id="filter-pop-copy-btn2" onclick="copyColumnData(filterPopCol, 'url')" style="display:none">Copy URLs</button>
+    </div>
 </div>
 
 <script>
@@ -1191,9 +1196,19 @@ function openFilter(event, col) {
 
     const visCount = [...document.querySelectorAll('#main-table tbody tr[data-id]')]
         .filter(r => r.style.display !== 'none').length;
-    const copyBtn = document.getElementById('filter-pop-copy-btn');
-    copyBtn.textContent = `Copy ${visCount} row${visCount !== 1 ? 's' : ''}`;
+    const n = visCount, s = n !== 1 ? 's' : '';
+    const copyBtn  = document.getElementById('filter-pop-copy-btn');
+    const copyBtn2 = document.getElementById('filter-pop-copy-btn2');
     copyBtn.classList.remove('copied');
+    copyBtn2.classList.remove('copied');
+    if (col === 'site') {
+        copyBtn.textContent  = `Copy ${n} name${s}`;
+        copyBtn2.textContent = `Copy ${n} URL${s}`;
+        copyBtn2.style.display = '';
+    } else {
+        copyBtn.textContent    = `Copy ${n} row${s}`;
+        copyBtn2.style.display = 'none';
+    }
 
     const rect = event.currentTarget.getBoundingClientRect();
     pop.style.top  = (rect.bottom + 4) + 'px';
@@ -1337,7 +1352,7 @@ function closeFilter() {
 
 const PEOPLE_COLS = new Set(['vp_lead','college_communicator','site_owner','content_lead','tech_lead','admin_contact']);
 
-function copyColumnData(col) {
+function copyColumnData(col, variant) {
     const rows = [...document.querySelectorAll('#main-table tbody tr[data-id]')]
         .filter(r => r.style.display !== 'none');
 
@@ -1347,9 +1362,13 @@ function copyColumnData(col) {
 
         if (col === 'site') {
             const a = td.querySelector('.site-inner a');
-            if (a) return a.textContent.trim();
-            const span = td.querySelector('.site-inner > span:not(.empty-cell)');
-            return span ? span.textContent.trim() : '';
+            if (variant === 'url') {
+                return a ? a.href : '';
+            } else {
+                if (a) return a.textContent.trim();
+                const span = td.querySelector('.site-inner > span:not(.empty-cell)');
+                return span ? span.textContent.trim() : '';
+            }
         }
 
         if (PEOPLE_COLS.has(col)) {
@@ -1367,14 +1386,13 @@ function copyColumnData(col) {
     });
 
     navigator.clipboard.writeText(lines.join('\n')).then(() => {
-        const btn = document.getElementById('filter-pop-copy-btn');
+        const btn = variant === 'url'
+            ? document.getElementById('filter-pop-copy-btn2')
+            : document.getElementById('filter-pop-copy-btn');
+        const orig = btn.textContent;
         btn.classList.add('copied');
         btn.textContent = '✓ Copied!';
-        setTimeout(() => {
-            const n = rows.length;
-            btn.textContent = `Copy ${n} row${n !== 1 ? 's' : ''}`;
-            btn.classList.remove('copied');
-        }, 1500);
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
     });
 }
 
