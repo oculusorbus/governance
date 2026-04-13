@@ -577,7 +577,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 <!-- ── Column visibility panel ──────────────────────────────────────────── -->
 <?php
 $colGroups = [
-    'Website'        => ['url' => 'URL', 'site' => 'Site', 'description' => 'Description'],
+    'Website'        => ['url' => 'URL', 'site' => 'Site Name', 'description' => 'Description'],
     'Governance'     => ['vp_area'=>'VP Area','vp_lead'=>'VP Lead','college_dept'=>'College/Dept'],
     'People'         => ['college_communicator'=>'Communicator','site_owner'=>'Site Owner',
                          'content_lead'=>'Content Lead','tech_lead'=>'Tech Lead','admin_contact'=>'Admin Contact'],
@@ -637,7 +637,7 @@ $defaultHidden = ['site', 'description'];
     <!-- Column headers -->
     <tr class="headers">
         <th class="sticky-1 col-url">URL <?= sortBtn('url') ?><?= filterBtn('url') ?></th>
-        <th class="col-site">Site <?= sortBtn('site') ?><?= filterBtn('site') ?></th>
+        <th class="col-site">Site Name <?= sortBtn('site') ?><?= filterBtn('site') ?></th>
         <th class="col-description">Description <?= sortBtn('description') ?><?= filterBtn('description') ?></th>
         <th class="col-vp_area">VP Area <?= sortBtn('vp_area') ?><?= filterBtn('vp_area') ?></th>
         <th class="col-vp_lead">VP Lead <?= sortBtn('vp_lead') ?><?= filterBtn('vp_lead') ?></th>
