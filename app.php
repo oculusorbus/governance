@@ -282,7 +282,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
              background:#fff; }
 
         tr:hover td { background:rgba(200,220,255,.2); }
-        tr:hover td.sticky-1, tr:hover td.sticky-2 { background:rgba(200,220,255,.3); }
+        tr:hover td.sticky-1, tr:hover td.sticky-2 { background:#DCE8FF; }
 
         /* Sticky columns
            z-index hierarchy:
@@ -419,7 +419,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         tbody tr:nth-child(even) td.sticky-1,
         tbody tr:nth-child(even) td.sticky-2                 { background:#F2EDE9; }
         tbody tr:hover td                                    { background:rgba(200,220,255,.25) !important; }
-        tbody tr:hover td.sticky-1, tbody tr:hover td.sticky-2 { background:rgba(200,220,255,.35) !important; }
+        tbody tr:hover td.sticky-1, tbody tr:hover td.sticky-2 { background:#DCE8FF !important; }
     </style>
 </head>
 <body>
