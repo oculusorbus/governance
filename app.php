@@ -938,8 +938,10 @@ $defaultHidden = ['description'];
             <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:8px;padding:14px;margin-bottom:16px">
                 <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#991b1b">⚠ This cannot be undone.</p>
                 <p style="margin:0;font-size:12px;color:#7f1d1d;line-height:1.5">
-                    Deleting this site will permanently remove all associated roles, DubBot stats,
-                    and any other data linked to it. The site cannot be recovered.
+                    Deleting this site will permanently remove the site record and all role
+                    <em>assignments</em> tied to it (Owner, Tech Lead, etc.). The people themselves
+                    are not affected and remain in the system. DubBot stats for this site will also
+                    be removed.
                 </p>
             </div>
             <p style="margin:0 0 14px;font-size:13px;color:#332F21">
