@@ -244,11 +244,19 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* ── Column visibility panel ──────────────────────────────────── */
         #col-panel { display:none; background:#fff; border-bottom:1px solid #EBE6E2;
-                     padding:12px 16px; flex-wrap:wrap; gap:8px; }
-        #col-panel.open { display:flex; }
-        #col-panel label { display:flex; align-items:center; gap:5px; font-size:12px;
-                           cursor:pointer; user-select:none; }
-        #col-panel input[type=checkbox] { accent-color:#D3430D; }
+                     padding:10px 16px; }
+        #col-panel.open { display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px; }
+        .col-group { display:flex; flex-direction:column; gap:3px; min-width:130px; padding:6px 8px;
+                     border:1px solid #EBE6E2; border-radius:6px; background:#FAFAF9; }
+        .col-group-header { display:flex; align-items:center; gap:5px; font-size:11px;
+                            font-weight:700; color:#332F21; text-transform:uppercase;
+                            letter-spacing:.05em; cursor:pointer; user-select:none; }
+        .col-group-header input[type=checkbox] { accent-color:#D3430D; }
+        .col-group-children { display:flex; flex-direction:column; gap:2px;
+                              padding-top:4px; margin-top:3px; border-top:1px solid #EBE6E2; }
+        .col-group-children label { display:flex; align-items:center; gap:5px; font-size:12px;
+                                    cursor:pointer; user-select:none; padding:1px 0; }
+        .col-group-children input[type=checkbox] { accent-color:#D3430D; }
 
         /* ── Column filter buttons ────────────────────────────────────── */
         .filter-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
@@ -532,37 +540,45 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 </div>
 
 <!-- ── Column visibility panel ──────────────────────────────────────────── -->
-<div id="col-panel">
 <?php
-$toggleCols = [
-    'description','vp_area','vp_lead','college_dept',
-    'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
-    'support_intake_url','datastudio_url',
-    'server','platform','audience','category','second_category',
-    'db-score','db-accessibility','db-badlinks','db-seo',
-    'db-spelling','db-bestpractices','db-webgovernance','db-pages',
+$colGroups = [
+    'General'        => ['description' => 'Description'],
+    'Governance'     => ['vp_area'=>'VP Area','vp_lead'=>'VP Lead','college_dept'=>'College/Dept'],
+    'People'         => ['college_communicator'=>'Communicator','site_owner'=>'Site Owner',
+                         'content_lead'=>'Content Lead','tech_lead'=>'Tech Lead','admin_contact'=>'Admin Contact'],
+    'Support'        => ['support_intake_url'=>'Intake URL','datastudio_url'=>'Datastudio'],
+    'Technical'      => ['server'=>'Server','platform'=>'Platform','audience'=>'Audience'],
+    'Classification' => ['category'=>'Category','second_category'=>'2nd Category'],
+    'DubBot'         => ['db-score'=>'Score','db-accessibility'=>'Accessibility',
+                         'db-badlinks'=>'Bad Links','db-seo'=>'SEO','db-spelling'=>'Spelling',
+                         'db-bestpractices'=>'Best Practices','db-webgovernance'=>'Web Gov.',
+                         'db-pages'=>'Pages'],
 ];
-$colLabels = [
-    'description'=>'Description','vp_area'=>'VP Area','vp_lead'=>'VP Lead',
-    'college_dept'=>'College/Dept','college_communicator'=>'Communicator',
-    'site_owner'=>'Site Owner','content_lead'=>'Content Lead','tech_lead'=>'Tech Lead',
-    'admin_contact'=>'Admin Contact',
-    'support_intake_url'=>'Intake URL','datastudio_url'=>'Datastudio',
-    'server'=>'Server','platform'=>'Platform','audience'=>'Audience',
-    'category'=>'Category','second_category'=>'2nd Category',
-    'db-score'=>'DB: Score','db-accessibility'=>'DB: Accessibility',
-    'db-badlinks'=>'DB: Bad Links','db-seo'=>'DB: SEO','db-spelling'=>'DB: Spelling',
-    'db-bestpractices'=>'DB: Best Practices','db-webgovernance'=>'DB: Web Gov.',
-    'db-pages'=>'DB: Pages',
-];
+$toggleCols    = array_merge(...array_values(array_map('array_keys', $colGroups)));
 $defaultHidden = ['description'];
-foreach ($toggleCols as $key):
-    $chk = in_array($key, $defaultHidden) ? '' : ' checked';
 ?>
-    <label>
-        <input type="checkbox" data-col="<?= $key ?>"<?= $chk ?> onchange="toggleCol('<?= $key ?>', this.checked)">
-        <?= h($colLabels[$key]) ?>
+<div id="col-panel">
+<?php foreach ($colGroups as $groupName => $cols):
+    $groupKey = strtolower(preg_replace('/\W+/', '-', $groupName));
+?>
+<div class="col-group" data-group="<?= $groupKey ?>">
+    <label class="col-group-header">
+        <input type="checkbox" data-group-cb="<?= $groupKey ?>"
+               onchange="toggleGroup('<?= $groupKey ?>', this.checked)">
+        <?= h($groupName) ?>
     </label>
+    <div class="col-group-children">
+    <?php foreach ($cols as $key => $label):
+        $chk = in_array($key, $defaultHidden) ? '' : ' checked';
+    ?>
+        <label>
+            <input type="checkbox" data-col="<?= $key ?>" data-group="<?= $groupKey ?>"<?= $chk ?>
+                   onchange="toggleCol('<?= $key ?>', this.checked)">
+            <?= h($label) ?>
+        </label>
+    <?php endforeach; ?>
+    </div>
+</div>
 <?php endforeach; ?>
 </div>
 
@@ -948,14 +964,29 @@ function toggleCol(key, visible) {
     applyColVisibility();
 }
 
+function toggleGroup(groupKey, visible) {
+    document.querySelectorAll(`#col-panel input[data-col][data-group="${groupKey}"]`).forEach(cb => {
+        cb.checked = visible;
+        toggleCol(cb.dataset.col, visible);
+    });
+}
+
 function applyColVisibility() {
     ALL_TOGGLE_COLS.forEach(key => {
         const hide = hiddenCols.has(key);
         document.querySelectorAll('.col-' + key).forEach(el => el.style.display = hide ? 'none' : '');
     });
-    // Sync checkboxes
+    // Sync column checkboxes
     document.querySelectorAll('#col-panel input[data-col]').forEach(cb => {
         cb.checked = !hiddenCols.has(cb.dataset.col);
+    });
+    // Sync group aggregate checkboxes
+    document.querySelectorAll('#col-panel input[data-group-cb]').forEach(gcb => {
+        const grp  = gcb.dataset.groupCb;
+        const kids = [...document.querySelectorAll(`#col-panel input[data-col][data-group="${grp}"]`)];
+        const numChecked = kids.filter(c => c.checked).length;
+        gcb.checked       = numChecked === kids.length;
+        gcb.indeterminate = numChecked > 0 && numChecked < kids.length;
     });
 }
 
