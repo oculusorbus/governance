@@ -282,11 +282,16 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
              background:#fff; }
 
         tr:hover td { background:rgba(200,220,255,.2); }
-        tr:hover td.sticky { background:rgba(200,220,255,.3); }
+        tr:hover td.sticky-1, tr:hover td.sticky-2 { background:rgba(200,220,255,.3); }
 
-        /* Sticky columns */
-        .sticky-1 { position:sticky; left:0;     z-index:5; background:#fff; min-width:220px; max-width:220px; }
-        .sticky-2 { position:sticky; left:220px; z-index:5; background:#fff; min-width:200px; max-width:200px; }
+        /* Sticky columns
+           z-index hierarchy:
+             20 — sticky header cells (both axes pinned, must win over everything)
+             15 — sticky body cells (pinned left; must cover scrolling body cells
+                  AND non-sticky header cells as they slide over the frozen columns)
+             10 — non-sticky header cells (pinned top; covers scrolling body rows) */
+        .sticky-1 { position:sticky; left:0;     z-index:15; background:#fff; min-width:220px; max-width:220px; }
+        .sticky-2 { position:sticky; left:220px; z-index:15; background:#fff; min-width:200px; max-width:200px; }
         /* Must beat specificity of "thead tr.headers th { z-index:10 }" ([0,1,3])
            so both overrides use two classes + the element chain → [0,2,3] */
         thead tr.headers th.sticky-1,
@@ -410,16 +415,18 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         #btn-create-emp:disabled { background:#DBB485; cursor:not-allowed; }
 
         /* Zebra stripe */
-        tbody tr:nth-child(even) td        { background:#F8F4F1; }
-        tbody tr:nth-child(even) td.sticky { background:#F2EDE9; }
-        tbody tr:hover td        { background:rgba(200,220,255,.25) !important; }
-        tbody tr:hover td.sticky { background:rgba(200,220,255,.35) !important; }
+        tbody tr:nth-child(even) td                          { background:#F8F4F1; }
+        tbody tr:nth-child(even) td.sticky-1,
+        tbody tr:nth-child(even) td.sticky-2                 { background:#F2EDE9; }
+        tbody tr:hover td                                    { background:rgba(200,220,255,.25) !important; }
+        tbody tr:hover td.sticky-1, tbody tr:hover td.sticky-2 { background:rgba(200,220,255,.35) !important; }
     </style>
 </head>
 <body>
 
 <!-- ── Top bar ──────────────────────────────────────────────────────────── -->
 <div id="topbar">
+    <img src="utsa-logo.svg" alt="UT San Antonio" height="20" style="flex-shrink:0">
     <h1>Website Governance Directory</h1>
     <span id="row-count"></span>
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
