@@ -357,6 +357,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* Column widths */
         .col-site               { min-width:280px; max-width:280px; }
+        .col-url                { min-width:200px; max-width:200px; }
         .col-description        { min-width:240px; max-width:240px; }
         .col-vp_area            { min-width:100px; max-width:100px; }
         .col-vp_lead            { min-width:120px; max-width:120px; }
@@ -538,7 +539,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     </style>
     <!-- Hide default-hidden columns before first paint to prevent flash.
          JS re-applies localStorage prefs on DOMContentLoaded. -->
-    <style id="col-hide-defaults">.col-description { display:none; }</style>
+    <style id="col-hide-defaults">.col-description,.col-url { display:none; }</style>
 </head>
 <body>
 
@@ -560,7 +561,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 <!-- ── Column visibility panel ──────────────────────────────────────────── -->
 <?php
 $colGroups = [
-    'General'        => ['description' => 'Description'],
+    'General'        => ['url' => 'URL', 'description' => 'Description'],
     'Governance'     => ['vp_area'=>'VP Area','vp_lead'=>'VP Lead','college_dept'=>'College/Dept'],
     'People'         => ['college_communicator'=>'Communicator','site_owner'=>'Site Owner',
                          'content_lead'=>'Content Lead','tech_lead'=>'Tech Lead','admin_contact'=>'Admin Contact'],
@@ -573,7 +574,7 @@ $colGroups = [
                          'db-pages'=>'Pages'],
 ];
 $toggleCols    = array_merge(...array_values(array_map('array_keys', $colGroups)));
-$defaultHidden = ['description'];
+$defaultHidden = ['url', 'description'];
 ?>
 <div id="col-panel">
 <?php foreach ($colGroups as $groupName => $cols):
@@ -608,6 +609,7 @@ $defaultHidden = ['description'];
     <!-- Group headers -->
     <tr class="groups">
         <th colspan="1" class="grp-identity sticky-1">Website</th>
+        <th colspan="1" class="grp-identity col-url">&#8203;</th>
         <th colspan="1" class="grp-identity col-description">&#8203;</th>
         <th colspan="3" class="grp-governance">Governance</th>
         <th colspan="5" class="grp-people">People</th>
@@ -619,6 +621,7 @@ $defaultHidden = ['description'];
     <!-- Column headers -->
     <tr class="headers">
         <th class="sticky-1 col-site">Site <?= filterBtn('site') ?></th>
+        <th class="col-url">URL</th>
         <th class="col-description">Description <?= filterBtn('description') ?></th>
         <th class="col-vp_area">VP Area <?= filterBtn('vp_area') ?></th>
         <th class="col-vp_lead">VP Lead <?= filterBtn('vp_lead') ?></th>
@@ -715,6 +718,17 @@ $defaultHidden = ['description'];
             </div>
             <button class="site-edit-btn"
                     onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>)">✎</button>
+        </td>
+
+        <!-- URL -->
+        <td class="col-url" title="<?= h($site['url']) ?>">
+            <?php if ($site['url']): ?>
+                <a href="https://<?= h($site['url']) ?>" target="_blank"
+                   onclick="event.stopPropagation()"
+                   style="color:#265BF7;text-decoration:none;"><?= h($site['url']) ?></a>
+            <?php else: ?>
+                <span class="empty-cell">—</span>
+            <?php endif; ?>
         </td>
 
         <!-- Description -->
