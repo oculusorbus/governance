@@ -251,7 +251,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         /* position:relative + z-index:1 creates a stacking context that
            scopes all sticky-cell z-indices inside it, so the body-level
            Tom Select dropdown (z-index 99999) paints above the table. */
-        #table-wrap { overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 46px);
+        #table-wrap { overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 66px);
                       position:relative; z-index:1; }
 
         /* ── Table ────────────────────────────────────────────────────── */
@@ -287,7 +287,12 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         /* Sticky columns */
         .sticky-1 { position:sticky; left:0;     z-index:5; background:#fff; min-width:220px; max-width:220px; }
         .sticky-2 { position:sticky; left:220px; z-index:5; background:#fff; min-width:200px; max-width:200px; }
-        thead .sticky-1, thead .sticky-2 { z-index:15; }
+        /* Must beat specificity of "thead tr.headers th { z-index:10 }" ([0,1,3])
+           so both overrides use two classes + the element chain → [0,2,3] */
+        thead tr.headers th.sticky-1,
+        thead tr.headers th.sticky-2 { z-index:20; }
+        thead tr.groups  th.sticky-1,
+        thead tr.groups  th.sticky-2 { z-index:20; }
         thead tr.groups .sticky-1 { background:#0D3B6E; }
         thead tr.groups .sticky-2 { background:#0D3B6E; }
 
