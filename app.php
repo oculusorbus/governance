@@ -435,6 +435,25 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         tbody tr:hover td                     { background:rgba(200,220,255,.25) !important; }
         tbody tr:hover td.sticky-1            { background:#DCE8FF !important; }
 
+        /* ── DubBot columns ──────────────────────────────────────────── */
+        .grp-dubbot { background:#0D7A5F; }
+        .col-db-pages        { min-width:60px;  max-width:60px;  text-align:right; }
+        .col-db-score        { min-width:68px;  max-width:68px;  text-align:center; }
+        .col-db-accessibility,
+        .col-db-bestpractices,
+        .col-db-webgovernance { min-width:82px;  max-width:82px;  text-align:center; }
+        .col-db-badlinks,
+        .col-db-seo,
+        .col-db-spelling,
+        .col-db-profanity    { min-width:72px;  max-width:72px;  text-align:center; }
+        .db-score { font-size:12px; font-weight:600; }
+        .db-good  { color:#15803d; }
+        .db-ok    { color:#b45309; }
+        .db-poor  { color:#dc2626; }
+        .db-spin  { display:inline-block; width:10px; height:10px; border:2px solid #EBE6E2;
+                    border-top-color:#265BF7; border-radius:50%; animation:spin .7s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
         /* ── Cell tooltip ─────────────────────────────────────────────── */
         #cell-tooltip { position:fixed; pointer-events:none; z-index:99998;
                         background:#032044; color:#fff; font-size:12px; line-height:1.4;
@@ -469,6 +488,8 @@ $toggleCols = [
     'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
     'support_platform','support_intake_url','datastudio_url',
     'server','platform','audience','category','second_category',
+    'db-pages','db-score','db-accessibility','db-badlinks','db-seo',
+    'db-spelling','db-bestpractices','db-webgovernance','db-profanity',
 ];
 $colLabels = [
     'description'=>'Description','vp_area'=>'VP Area','vp_lead'=>'VP Lead',
@@ -478,6 +499,11 @@ $colLabels = [
     'support_intake_url'=>'Intake URL','datastudio_url'=>'Datastudio',
     'server'=>'Server','platform'=>'Platform','audience'=>'Audience',
     'category'=>'Category','second_category'=>'2nd Category',
+    'db-pages'=>'DB: Pages','db-score'=>'DB: Score',
+    'db-accessibility'=>'DB: Accessibility','db-badlinks'=>'DB: Bad Links',
+    'db-seo'=>'DB: SEO','db-spelling'=>'DB: Spelling',
+    'db-bestpractices'=>'DB: Best Practices','db-webgovernance'=>'DB: Web Gov.',
+    'db-profanity'=>'DB: Profanity',
 ];
 $defaultHidden = ['description'];
 foreach ($toggleCols as $key):
@@ -504,6 +530,7 @@ foreach ($toggleCols as $key):
         <th colspan="2" class="grp-support">Support</th>
         <th colspan="3" class="grp-technical">Technical</th>
         <th colspan="3" class="grp-classification">Classification</th>
+        <th colspan="9" class="grp-dubbot">DubBot</th>
     </tr>
     <!-- Column headers -->
     <tr class="headers">
@@ -525,6 +552,15 @@ foreach ($toggleCols as $key):
         <th class="col-audience">Audience <?= filterBtn('audience') ?></th>
         <th class="col-category">Category <?= filterBtn('category') ?></th>
         <th class="col-second_category">2nd Category <?= filterBtn('second_category') ?></th>
+        <th class="col-db-pages">Pages</th>
+        <th class="col-db-score">Score</th>
+        <th class="col-db-accessibility">Access.</th>
+        <th class="col-db-badlinks">Bad Links</th>
+        <th class="col-db-seo">SEO</th>
+        <th class="col-db-spelling">Spelling</th>
+        <th class="col-db-bestpractices">Best Prac.</th>
+        <th class="col-db-webgovernance">Web Gov.</th>
+        <th class="col-db-profanity">Profanity</th>
     </tr>
 </thead>
 <tbody>
@@ -704,6 +740,17 @@ foreach ($toggleCols as $key):
             <?= h($site['second_category']) ?>
         </td>
 
+        <!-- DubBot (populated asynchronously by JS) -->
+        <td class="col-db-pages"         data-db-col="pages"><span class="db-spin"></span></td>
+        <td class="col-db-score"         data-db-col="score"><span class="db-spin"></span></td>
+        <td class="col-db-accessibility" data-db-col="accessibility"><span class="db-spin"></span></td>
+        <td class="col-db-badlinks"      data-db-col="badLinks"><span class="db-spin"></span></td>
+        <td class="col-db-seo"           data-db-col="seo"><span class="db-spin"></span></td>
+        <td class="col-db-spelling"      data-db-col="spelling"><span class="db-spin"></span></td>
+        <td class="col-db-bestpractices" data-db-col="bestPractices"><span class="db-spin"></span></td>
+        <td class="col-db-webgovernance" data-db-col="webGovernance"><span class="db-spin"></span></td>
+        <td class="col-db-profanity"     data-db-col="profanity"><span class="db-spin"></span></td>
+
     </tr>
 <?php endforeach; ?>
 </tbody>
@@ -807,7 +854,9 @@ const PEOPLE_OPTIONS = <?= $filterPeopleJson ?>;
 const ALL_TOGGLE_COLS = ['description','vp_area','vp_lead','college_dept',
     'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
     'support_platform','support_intake_url','datastudio_url',
-    'server','platform','audience','category','second_category'];
+    'server','platform','audience','category','second_category',
+    'db-pages','db-score','db-accessibility','db-badlinks','db-seo',
+    'db-spelling','db-bestpractices','db-webgovernance','db-profanity'];
 
 const DEFAULT_HIDDEN = ['description'];
 const storedCols     = localStorage.getItem('hiddenCols');
@@ -844,6 +893,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // restores scroll position, which itself fires this scroll event)
         if (activeCell && !activeTomSelect) cancelEdit();
     });
+    loadDubBotData();
 });
 
 // ── Column filters ─────────────────────────────────────────────────────────
@@ -1793,6 +1843,171 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// ── DubBot integration ─────────────────────────────────────────────────────
+const DB_FRAGMENT = `
+  pagesCount online
+  latestStatsSnapshot {
+    score
+    accessibility  { score total }
+    bestPractices  { score total }
+    webGovernance  { score total }
+    seo            { score total }
+    badLinks       { score total }
+    spelling       { score total }
+    profanity      { score total }
+  }
+`;
+
+async function dbGql(query) {
+    const res = await fetch('dubbot.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+    });
+    if (!res.ok) throw new Error('dubbot.php HTTP ' + res.status);
+    const json = await res.json();
+    if (json.error)  throw new Error(json.error);
+    if (json.errors) throw new Error(json.errors.map(e => e.message).join('; '));
+    return json.data;
+}
+
+function dbExtractList(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    for (const k of ['nodes','items','results','data','edges']) {
+        if (Array.isArray(raw[k])) return k === 'edges' ? raw[k].map(e => e.node).filter(Boolean) : raw[k];
+    }
+    return [raw];
+}
+
+function dbNorm(url) {
+    return (url || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '').toLowerCase();
+}
+
+function dbScoreHtml(score, total) {
+    if (score === null || score === undefined) return '<span class="empty-cell">—</span>';
+    const cls = score >= 90 ? 'db-good' : score >= 70 ? 'db-ok' : 'db-poor';
+    const tip  = total != null ? ` title="${total.toLocaleString()} issues"` : '';
+    return `<span class="db-score ${cls}"${tip}>${score.toFixed(1)}%</span>`;
+}
+
+function dbFillRow(row, site) {
+    const snap = site?.latestStatsSnapshot;
+    row.querySelectorAll('td[data-db-col]').forEach(td => {
+        const col = td.dataset.dbCol;
+        if (col === 'pages') {
+            td.innerHTML = site?.pagesCount != null
+                ? site.pagesCount.toLocaleString()
+                : '<span class="empty-cell">—</span>';
+        } else if (col === 'score') {
+            td.innerHTML = dbScoreHtml(snap?.score);
+        } else {
+            const cat = snap?.[col];
+            td.innerHTML = dbScoreHtml(cat?.score, cat?.total);
+        }
+    });
+}
+
+function dbFillAll(msg) {
+    document.querySelectorAll('td[data-db-col]').forEach(td => {
+        td.innerHTML = `<span class="empty-cell">${escHtml(msg)}</span>`;
+    });
+}
+
+async function loadDubBotData() {
+    // ── Step 1: discover account/site memberships ──────────────────────────
+    let memberships = [];
+    const strategies = [
+        `{ currentUser { siteMemberships { site { id name url } account { id name } } } }`,
+        `{ currentUser { memberships      { site { id name url } account { id name } } } }`,
+        `{ currentUser { membership       { site { id name url } account { id name } } } }`,
+    ];
+    for (const q of strategies) {
+        try {
+            const data = await dbGql(q);
+            const user = data?.currentUser;
+            if (!user) continue;
+            const raw  = user.siteMemberships ?? user.memberships ?? user.membership;
+            const list = dbExtractList(raw);
+            if (list.length) { memberships = list; break; }
+        } catch (_) { /* try next */ }
+    }
+
+    if (!memberships.length) {
+        dbFillAll('—');
+        return;
+    }
+
+    // ── Step 2: build URL → {siteId, accountId} map ───────────────────────
+    const urlMap = {};
+    for (const m of memberships) {
+        const site    = m.site    ?? m;
+        const account = m.account ?? {};
+        if (!site?.id) continue;
+        const norm = dbNorm(site.url);
+        if (norm) urlMap[norm] = { siteId: site.id, accountId: account.id };
+    }
+
+    // ── Step 3: match table rows ───────────────────────────────────────────
+    const allRows  = [...document.querySelectorAll('#main-table tbody tr[data-id]')];
+    const matched  = [];
+    allRows.forEach(row => {
+        const norm  = dbNorm(row.dataset.url);
+        const entry = urlMap[norm];
+        if (entry) matched.push({ row, ...entry });
+        else       dbFillRow(row, null);   // no DubBot record → show —
+    });
+
+    if (!matched.length) return;
+
+    // ── Step 4: fetch stats with adaptive parallel batching ────────────────
+    async function fetchBatch(batch, offset) {
+        const aliases = batch.map((r, j) =>
+            `s_${offset + j}: site(siteId:"${r.siteId}", accountId:"${r.accountId}") { ${DB_FRAGMENT} }`
+        ).join('\n');
+        return dbGql(`{ ${aliases} }`);
+    }
+
+    function applyBatch(data, batch, offset) {
+        batch.forEach((r, j) => dbFillRow(r.row, data?.[`s_${offset + j}`] ?? null));
+    }
+
+    try {
+        // First attempt: all sites in one request (uses GraphQL field aliases)
+        const first = await fetchBatch(matched, 0);
+        const complexErr = (first.errors || []).find(e => /complexity/i.test(e.message));
+
+        if (!complexErr) {
+            applyBatch(first, matched, 0);
+            return;
+        }
+
+        // Parse the complexity error to find the optimal batch size
+        let batchSize = 5;
+        const m = complexErr.message.match(/complexity of (\d+).*max complexity of (\d+)/i);
+        if (m) {
+            const perItem = parseInt(m[1]) / matched.length;
+            batchSize = Math.max(1, Math.floor(parseInt(m[2]) / perItem));
+        }
+
+        // Split into batches and fire ALL in parallel
+        const batches = [];
+        for (let i = 0; i < matched.length; i += batchSize)
+            batches.push({ rows: matched.slice(i, i + batchSize), offset: i });
+
+        const results = await Promise.all(
+            batches.map(b => fetchBatch(b.rows, b.offset).catch(() => null))
+        );
+        results.forEach((data, bi) => {
+            if (data) applyBatch(data, batches[bi].rows, batches[bi].offset);
+        });
+
+    } catch (e) {
+        console.error('DubBot load failed:', e);
+        matched.forEach(r => dbFillRow(r.row, null));
+    }
+}
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 async function api(payload) {
