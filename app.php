@@ -104,6 +104,13 @@ function badgeColor(string $name): string {
     return $palette[$h % count($palette)];
 }
 
+function filterBtn(string $col): string {
+    return '<button class="filter-btn" data-col="' . $col . '" onclick="openFilter(event,\'' . $col . '\')" title="Filter">'
+         . '<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+         . '<path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>'
+         . '</svg></button>';
+}
+
 function renderBadges(array $people): string {
     if (!$people) return '<span class="empty-cell">—</span>';
     $out = '';
@@ -158,15 +165,40 @@ $employeesJson = json_encode($employees,  JSON_HEX_TAG | JSON_HEX_APOS);
                            cursor:pointer; user-select:none; }
         #col-panel input[type=checkbox] { accent-color:#3b82f6; }
 
-        /* ── Filter bar ───────────────────────────────────────────────── */
-        #filter-bar { display:flex; align-items:center; gap:8px; padding:8px 16px;
-                      background:#f1f5f9; border-bottom:1px solid #e2e8f0; flex-wrap:wrap; }
-        #filter-bar input { font-size:12px; border:1px solid #cbd5e1; border-radius:6px;
-                            padding:4px 8px; width:160px; outline:none; }
-        #filter-bar input:focus { border-color:#3b82f6; box-shadow:0 0 0 2px #bfdbfe; }
-        #filter-clear { font-size:12px; padding:4px 10px; border:1px solid #cbd5e1;
-                        border-radius:6px; background:#fff; cursor:pointer; }
-        #filter-clear:hover { background:#f8fafc; }
+        /* ── Column filter buttons ────────────────────────────────────── */
+        .filter-btn { display:inline-flex; align-items:center; background:none; border:none;
+                      cursor:pointer; padding:2px 3px; margin-left:3px; opacity:.35;
+                      color:inherit; vertical-align:middle; border-radius:3px;
+                      transition:opacity .15s, color .15s; }
+        .filter-btn:hover { opacity:.75; }
+        .filter-btn.filter-active { opacity:1; color:#3b82f6; }
+
+        /* ── Filter popover ───────────────────────────────────────────── */
+        #filter-popover { display:none; position:fixed; background:#fff;
+                          border:1px solid #e2e8f0; border-radius:8px;
+                          box-shadow:0 6px 20px rgba(0,0,0,.13); z-index:10000;
+                          padding:10px; width:230px; max-height:360px;
+                          flex-direction:column; }
+        #filter-popover.open { display:flex; }
+        #filter-pop-search, #filter-pop-text {
+            width:100%; padding:5px 8px; border:1px solid #cbd5e1; border-radius:6px;
+            font-size:12px; outline:none; margin-bottom:6px; box-sizing:border-box; }
+        #filter-pop-search:focus, #filter-pop-text:focus { border-color:#3b82f6; }
+        .filter-pop-list { overflow-y:auto; max-height:200px; margin-bottom:6px; }
+        .filter-pop-item { display:flex; align-items:center; gap:6px; padding:3px 4px;
+                           border-radius:4px; cursor:pointer; font-size:12px; user-select:none; }
+        .filter-pop-item:hover { background:#f1f5f9; }
+        .filter-pop-item input { flex-shrink:0; cursor:pointer; accent-color:#3b82f6; }
+        .filter-pop-sep { height:1px; background:#e2e8f0; margin:4px 0; flex-shrink:0; }
+        .filter-pop-actions { display:flex; gap:6px; padding-top:8px;
+                              border-top:1px solid #e2e8f0; flex-shrink:0; }
+        .filter-pop-actions button { flex:1; padding:5px; border-radius:6px; border:none;
+                                     cursor:pointer; font-size:12px; font-weight:600; }
+        .filter-pop-actions .btn-clear { background:#f1f5f9; color:#475569; }
+        .filter-pop-actions .btn-clear:hover { background:#e2e8f0; }
+        .filter-pop-actions .btn-apply { background:#3b82f6; color:#fff; }
+        .filter-pop-actions .btn-apply:hover { background:#2563eb; }
+        #btn-clear-filters { background:#f59e0b; color:#fff; }
 
         /* ── Table wrapper ────────────────────────────────────────────── */
         /* position:relative + z-index:1 creates a stacking context that
@@ -304,8 +336,9 @@ $employeesJson = json_encode($employees,  JSON_HEX_TAG | JSON_HEX_APOS);
 <div id="topbar">
     <h1>Website Governance Directory</h1>
     <span id="row-count"></span>
-    <button id="btn-cols"   onclick="toggleColPanel()">Columns</button>
-    <button id="btn-add"    onclick="addSite()">+ Add Site</button>
+    <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
+    <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
+    <button id="btn-add"          onclick="addSite()">+ Add Site</button>
     <a href="logout.php"><button id="btn-logout">Sign Out</button></a>
 </div>
 
@@ -338,20 +371,6 @@ foreach ($toggleCols as $key):
 <?php endforeach; ?>
 </div>
 
-<!-- ── Filter bar ───────────────────────────────────────────────────────── -->
-<div id="filter-bar">
-    <strong style="font-size:12px;color:#64748b">Filter:</strong>
-    <input type="text" id="f-url"          placeholder="URL"             oninput="applyFilters()">
-    <input type="text" id="f-site_name"    placeholder="Site Name"       oninput="applyFilters()">
-    <input type="text" id="f-vp_area"      placeholder="VP Area"         oninput="applyFilters()">
-    <input type="text" id="f-college_dept" placeholder="College/Dept"    oninput="applyFilters()">
-    <input type="text" id="f-support_platform" placeholder="Sup. Platform" oninput="applyFilters()">
-    <input type="text" id="f-server"       placeholder="Server"          oninput="applyFilters()">
-    <input type="text" id="f-platform"     placeholder="Platform"        oninput="applyFilters()">
-    <input type="text" id="f-audience"     placeholder="Audience"        oninput="applyFilters()">
-    <input type="text" id="f-category"     placeholder="Category"        oninput="applyFilters()">
-    <button id="filter-clear" onclick="clearFilters()">✕ Clear</button>
-</div>
 
 <!-- ── Table ────────────────────────────────────────────────────────────── -->
 <div id="table-wrap">
@@ -369,25 +388,25 @@ foreach ($toggleCols as $key):
     </tr>
     <!-- Column headers -->
     <tr class="headers">
-        <th class="sticky-1 col-url">URL</th>
-        <th class="sticky-2 col-site_name">Site Name</th>
-        <th class="col-description">Description</th>
-        <th class="col-vp_area">VP Area</th>
+        <th class="sticky-1 col-url">URL <?= filterBtn('url') ?></th>
+        <th class="sticky-2 col-site_name">Site Name <?= filterBtn('site_name') ?></th>
+        <th class="col-description">Description <?= filterBtn('description') ?></th>
+        <th class="col-vp_area">VP Area <?= filterBtn('vp_area') ?></th>
         <th class="col-vp_lead">VP Lead</th>
-        <th class="col-college_dept">College/Dept</th>
+        <th class="col-college_dept">College/Dept <?= filterBtn('college_dept') ?></th>
         <th class="col-college_communicator">Communicator</th>
         <th class="col-site_owner">Owner</th>
         <th class="col-content_lead">Content Lead</th>
         <th class="col-tech_lead">Tech Lead</th>
         <th class="col-admin_contact">Admin Contact</th>
-        <th class="col-support_platform">Support Platform</th>
+        <th class="col-support_platform">Support Platform <?= filterBtn('support_platform') ?></th>
         <th class="col-support_intake_url">Intake</th>
         <th class="col-datastudio_url">Studio</th>
-        <th class="col-server">Server</th>
-        <th class="col-platform">Platform</th>
-        <th class="col-audience">Audience</th>
-        <th class="col-category">Category</th>
-        <th class="col-second_category">2nd Category</th>
+        <th class="col-server">Server <?= filterBtn('server') ?></th>
+        <th class="col-platform">Platform <?= filterBtn('platform') ?></th>
+        <th class="col-audience">Audience <?= filterBtn('audience') ?></th>
+        <th class="col-category">Category <?= filterBtn('category') ?></th>
+        <th class="col-second_category">2nd Category <?= filterBtn('second_category') ?></th>
     </tr>
 </thead>
 <tbody>
@@ -398,15 +417,17 @@ foreach ($toggleCols as $key):
 
     // Data attributes for JS filtering (lowercase for case-insensitive match)
     $da = implode(' ', [
-        'data-url="'           . h(strtolower($site['url'] ?? ''))            . '"',
-        'data-site_name="'     . h(strtolower($site['site_name'] ?? ''))      . '"',
-        'data-vp_area="'       . h(strtolower($site['vp_area'] ?? ''))        . '"',
-        'data-college_dept="'  . h(strtolower($site['college_dept'] ?? ''))   . '"',
-        'data-support_platform="' . h(strtolower($site['support_platform'] ?? '')) . '"',
-        'data-server="'        . h(strtolower($site['server'] ?? ''))         . '"',
-        'data-platform="'      . h(strtolower($site['platform'] ?? ''))       . '"',
-        'data-audience="'      . h(strtolower($site['audience'] ?? ''))       . '"',
-        'data-category="'      . h(strtolower($site['category'] ?? ''))       . '"',
+        'data-url="'              . h(strtolower($site['url'] ?? ''))               . '"',
+        'data-site_name="'        . h(strtolower($site['site_name'] ?? ''))         . '"',
+        'data-description="'      . h(strtolower($site['description'] ?? ''))       . '"',
+        'data-vp_area="'          . h(strtolower($site['vp_area'] ?? ''))           . '"',
+        'data-college_dept="'     . h(strtolower($site['college_dept'] ?? ''))      . '"',
+        'data-support_platform="' . h(strtolower($site['support_platform'] ?? ''))  . '"',
+        'data-server="'           . h(strtolower($site['server'] ?? ''))            . '"',
+        'data-platform="'         . h(strtolower($site['platform'] ?? ''))          . '"',
+        'data-audience="'         . h(strtolower($site['audience'] ?? ''))          . '"',
+        'data-category="'         . h(strtolower($site['category'] ?? ''))          . '"',
+        'data-second_category="'  . h(strtolower($site['second_category'] ?? ''))   . '"',
     ]);
 ?>
     <tr data-id="<?= $sid ?>" <?= $da ?>>
@@ -589,6 +610,15 @@ foreach ($toggleCols as $key):
     </div>
 </div>
 
+<!-- ── Column filter popover ────────────────────────────────────────────── -->
+<div id="filter-popover">
+    <div id="filter-pop-content"></div>
+    <div class="filter-pop-actions">
+        <button class="btn-clear" onclick="clearFilterFromPop()">Clear</button>
+        <button class="btn-apply" onclick="applyFilterFromPop()">Apply</button>
+    </div>
+</div>
+
 <script>
 // ── Data from PHP ──────────────────────────────────────────────────────────
 const LOOKUPS   = <?= $lookupsJson ?>;
@@ -635,36 +665,196 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ── Filtering ──────────────────────────────────────────────────────────────
-const filterFields = ['url','site_name','vp_area','college_dept','support_platform',
-                      'server','platform','audience','category'];
+// ── Column filters ─────────────────────────────────────────────────────────
+// type:'text' → substring match on data attr
+// type:'set'  → row's data attr must be in the selected Set of lowercase labels
+const FILTER_COLS = {
+    url:              { type:'text' },
+    site_name:        { type:'text' },
+    description:      { type:'text' },
+    vp_area:          { type:'set', lookup:'vp_areas' },
+    college_dept:     { type:'set', lookup:'colleges_depts' },
+    support_platform: { type:'set', lookup:'support_platforms' },
+    server:           { type:'set', lookup:'servers' },
+    platform:         { type:'set', lookup:'platforms' },
+    audience:         { type:'set', lookup:'audiences' },
+    category:         { type:'set', lookup:'categories' },
+    second_category:  { type:'set', lookup:'categories' },
+};
+
+const activeFilters = {};   // col → { type, value } | { type, values:Set }
+let filterPopCol     = null;
+let filterPopPending = null;
 
 function applyFilters() {
-    const filters = {};
-    filterFields.forEach(f => {
-        const el = document.getElementById('f-' + f);
-        if (el && el.value.trim()) filters[f] = el.value.trim().toLowerCase();
-    });
-
     let visible = 0;
     document.querySelectorAll('#main-table tbody tr[data-id]').forEach(row => {
         let show = true;
-        for (const [key, val] of Object.entries(filters)) {
-            if (!(row.dataset[key] || '').includes(val)) { show = false; break; }
+        for (const [col, f] of Object.entries(activeFilters)) {
+            const v = (row.dataset[col] || '').toLowerCase();
+            if (f.type === 'text'  && !v.includes(f.value))  { show = false; break; }
+            if (f.type === 'set'   && !f.values.has(v))      { show = false; break; }
         }
         row.style.display = show ? '' : 'none';
         if (show) visible++;
     });
     updateRowCount(visible);
+    document.getElementById('btn-clear-filters').style.display =
+        Object.keys(activeFilters).length ? '' : 'none';
 }
 
-function clearFilters() {
-    filterFields.forEach(f => {
-        const el = document.getElementById('f-' + f);
-        if (el) el.value = '';
+function clearAllFilters() {
+    for (const col of Object.keys(activeFilters)) {
+        delete activeFilters[col];
+        markFilterBtn(col, false);
+    }
+    applyFilters();
+}
+
+// ── Filter popover ─────────────────────────────────────────────────────────
+function openFilter(event, col) {
+    event.stopPropagation();
+    const pop = document.getElementById('filter-popover');
+    if (filterPopCol === col && pop.classList.contains('open')) {
+        closeFilter(); return;
+    }
+    filterPopCol = col;
+    const def     = FILTER_COLS[col];
+    const current = activeFilters[col] || null;
+
+    if (def.type === 'text') {
+        filterPopPending = { type:'text', value: current ? current.value : '' };
+    } else {
+        const opts   = allSetOptions(def.lookup);
+        const active = current ? current.values : new Set(opts.map(o => o.val));
+        filterPopPending = { type:'set', values: new Set(active) };
+    }
+
+    buildFilterPopover(col, def);
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    pop.style.top  = (rect.bottom + 4) + 'px';
+    pop.style.left = rect.left + 'px';
+    pop.classList.add('open');
+
+    // Nudge left if it overflows the right edge
+    requestAnimationFrame(() => {
+        const pr = pop.getBoundingClientRect();
+        if (pr.right > window.innerWidth - 8)
+            pop.style.left = (window.innerWidth - pr.width - 8) + 'px';
     });
-    document.querySelectorAll('#main-table tbody tr[data-id]').forEach(r => r.style.display = '');
-    updateRowCount();
+}
+
+function allSetOptions(lookupKey) {
+    const items = (LOOKUPS[lookupKey] || []).map(o => ({ val: o.label.toLowerCase(), label: o.label }));
+    return [{ val:'', label:'(None)' }, ...items];
+}
+
+function buildFilterPopover(col, def) {
+    const content = document.getElementById('filter-pop-content');
+    if (def.type === 'text') {
+        content.innerHTML =
+            `<input type="text" id="filter-pop-text" placeholder="Filter…"
+                    value="${escHtml(filterPopPending.value)}">`;
+        const inp = document.getElementById('filter-pop-text');
+        inp.focus(); inp.select();
+        inp.addEventListener('keydown', e => {
+            if (e.key === 'Enter')  applyFilterFromPop();
+            if (e.key === 'Escape') closeFilter();
+        });
+    } else {
+        const opts = allSetOptions(def.lookup);
+        const allChecked = opts.every(o => filterPopPending.values.has(o.val));
+        const rows = opts.map(o => {
+            const chk = filterPopPending.values.has(o.val) ? 'checked' : '';
+            return `<label class="filter-pop-item">
+                <input type="checkbox" value="${escHtml(o.val)}" ${chk} onchange="filterPopToggle(this)">
+                ${escHtml(o.label)}
+            </label>`;
+        }).join('');
+        content.innerHTML =
+            `<input type="text" id="filter-pop-search" placeholder="Search options…"
+                    oninput="filterPopSearch(this.value)">
+             <label class="filter-pop-item filter-pop-all">
+                 <input type="checkbox" id="filter-pop-selall"
+                        ${allChecked ? 'checked' : ''}
+                        onchange="filterPopSelectAll(this.checked)">
+                 <strong>Select All</strong>
+             </label>
+             <div class="filter-pop-sep"></div>
+             <div class="filter-pop-list" id="filter-pop-list">${rows}</div>`;
+    }
+}
+
+function filterPopSearch(q) {
+    const lq = q.toLowerCase();
+    document.querySelectorAll('#filter-pop-list .filter-pop-item').forEach(el => {
+        el.style.display = el.textContent.trim().toLowerCase().includes(lq) ? '' : 'none';
+    });
+    syncSelectAll();
+}
+
+function filterPopToggle(cb) {
+    if (cb.checked) filterPopPending.values.add(cb.value);
+    else            filterPopPending.values.delete(cb.value);
+    syncSelectAll();
+}
+
+function filterPopSelectAll(checked) {
+    document.querySelectorAll('#filter-pop-list .filter-pop-item').forEach(item => {
+        if (item.style.display === 'none') return;
+        const cb = item.querySelector('input');
+        cb.checked = checked;
+        if (checked) filterPopPending.values.add(cb.value);
+        else         filterPopPending.values.delete(cb.value);
+    });
+    syncSelectAll();
+}
+
+function syncSelectAll() {
+    const sa = document.getElementById('filter-pop-selall');
+    if (!sa) return;
+    const visible = [...document.querySelectorAll('#filter-pop-list .filter-pop-item')]
+        .filter(el => el.style.display !== 'none')
+        .map(el => el.querySelector('input'));
+    sa.checked       = visible.length > 0 && visible.every(cb => cb.checked);
+    sa.indeterminate = !sa.checked && visible.some(cb => cb.checked);
+}
+
+function applyFilterFromPop() {
+    const col = filterPopCol;
+    const def = FILTER_COLS[col];
+    if (def.type === 'text') {
+        const val = document.getElementById('filter-pop-text').value.trim().toLowerCase();
+        if (val) activeFilters[col] = { type:'text', value: val };
+        else     delete activeFilters[col];
+    } else {
+        const allVals = new Set(allSetOptions(def.lookup).map(o => o.val));
+        const isAll   = [...allVals].every(v => filterPopPending.values.has(v));
+        if (isAll) delete activeFilters[col];
+        else       activeFilters[col] = { type:'set', values: new Set(filterPopPending.values) };
+    }
+    markFilterBtn(col, !!activeFilters[col]);
+    applyFilters();
+    closeFilter();
+}
+
+function clearFilterFromPop() {
+    delete activeFilters[filterPopCol];
+    markFilterBtn(filterPopCol, false);
+    applyFilters();
+    closeFilter();
+}
+
+function closeFilter() {
+    document.getElementById('filter-popover').classList.remove('open');
+    filterPopCol = null; filterPopPending = null;
+}
+
+function markFilterBtn(col, active) {
+    document.querySelectorAll(`.filter-btn[data-col="${col}"]`).forEach(btn => {
+        btn.classList.toggle('filter-active', active);
+    });
 }
 
 function updateRowCount(n) {
@@ -679,13 +869,19 @@ let activeTomSelect = null;
 let activeCell = null;
 
 document.addEventListener('click', e => {
+    // Close filter popover on outside click
+    if (filterPopCol !== null &&
+        !e.target.closest('#filter-popover') &&
+        !e.target.closest('.filter-btn')) {
+        closeFilter();
+    }
+
     const td = e.target.closest('td.editable');
     if (!td) {
-        // Clicked outside — cancel any open edit
         if (activeCell && !e.target.closest('.ts-dropdown')) cancelEdit();
         return;
     }
-    if (td === activeCell) return; // already editing
+    if (td === activeCell) return;
     if (activeCell) cancelEdit();
     openEdit(td);
 });
