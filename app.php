@@ -169,7 +169,11 @@ $employeesJson = json_encode($employees,  JSON_HEX_TAG | JSON_HEX_APOS);
         #filter-clear:hover { background:#f8fafc; }
 
         /* ── Table wrapper ────────────────────────────────────────────── */
-        #table-wrap { overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 140px); }
+        /* isolation:isolate creates a stacking context that scopes all
+           sticky-cell z-indices inside it, so the body-level Tom Select
+           dropdown (z-index 99999) always paints above the table. */
+        #table-wrap { overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 140px);
+                      isolation:isolate; }
 
         /* ── Table ────────────────────────────────────────────────────── */
         table { border-collapse:collapse; width:max-content; }
@@ -584,20 +588,6 @@ foreach ($toggleCols as $key):
 </div>
 
 <script>
-// ── Fix Tom Select dropdowns appearing behind sticky/stacking-context cells ─
-// Tom Select's built-in positionDropdown adds window.scrollY to a
-// getBoundingClientRect value, which is wrong when the dropdown is fixed.
-// We replace it with a version that uses viewport-relative coords directly.
-TomSelect.prototype.positionDropdown = function() {
-    const rect = this.control.getBoundingClientRect();
-    Object.assign(this.dropdown.style, {
-        position : 'fixed',
-        width    : rect.width + 'px',
-        top      : rect.bottom + 'px',
-        left     : rect.left + 'px',
-    });
-};
-
 // ── Data from PHP ──────────────────────────────────────────────────────────
 const LOOKUPS   = <?= $lookupsJson ?>;
 const EMPLOYEES = <?= $employeesJson ?>;
@@ -997,9 +987,14 @@ async function openVpLeadModal(siteId, vpAreaId, cell) {
     // Load existing leads after the modal is visible
     try {
         const data = await api({ action: 'get_vp_leads', vp_area_id: vpAreaId });
+        if (data.error) throw new Error(data.error);
         modalState.roles = (data.leads || []).map(l => ({ ...l, role_id: l.lead_id, role: '_vp_lead' }));
         renderModalPeople('_vp_lead');
-    } catch(e) { console.error('VP leads load failed:', e); }
+    } catch(e) {
+        console.error('VP leads load failed:', e);
+        document.getElementById('modal-people-list').innerHTML =
+            `<p style="color:#ef4444;font-size:12px;margin:0 0 8px">Error: ${escHtml(e.message)}</p>`;
+    }
 }
 
 async function addVpLead(employeeId) {
