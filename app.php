@@ -963,16 +963,34 @@ function toggleCol(key, visible) {
 
 function toggleGroup(groupKey, visible) {
     document.querySelectorAll(`#col-panel input[data-col][data-group="${groupKey}"]`).forEach(cb => {
-        cb.checked = visible;
-        toggleCol(cb.dataset.col, visible);
+        if (visible) hiddenCols.delete(cb.dataset.col);
+        else         hiddenCols.add(cb.dataset.col);
     });
+    localStorage.setItem('hiddenCols', JSON.stringify([...hiddenCols]));
+    applyColVisibility();
 }
 
 function applyColVisibility() {
+    // Remove the server-side flash-prevention style so JS inline styles take full control
+    document.getElementById('col-hide-defaults')?.remove();
+
     ALL_TOGGLE_COLS.forEach(key => {
         const hide = hiddenCols.has(key);
         document.querySelectorAll('.col-' + key).forEach(el => el.style.display = hide ? 'none' : '');
     });
+
+    // Hide group header <th> when every column in that group is hidden
+    document.querySelectorAll('#col-panel .col-group').forEach(group => {
+        const grpKey  = group.dataset.group;
+        const kids    = [...group.querySelectorAll('input[data-col]')];
+        const allHide = kids.length > 0 && kids.every(cb => hiddenCols.has(cb.dataset.col));
+        // General group header is col-description th (already handled by col class above)
+        if (grpKey !== 'general') {
+            const th = document.querySelector(`th.grp-${grpKey}`);
+            if (th) th.style.display = allHide ? 'none' : '';
+        }
+    });
+
     // Sync column checkboxes
     document.querySelectorAll('#col-panel input[data-col]').forEach(cb => {
         cb.checked = !hiddenCols.has(cb.dataset.col);
