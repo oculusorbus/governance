@@ -243,19 +243,21 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         #row-count { font-size:12px; color:#C8DCFF; }
 
         /* ── Column visibility panel ──────────────────────────────────── */
-        #col-panel { display:none; background:#fff; border-bottom:1px solid #EBE6E2;
+        #col-panel { display:none; background:#032044; border-bottom:1px solid #021333;
                      padding:10px 16px; }
         #col-panel.open { display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px; }
         .col-group { display:flex; flex-direction:column; gap:3px; min-width:130px; padding:6px 8px;
-                     border:1px solid #EBE6E2; border-radius:6px; background:#FAFAF9; }
+                     border:1px solid rgba(255,255,255,.12); border-radius:6px;
+                     background:rgba(255,255,255,.07); }
         .col-group-header { display:flex; align-items:center; gap:5px; font-size:11px;
-                            font-weight:700; color:#332F21; text-transform:uppercase;
+                            font-weight:700; color:#C8DCFF; text-transform:uppercase;
                             letter-spacing:.05em; cursor:pointer; user-select:none; }
         .col-group-header input[type=checkbox] { accent-color:#D3430D; }
         .col-group-children { display:flex; flex-direction:column; gap:2px;
-                              padding-top:4px; margin-top:3px; border-top:1px solid #EBE6E2; }
+                              padding-top:4px; margin-top:3px;
+                              border-top:1px solid rgba(255,255,255,.1); }
         .col-group-children label { display:flex; align-items:center; gap:5px; font-size:12px;
-                                    cursor:pointer; user-select:none; padding:1px 0; }
+                                    color:#E8E4FF; cursor:pointer; user-select:none; padding:1px 0; }
         .col-group-children input[type=checkbox] { accent-color:#D3430D; }
 
         /* ── Column filter buttons ────────────────────────────────────── */
