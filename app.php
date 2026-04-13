@@ -1075,14 +1075,6 @@ function openEdit(td) {
         td.innerHTML = '';
         td.appendChild(select);
 
-        // Capture scroll BEFORE focus() so we have the true pre-jump position.
-        // focus() triggers the browser's scroll-into-view synchronously, so by
-        // the time onDropdownOpen fires the table has already jumped.  We restore
-        // it synchronously at the top of onDropdownOpen (before getBoundingClientRect)
-        // so the rect is measured at the correct scroll position.
-        const wrap = document.getElementById('table-wrap');
-        const preScrollLeft = wrap ? wrap.scrollLeft : 0;
-
         activeTomSelect = new TomSelect(select, {
             valueField: 'id',
             labelField: 'label',
@@ -1092,8 +1084,6 @@ function openEdit(td) {
             create: false,
             dropdownParent: 'body',
             onDropdownOpen(dropdown) {
-                // Restore scroll first so getBoundingClientRect is accurate
-                if (wrap) wrap.scrollLeft = preScrollLeft;
                 const rect = this.control.getBoundingClientRect();
                 Object.assign(dropdown.style, {
                     position: 'fixed',
@@ -1109,6 +1099,13 @@ function openEdit(td) {
                 setTimeout(() => { if (activeCell === td) cancelEdit(); }, 300);
             },
         });
+
+        // Prevent the browser's scroll-into-view when TomSelect focuses its
+        // internal input — without this the table jumps left on every open.
+        const ci = activeTomSelect.control_input;
+        const _nativeFocus = ci.focus.bind(ci);
+        ci.focus = (opts) => _nativeFocus({ preventScroll: true });
+
         activeTomSelect.focus();
     }
 }
