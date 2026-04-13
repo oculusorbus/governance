@@ -149,6 +149,14 @@ function filterBtn(string $col): string {
          . '</svg></button>';
 }
 
+function sortBtn(string $col): string {
+    return '<button class="sort-btn" data-col="' . $col . '" onclick="toggleSort(event,\'' . $col . '\')" title="Sort">'
+         . '<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+         . '<path class="sort-up" d="M12 2L20 13H4Z"/>'
+         . '<path class="sort-dn" d="M12 22L4 11H20Z"/>'
+         . '</svg></button>';
+}
+
 function renderBadges(array $people): string {
     if (!$people) return '<span class="empty-cell">—</span>';
     $out = '';
@@ -261,13 +269,19 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                                     color:#E8E4FF; cursor:pointer; user-select:none; padding:1px 0; }
         .col-group-children input[type=checkbox] { accent-color:#D3430D; }
 
-        /* ── Column filter buttons ────────────────────────────────────── */
-        .filter-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
+        /* ── Column filter / sort buttons ────────────────────────────── */
+        .filter-btn, .sort-btn { position:absolute; top:50%; transform:translateY(-50%);
                       display:inline-flex; align-items:center; background:none; border:none;
                       cursor:pointer; padding:2px; opacity:.35; color:inherit;
                       border-radius:3px; transition:opacity .15s, color .15s; }
-        .filter-btn:hover { opacity:.8; }
+        .filter-btn { right:4px; }
+        .sort-btn   { right:18px; }
+        .filter-btn:hover, .sort-btn:hover { opacity:.8; }
         .filter-btn.filter-active { opacity:1; color:#D3430D; }
+        .sort-btn.sort-asc, .sort-btn.sort-desc { opacity:1; color:#265BF7; }
+        .sort-btn .sort-up, .sort-btn .sort-dn { transition:opacity .15s; }
+        .sort-btn.sort-asc  .sort-dn  { opacity:.2; }
+        .sort-btn.sort-desc .sort-up  { opacity:.2; }
 
         /* ── Filter popover ───────────────────────────────────────────── */
         #filter-popover { display:none; position:fixed; background:#fff;
@@ -329,7 +343,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* Column header row */
         thead tr.headers th { font-size:11px; font-weight:600; color:#6B6355;
-                              background:#F8F4F1; padding:6px 20px 6px 8px; white-space:nowrap;
+                              background:#F8F4F1; padding:6px 36px 6px 8px; white-space:nowrap;
                               border-bottom:2px solid #EBE6E2; border-right:1px solid #EBE6E2;
                               position:sticky; top:28px; z-index:10; overflow:hidden; }
 
@@ -620,24 +634,24 @@ $defaultHidden = ['url', 'description'];
     </tr>
     <!-- Column headers -->
     <tr class="headers">
-        <th class="sticky-1 col-site">Site <?= filterBtn('site') ?></th>
+        <th class="sticky-1 col-site">Site <?= sortBtn('site') ?><?= filterBtn('site') ?></th>
         <th class="col-url">URL</th>
-        <th class="col-description">Description <?= filterBtn('description') ?></th>
-        <th class="col-vp_area">VP Area <?= filterBtn('vp_area') ?></th>
-        <th class="col-vp_lead">VP Lead <?= filterBtn('vp_lead') ?></th>
-        <th class="col-college_dept">College/Dept <?= filterBtn('college_dept') ?></th>
-        <th class="col-college_communicator">Communicator <?= filterBtn('college_communicator') ?></th>
-        <th class="col-site_owner">Owner <?= filterBtn('site_owner') ?></th>
-        <th class="col-content_lead">Content Lead <?= filterBtn('content_lead') ?></th>
-        <th class="col-tech_lead">Tech Lead <?= filterBtn('tech_lead') ?></th>
-        <th class="col-admin_contact">Admin Contact <?= filterBtn('admin_contact') ?></th>
+        <th class="col-description">Description <?= sortBtn('description') ?><?= filterBtn('description') ?></th>
+        <th class="col-vp_area">VP Area <?= sortBtn('vp_area') ?><?= filterBtn('vp_area') ?></th>
+        <th class="col-vp_lead">VP Lead <?= sortBtn('vp_lead') ?><?= filterBtn('vp_lead') ?></th>
+        <th class="col-college_dept">College/Dept <?= sortBtn('college_dept') ?><?= filterBtn('college_dept') ?></th>
+        <th class="col-college_communicator">Communicator <?= sortBtn('college_communicator') ?><?= filterBtn('college_communicator') ?></th>
+        <th class="col-site_owner">Owner <?= sortBtn('site_owner') ?><?= filterBtn('site_owner') ?></th>
+        <th class="col-content_lead">Content Lead <?= sortBtn('content_lead') ?><?= filterBtn('content_lead') ?></th>
+        <th class="col-tech_lead">Tech Lead <?= sortBtn('tech_lead') ?><?= filterBtn('tech_lead') ?></th>
+        <th class="col-admin_contact">Admin Contact <?= sortBtn('admin_contact') ?><?= filterBtn('admin_contact') ?></th>
         <th class="col-support_intake_url">Intake</th>
         <th class="col-datastudio_url">Studio</th>
-        <th class="col-server">Server <?= filterBtn('server') ?></th>
-        <th class="col-platform">Platform <?= filterBtn('platform') ?></th>
-        <th class="col-audience">Audience <?= filterBtn('audience') ?></th>
-        <th class="col-category">Category <?= filterBtn('category') ?></th>
-        <th class="col-second_category">2nd Category <?= filterBtn('second_category') ?></th>
+        <th class="col-server">Server <?= sortBtn('server') ?><?= filterBtn('server') ?></th>
+        <th class="col-platform">Platform <?= sortBtn('platform') ?><?= filterBtn('platform') ?></th>
+        <th class="col-audience">Audience <?= sortBtn('audience') ?><?= filterBtn('audience') ?></th>
+        <th class="col-category">Category <?= sortBtn('category') ?><?= filterBtn('category') ?></th>
+        <th class="col-second_category">2nd Category <?= sortBtn('second_category') ?><?= filterBtn('second_category') ?></th>
         <th class="col-db-score">Score</th>
         <th class="col-db-accessibility">Accessibility</th>
         <th class="col-db-badlinks">Bad Links</th>
@@ -1103,6 +1117,7 @@ function applyColVisibility() {
 window.addEventListener('DOMContentLoaded', () => {
     applyColVisibility();
     updateRowCount();
+    document.querySelectorAll('#main-table tbody tr[data-id]').forEach((r, i) => r.dataset.origIndex = i);
     document.getElementById('global-search').addEventListener('input', e => {
         searchQuery = e.target.value.toLowerCase().trim();
         applyFilters();
@@ -1185,6 +1200,59 @@ function clearAllFilters() {
     searchQuery = '';
     document.getElementById('global-search').value = '';
     applyFilters();
+}
+
+// ── Sorting ────────────────────────────────────────────────────────────────
+let sortCol = null;
+let sortDir = null; // 'asc' | 'desc'
+
+function getSortValue(row, col) {
+    if (col === 'site') return row.dataset.site_name || row.dataset.url || '';
+    if (PEOPLE_COLS.has(col)) {
+        const td = row.querySelector('td.col-' + col);
+        if (!td) return '';
+        const first = td.querySelector('.badge[data-tip]');
+        return first ? first.dataset.tip.split('·')[0].trim().toLowerCase() : '';
+    }
+    return (row.dataset[col] || '').toLowerCase();
+}
+
+function toggleSort(event, col) {
+    event.stopPropagation();
+    if (sortCol === col) {
+        sortDir = sortDir === 'asc' ? 'desc' : null;
+        if (!sortDir) sortCol = null;
+    } else {
+        sortCol = col; sortDir = 'asc';
+    }
+    applySort();
+    updateSortBtns();
+}
+
+function applySort() {
+    const tbody = document.querySelector('#main-table tbody');
+    const rows  = [...tbody.querySelectorAll('tr[data-id]')];
+    if (!sortCol) {
+        rows.sort((a, b) => +a.dataset.origIndex - +b.dataset.origIndex);
+    } else {
+        rows.sort((a, b) => {
+            const av = getSortValue(a, sortCol);
+            const bv = getSortValue(b, sortCol);
+            if (!av && bv)  return 1;   // blanks always last
+            if (av  && !bv) return -1;
+            if (!av && !bv) return 0;
+            const cmp = av.localeCompare(bv, undefined, { sensitivity:'base' });
+            return sortDir === 'asc' ? cmp : -cmp;
+        });
+    }
+    rows.forEach(r => tbody.appendChild(r));
+}
+
+function updateSortBtns() {
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.classList.toggle('sort-asc',  btn.dataset.col === sortCol && sortDir === 'asc');
+        btn.classList.toggle('sort-desc', btn.dataset.col === sortCol && sortDir === 'desc');
+    });
 }
 
 // ── Filter popover ─────────────────────────────────────────────────────────
