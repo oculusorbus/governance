@@ -371,7 +371,9 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* Column widths */
         .col-site               { min-width:280px; max-width:280px; }
-        .col-url                { min-width:200px; max-width:200px; }
+        .col-url                { min-width:280px; max-width:280px; }
+        td.col-url              { overflow:hidden; padding:4px 8px; }
+        td.col-site             { position:relative; }
         .col-description        { min-width:240px; max-width:240px; }
         .col-vp_area            { min-width:100px; max-width:100px; }
         .col-vp_lead            { min-width:120px; max-width:120px; }
@@ -553,7 +555,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     </style>
     <!-- Hide default-hidden columns before first paint to prevent flash.
          JS re-applies localStorage prefs on DOMContentLoaded. -->
-    <style id="col-hide-defaults">.col-description,.col-url { display:none; }</style>
+    <style id="col-hide-defaults">.col-description,.col-site { display:none; }</style>
 </head>
 <body>
 
@@ -575,7 +577,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 <!-- ── Column visibility panel ──────────────────────────────────────────── -->
 <?php
 $colGroups = [
-    'General'        => ['url' => 'URL', 'description' => 'Description'],
+    'Website'        => ['url' => 'URL', 'site' => 'Site', 'description' => 'Description'],
     'Governance'     => ['vp_area'=>'VP Area','vp_lead'=>'VP Lead','college_dept'=>'College/Dept'],
     'People'         => ['college_communicator'=>'Communicator','site_owner'=>'Site Owner',
                          'content_lead'=>'Content Lead','tech_lead'=>'Tech Lead','admin_contact'=>'Admin Contact'],
@@ -588,7 +590,7 @@ $colGroups = [
                          'db-pages'=>'Pages'],
 ];
 $toggleCols    = array_merge(...array_values(array_map('array_keys', $colGroups)));
-$defaultHidden = ['url', 'description'];
+$defaultHidden = ['site', 'description'];
 ?>
 <div id="col-panel">
 <?php foreach ($colGroups as $groupName => $cols):
@@ -622,8 +624,8 @@ $defaultHidden = ['url', 'description'];
 <thead>
     <!-- Group headers -->
     <tr class="groups">
-        <th colspan="1" class="grp-identity sticky-1">Website</th>
-        <th colspan="1" class="grp-identity col-url">&#8203;</th>
+        <th colspan="1" class="grp-identity sticky-1 col-url">Website</th>
+        <th colspan="1" class="grp-identity col-site">&#8203;</th>
         <th colspan="1" class="grp-identity col-description">&#8203;</th>
         <th colspan="3" class="grp-governance">Governance</th>
         <th colspan="5" class="grp-people">People</th>
@@ -634,8 +636,8 @@ $defaultHidden = ['url', 'description'];
     </tr>
     <!-- Column headers -->
     <tr class="headers">
-        <th class="sticky-1 col-site">Site <?= sortBtn('site') ?><?= filterBtn('site') ?></th>
-        <th class="col-url">URL <?= sortBtn('url') ?><?= filterBtn('url') ?></th>
+        <th class="sticky-1 col-url">URL <?= sortBtn('url') ?><?= filterBtn('url') ?></th>
+        <th class="col-site">Site <?= sortBtn('site') ?><?= filterBtn('site') ?></th>
         <th class="col-description">Description <?= sortBtn('description') ?><?= filterBtn('description') ?></th>
         <th class="col-vp_area">VP Area <?= sortBtn('vp_area') ?><?= filterBtn('vp_area') ?></th>
         <th class="col-vp_lead">VP Lead <?= sortBtn('vp_lead') ?><?= filterBtn('vp_lead') ?></th>
@@ -718,7 +720,20 @@ $defaultHidden = ['url', 'description'];
         $urlJ      = json_encode((string)($site['url']       ?? ''), $flags);
         ?>
         <?php $tooltip = $display . ($site['url'] && $site['site_name'] ? "\n" . $site['url'] : ''); ?>
-        <td class="sticky-1 col-site" data-site-id="<?= $sid ?>"
+        <!-- URL (primary sticky column) -->
+        <td class="sticky-1 col-url" title="<?= h($site['url']) ?>">
+            <div class="site-inner">
+                <?php if ($site['url']): ?>
+                    <a href="https://<?= h($site['url']) ?>" target="_blank"
+                       onclick="event.stopPropagation()"><?= h($site['url']) ?></a>
+                <?php else: ?>
+                    <span class="empty-cell">—</span>
+                <?php endif; ?>
+            </div>
+        </td>
+
+        <!-- Site (name + edit button) -->
+        <td class="col-site" data-site-id="<?= $sid ?>"
             title="<?= h($tooltip) ?>">
             <div class="site-inner">
                 <?php if ($href): ?>
@@ -732,17 +747,6 @@ $defaultHidden = ['url', 'description'];
             </div>
             <button class="site-edit-btn"
                     onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>)">✎</button>
-        </td>
-
-        <!-- URL -->
-        <td class="col-url" title="<?= h($site['url']) ?>">
-            <?php if ($site['url']): ?>
-                <a href="https://<?= h($site['url']) ?>" target="_blank"
-                   onclick="event.stopPropagation()"
-                   style="color:#265BF7;text-decoration:none;"><?= h($site['url']) ?></a>
-            <?php else: ?>
-                <span class="empty-cell">—</span>
-            <?php endif; ?>
         </td>
 
         <!-- Description -->
@@ -1048,14 +1052,14 @@ const EMPLOYEES      = <?= $employeesJson ?>;
 const PEOPLE_OPTIONS = <?= $filterPeopleJson ?>;
 
 // ── Column visibility ──────────────────────────────────────────────────────
-const ALL_TOGGLE_COLS = ['url','description','vp_area','vp_lead','college_dept',
+const ALL_TOGGLE_COLS = ['url','site','description','vp_area','vp_lead','college_dept',
     'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
     'support_intake_url','datastudio_url',
     'server','platform','audience','category','second_category',
     'db-score','db-accessibility','db-badlinks','db-seo',
     'db-spelling','db-bestpractices','db-webgovernance','db-pages'];
 
-const DEFAULT_HIDDEN = ['url', 'description'];
+const DEFAULT_HIDDEN = ['site', 'description'];
 const storedCols     = localStorage.getItem('hiddenCols');
 const hiddenCols     = new Set(storedCols !== null ? JSON.parse(storedCols) : DEFAULT_HIDDEN);
 
@@ -1093,8 +1097,8 @@ function applyColVisibility() {
         const grpKey  = group.dataset.group;
         const kids    = [...group.querySelectorAll('input[data-col]')];
         const allHide = kids.length > 0 && kids.every(cb => hiddenCols.has(cb.dataset.col));
-        // General group header is col-description th (already handled by col class above)
-        if (grpKey !== 'general') {
+        // Website group header is col-url th (already handled by col class above)
+        if (grpKey !== 'website') {
             const th = document.querySelector(`th.grp-${grpKey}`);
             if (th) th.style.display = allHide ? 'none' : '';
         }
@@ -1442,6 +1446,11 @@ function copyColumnData(col, variant) {
     const lines = rows.map(row => {
         const td = row.querySelector(`td.col-${col}`);
         if (!td) return '';
+
+        if (col === 'url') {
+            const a = td.querySelector('.site-inner a');
+            return a ? a.href : '';
+        }
 
         if (col === 'site') {
             const a = td.querySelector('.site-inner a');
