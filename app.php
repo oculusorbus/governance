@@ -325,13 +325,14 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                                                 transform:translateY(-50%); pointer-events:none; }
 
         /* Site column (combined URL + Site Name) */
-        td.col-site { display:flex !important; align-items:center; gap:4px;
-                      overflow:visible; padding:4px 8px; }
-        td.col-site a, td.col-site > span { flex:1; min-width:0; overflow:hidden;
+        td.col-site { position:relative; overflow:hidden; padding:4px 8px; }
+        .site-inner { display:flex; align-items:center; gap:4px; overflow:hidden; }
+        .site-inner a, .site-inner > span { flex:1; min-width:0; overflow:hidden;
             text-overflow:ellipsis; white-space:nowrap; text-decoration:none; }
-        td.col-site a { color:#265BF7; }
-        td.col-site > span.empty-cell { color:#D5CFC8; }
-        .site-edit-btn { flex-shrink:0; opacity:0; background:none; border:none;
+        .site-inner a { color:#265BF7; }
+        .site-inner > span.empty-cell { color:#D5CFC8; }
+        .site-edit-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
+                         opacity:0; background:none; border:none;
                          cursor:pointer; color:#A09080; font-size:11px;
                          padding:2px 3px; border-radius:3px; line-height:1;
                          transition:opacity .1s, color .1s; }
@@ -563,14 +564,16 @@ foreach ($toggleCols as $key):
         ?>
         <td class="sticky-1 col-site" data-site-id="<?= $sid ?>"
             title="<?= h($display) ?>">
-            <?php if ($href): ?>
-                <a href="<?= $href ?>" target="_blank"
-                   onclick="event.stopPropagation()"><?= h($display) ?></a>
-            <?php elseif ($display): ?>
-                <span><?= h($display) ?></span>
-            <?php else: ?>
-                <span class="empty-cell">—</span>
-            <?php endif; ?>
+            <div class="site-inner">
+                <?php if ($href): ?>
+                    <a href="<?= $href ?>" target="_blank"
+                       onclick="event.stopPropagation()"><?= h($display) ?></a>
+                <?php elseif ($display): ?>
+                    <span><?= h($display) ?></span>
+                <?php else: ?>
+                    <span class="empty-cell">—</span>
+                <?php endif; ?>
+            </div>
             <button class="site-edit-btn"
                     onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= $siteNameJ ?>,<?= $urlJ ?>)">✎</button>
         </td>
@@ -1698,18 +1701,15 @@ async function saveSiteEditModal() {
         const row = document.querySelector(`tr[data-id="${siteId}"]`);
         if (row) {
             const td      = row.querySelector('td.col-site');
+            const inner   = td.querySelector('.site-inner');
             const display = name || url;
-            let a = td.querySelector('a');
+            let a = inner.querySelector('a');
             if (!a) {
                 a = document.createElement('a');
                 a.target = '_blank';
                 a.addEventListener('click', e => e.stopPropagation());
-                td.prepend(a);
-                // Remove any plain <span> that was there
-                const s = td.querySelector(':scope > span:not(.empty-cell)');
-                if (s) s.remove();
-                const ec = td.querySelector('.empty-cell');
-                if (ec) ec.remove();
+                inner.innerHTML = '';
+                inner.appendChild(a);
             }
             a.textContent = display;
             a.href = 'https://' + url;
