@@ -1864,15 +1864,23 @@ const DB_FRAGMENT = `
   }
 `;
 
-async function dbGql(query) {
-    const res = await fetch('dubbot.php', {
+// Raw fetch — returns full {data, errors} so the caller can inspect errors
+// (e.g. complexity limits) without throwing. Use for batch stat queries.
+async function dbFetch(query) {
+    const res  = await fetch('dubbot.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
     });
-    if (!res.ok) throw new Error('dubbot.php HTTP ' + res.status);
     const json = await res.json();
-    if (json.error)  throw new Error(json.error);
+    if (json.error) throw new Error(json.error);  // proxy-level error (auth, config)
+    return json;                                   // {data, errors}
+}
+
+// Error-checked fetch — throws on any GraphQL error.
+// Use only for discovery queries where errors are fatal.
+async function dbGql(query) {
+    const json = await dbFetch(query);
     if (json.errors) throw new Error(json.errors.map(e => e.message).join('; '));
     return json.data;
 }
@@ -1880,14 +1888,27 @@ async function dbGql(query) {
 function dbExtractList(raw) {
     if (!raw) return [];
     if (Array.isArray(raw)) return raw;
-    for (const k of ['nodes','items','results','data','edges']) {
-        if (Array.isArray(raw[k])) return k === 'edges' ? raw[k].map(e => e.node).filter(Boolean) : raw[k];
+    for (const k of ['nodes','items','results','data']) {
+        if (Array.isArray(raw[k])) return raw[k];
     }
+    if (Array.isArray(raw.edges)) return raw.edges.map(e => e.node).filter(Boolean);
     return [raw];
 }
 
 function dbNorm(url) {
     return (url || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '').toLowerCase();
+}
+
+function dbSetStatus(type, msg) {
+    const el = document.getElementById('grp-dubbot');
+    if (!el) return;
+    if (type === 'loading') {
+        el.innerHTML = `DubBot <span class="db-hdr-spin"></span><span class="db-hdr-status">${escHtml(msg)}</span>`;
+    } else if (type === 'error') {
+        el.innerHTML = `DubBot <span class="db-hdr-error">⚠ ${escHtml(msg)}</span>`;
+    } else {
+        el.innerHTML = `DubBot <span class="db-hdr-status">${escHtml(msg)}</span>`;
+    }
 }
 
 function dbScoreHtml(score, total) {
@@ -1914,102 +1935,166 @@ function dbFillRow(row, site) {
     });
 }
 
-function dbFillAll(msg) {
-    document.querySelectorAll('td[data-db-col]').forEach(td => {
-        td.innerHTML = `<span class="empty-cell">${escHtml(msg)}</span>`;
-    });
-}
-
 async function loadDubBotData() {
-    // ── Step 1: discover account/site memberships ──────────────────────────
-    let memberships = [];
-    const strategies = [
-        `{ currentUser { siteMemberships { site { id name url } account { id name } } } }`,
-        `{ currentUser { memberships      { site { id name url } account { id name } } } }`,
-        `{ currentUser { membership       { site { id name url } account { id name } } } }`,
+    dbSetStatus('loading', 'Connecting…');
+
+    // ── Step 1: discover accounts and their sites ──────────────────────────
+    // Four strategies mirror the adaptive discovery in the DubBot source.
+    let accounts = [];
+
+    const discoveryStrategies = [
+        // A: siteMemberships — groups by account to build account→sites map
+        async () => {
+            const data = await dbGql(`{
+                currentUser {
+                    siteMemberships { site { id name url } account { id name } }
+                }
+            }`);
+            const mems = dbExtractList(data?.currentUser?.siteMemberships);
+            if (!mems.length) return [];
+            const map = new Map();
+            for (const m of mems) {
+                const site = m.site || m;
+                const acc  = m.account || { id: '__default__', name: 'My Sites' };
+                if (!map.has(acc.id)) map.set(acc.id, { ...acc, sites: [] });
+                if (site?.id) map.get(acc.id).sites.push(site);
+            }
+            return [...map.values()];
+        },
+        // B: memberships → account.sites[]
+        async () => {
+            const data = await dbGql(`{
+                currentUser {
+                    memberships { account { id name sites { id name url } } }
+                }
+            }`);
+            return dbExtractList(data?.currentUser?.memberships)
+                .map(m => m.account).filter(Boolean)
+                .map(a => ({ ...a, sites: dbExtractList(a.sites) }));
+        },
+        // C: membership (singular) → account.sites[]
+        async () => {
+            const data = await dbGql(`{
+                currentUser {
+                    membership { account { id name sites { id name url } } }
+                }
+            }`);
+            const acc = data?.currentUser?.membership?.account;
+            return acc ? [{ ...acc, sites: dbExtractList(acc.sites) }] : [];
+        },
+        // D: currentMembership → account.sites[]
+        async () => {
+            const data = await dbGql(`{
+                currentUser {
+                    currentMembership { account { id name sites { id name url } } }
+                }
+            }`);
+            const acc = data?.currentUser?.currentMembership?.account;
+            return acc ? [{ ...acc, sites: dbExtractList(acc.sites) }] : [];
+        },
     ];
-    for (const q of strategies) {
+
+    for (const strategy of discoveryStrategies) {
         try {
-            const data = await dbGql(q);
-            const user = data?.currentUser;
-            if (!user) continue;
-            const raw  = user.siteMemberships ?? user.memberships ?? user.membership;
-            const list = dbExtractList(raw);
-            if (list.length) { memberships = list; break; }
-        } catch (_) { /* try next */ }
+            const result = await strategy();
+            if (result.length) { accounts = result; break; }
+        } catch (_) { /* try next strategy */ }
     }
 
-    if (!memberships.length) {
-        dbFillAll('—');
+    if (!accounts.length) {
+        dbSetStatus('error', 'No DubBot accounts found');
+        document.querySelectorAll('td[data-db-col]').forEach(td => {
+            td.innerHTML = '<span class="empty-cell">—</span>';
+        });
         return;
     }
 
-    // ── Step 2: build URL → {siteId, accountId} map ───────────────────────
+    const totalDbSites = accounts.reduce((n, a) => n + a.sites.length, 0);
+    dbSetStatus('loading', `Matching ${totalDbSites} DubBot sites…`);
+
+    // ── Step 2: build normalized URL → {siteId, accountId} map ───────────
     const urlMap = {};
-    for (const m of memberships) {
-        const site    = m.site    ?? m;
-        const account = m.account ?? {};
-        if (!site?.id) continue;
-        const norm = dbNorm(site.url);
-        if (norm) urlMap[norm] = { siteId: site.id, accountId: account.id };
+    for (const acc of accounts) {
+        for (const site of acc.sites) {
+            const norm = dbNorm(site.url);
+            if (norm) urlMap[norm] = { siteId: site.id, accountId: acc.id };
+        }
     }
 
-    // ── Step 3: match table rows ───────────────────────────────────────────
-    const allRows  = [...document.querySelectorAll('#main-table tbody tr[data-id]')];
-    const matched  = [];
+    // ── Step 3: match governance table rows ────────────────────────────────
+    const allRows = [...document.querySelectorAll('#main-table tbody tr[data-id]')];
+    const matched = [];
     allRows.forEach(row => {
-        const norm  = dbNorm(row.dataset.url);
-        const entry = urlMap[norm];
+        const entry = urlMap[dbNorm(row.dataset.url)];
         if (entry) matched.push({ row, ...entry });
-        else       dbFillRow(row, null);   // no DubBot record → show —
+        else       dbFillRow(row, null);
     });
 
-    if (!matched.length) return;
+    if (!matched.length) {
+        dbSetStatus('done', `0 / ${allRows.length} matched`);
+        return;
+    }
 
-    // ── Step 4: fetch stats with adaptive parallel batching ────────────────
+    dbSetStatus('loading', `Loading stats for ${matched.length} site${matched.length !== 1 ? 's' : ''}…`);
+
+    // ── Step 4: adaptive parallel batching ────────────────────────────────
+    // Uses dbFetch (raw) so we can inspect errors for complexity limits
+    // without throwing — same pattern as the DubBot source.
     async function fetchBatch(batch, offset) {
         const aliases = batch.map((r, j) =>
             `s_${offset + j}: site(siteId:"${r.siteId}", accountId:"${r.accountId}") { ${DB_FRAGMENT} }`
         ).join('\n');
-        return dbGql(`{ ${aliases} }`);
+        return dbFetch(`{ ${aliases} }`);  // returns raw {data, errors}
     }
 
-    function applyBatch(data, batch, offset) {
-        batch.forEach((r, j) => dbFillRow(r.row, data?.[`s_${offset + j}`] ?? null));
+    function applyBatch(json, batch, offset) {
+        const data = json.data || {};
+        batch.forEach((r, j) => dbFillRow(r.row, data[`s_${offset + j}`] ?? null));
     }
 
     try {
-        // First attempt: all sites in one request (uses GraphQL field aliases)
-        const first = await fetchBatch(matched, 0);
+        // Round 1: try all sites in one aliased request
+        const first      = await fetchBatch(matched, 0);
         const complexErr = (first.errors || []).find(e => /complexity/i.test(e.message));
 
         if (!complexErr) {
             applyBatch(first, matched, 0);
+            dbSetStatus('done', `${matched.length} / ${allRows.length} matched`);
             return;
         }
 
-        // Parse the complexity error to find the optimal batch size
+        // Complexity limit hit — parse the error to find the safe batch size,
+        // then fire all batches simultaneously (one more round trip, no matter
+        // how many batches are needed).
         let batchSize = 5;
-        const m = complexErr.message.match(/complexity of (\d+).*max complexity of (\d+)/i);
-        if (m) {
-            const perItem = parseInt(m[1]) / matched.length;
-            batchSize = Math.max(1, Math.floor(parseInt(m[2]) / perItem));
+        const cm = complexErr.message.match(/complexity of (\d+).*max complexity of (\d+)/i);
+        if (cm) {
+            const perItem = parseInt(cm[1]) / matched.length;
+            batchSize = Math.max(1, Math.floor(parseInt(cm[2]) / perItem));
         }
 
-        // Split into batches and fire ALL in parallel
         const batches = [];
         for (let i = 0; i < matched.length; i += batchSize)
             batches.push({ rows: matched.slice(i, i + batchSize), offset: i });
 
+        dbSetStatus('loading', `${batches.length} parallel batch${batches.length !== 1 ? 'es' : ''}…`);
+
         const results = await Promise.all(
             batches.map(b => fetchBatch(b.rows, b.offset).catch(() => null))
         );
-        results.forEach((data, bi) => {
-            if (data) applyBatch(data, batches[bi].rows, batches[bi].offset);
+
+        let loaded = 0;
+        results.forEach((json, bi) => {
+            if (!json) return;
+            applyBatch(json, batches[bi].rows, batches[bi].offset);
+            loaded += batches[bi].rows.length;
         });
 
+        dbSetStatus('done', `${loaded} / ${allRows.length} matched`);
+
     } catch (e) {
-        console.error('DubBot load failed:', e);
+        console.error('DubBot stats load failed:', e);
+        dbSetStatus('error', e.message);
         matched.forEach(r => dbFillRow(r.row, null));
     }
 }
