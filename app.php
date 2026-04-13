@@ -321,10 +321,12 @@ $colLabels = [
     'server'=>'Server','platform'=>'Platform','audience'=>'Audience',
     'category'=>'Category','second_category'=>'2nd Category',
 ];
+$defaultHidden = ['description'];
 foreach ($toggleCols as $key):
+    $chk = in_array($key, $defaultHidden) ? '' : ' checked';
 ?>
     <label>
-        <input type="checkbox" checked onchange="toggleCol('<?= $key ?>', this.checked)">
+        <input type="checkbox" data-col="<?= $key ?>"<?= $chk ?> onchange="toggleCol('<?= $key ?>', this.checked)">
         <?= h($colLabels[$key]) ?>
     </label>
 <?php endforeach; ?>
@@ -440,8 +442,11 @@ foreach ($toggleCols as $key):
             <?= h($site['vp_area']) ?>
         </td>
 
-        <!-- VP Lead (read-only — managed via VP Area) -->
-        <td class="col-vp_lead">
+        <!-- VP Lead -->
+        <td class="col-vp_lead role-cell"
+            data-site-id="<?= $sid ?>"
+            data-vp-area-id="<?= (int)$site['vp_area_id'] ?>"
+            onclick="openVpLeadModal(<?= $sid ?>, <?= (int)$site['vp_area_id'] ?>, this)">
             <?= renderBadges($vpLeads) ?>
         </td>
 
@@ -584,7 +589,14 @@ const LOOKUPS   = <?= $lookupsJson ?>;
 const EMPLOYEES = <?= $employeesJson ?>;
 
 // ── Column visibility ──────────────────────────────────────────────────────
-const hiddenCols = new Set(JSON.parse(localStorage.getItem('hiddenCols') || '[]'));
+const ALL_TOGGLE_COLS = ['description','vp_area','vp_lead','college_dept',
+    'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
+    'support_platform','support_intake_url','datastudio_url',
+    'server','platform','audience','category','second_category'];
+
+const DEFAULT_HIDDEN = ['description'];
+const storedCols     = localStorage.getItem('hiddenCols');
+const hiddenCols     = new Set(storedCols !== null ? JSON.parse(storedCols) : DEFAULT_HIDDEN);
 
 function toggleColPanel() {
     document.getElementById('col-panel').classList.toggle('open');
@@ -598,28 +610,18 @@ function toggleCol(key, visible) {
 }
 
 function applyColVisibility() {
-    hiddenCols.forEach(key => {
-        document.querySelectorAll('.col-' + key).forEach(el => el.style.display = 'none');
+    ALL_TOGGLE_COLS.forEach(key => {
+        const hide = hiddenCols.has(key);
+        document.querySelectorAll('.col-' + key).forEach(el => el.style.display = hide ? 'none' : '');
     });
     // Sync checkboxes
-    document.querySelectorAll('#col-panel input[type=checkbox]').forEach(cb => {
-        const key = cb.closest('label').textContent.trim();
-        // (checkboxes are already driven by user interaction)
+    document.querySelectorAll('#col-panel input[data-col]').forEach(cb => {
+        cb.checked = !hiddenCols.has(cb.dataset.col);
     });
 }
 
-// Restore on load
 window.addEventListener('DOMContentLoaded', () => {
-    hiddenCols.forEach(key => {
-        document.querySelectorAll('.col-' + key).forEach(el => el.style.display = 'none');
-        const labels = document.querySelectorAll('#col-panel label');
-        labels.forEach(lbl => {
-            const cb = lbl.querySelector('input');
-            if (lbl.textContent.trim() === document.querySelector(`th.col-${key}`)?.textContent.trim()) {
-                if (cb) cb.checked = false;
-            }
-        });
-    });
+    applyColVisibility();
     updateRowCount();
 });
 
@@ -719,6 +721,7 @@ function openEdit(td) {
             options: [{ id: '', label: '— clear —' }, ...LOOKUPS[lookupKey]],
             items: currentId ? [String(currentId)] : [],
             create: false,
+            dropdownParent: 'body',
             onChange(val) {
                 saveFkEdit(td, val, lookupKey, fkField);
             },
@@ -858,6 +861,7 @@ async function openPeopleModal(siteId, role, cell) {
             label: `${e.last_name}, ${e.first_name}${e.email ? ' · ' + e.email : ''}`,
         })),
         create: false,
+        dropdownParent: 'body',
         onItemAdd(val) {
             addPersonToRole(parseInt(val));
             empTs.clear(true);
@@ -883,7 +887,7 @@ function renderModalPeople(role) {
                 <div class="name">${escHtml(p.last_name)}, ${escHtml(p.first_name)}</div>
                 <div class="email">${escHtml(p.email || '')}</div>
             </div>
-            <button class="btn-remove" onclick="removePersonFromRole(${p.role_id})" title="Remove">×</button>
+            <button class="btn-remove" onclick="${modalState.isVpLead ? 'removeVpLead' : 'removePersonFromRole'}(${p.role_id})" title="Remove">×</button>
         </div>
     `).join('');
 }
@@ -926,6 +930,85 @@ function refreshRoleCell(siteId, role) {
     const cell = row.querySelector(`td[data-role="${role}"]`);
     if (!cell) return;
     const people = (modalState.roles || []).filter(r => r.role === role);
+    cell.innerHTML = people.length
+        ? people.map(p =>
+            `<span class="badge" style="background:${badgeColor(p.last_name+p.first_name)}"
+                   title="${escHtml(p.last_name+', '+p.first_name+(p.email?' · '+p.email:''))}">
+                ${initials(p.first_name, p.last_name)}
+            </span>`).join('')
+        : '<span class="empty-cell">—</span>';
+}
+
+// ── VP Lead modal (reuses people modal UI, different API actions) ──────────
+async function openVpLeadModal(siteId, vpAreaId, cell) {
+    if (!vpAreaId) { alert('Assign a VP Area to this site first.'); return; }
+    modalState = { siteId, role: '_vp_lead', vpAreaId, cell, isVpLead: true };
+
+    const row      = cell.closest('tr');
+    const urlCell  = row.querySelector('td.col-url');
+    const nameCell = row.querySelector('td.col-site_name');
+    document.getElementById('modal-title').textContent    = 'VP Lead';
+    document.getElementById('modal-subtitle').textContent =
+        (nameCell?.dataset.value || urlCell?.dataset.value || '');
+
+    const data = await api({ action: 'get_vp_leads', vp_area_id: vpAreaId });
+    modalState.roles = (data.leads || []).map(l => ({ ...l, role: '_vp_lead' }));
+    renderModalPeople('_vp_lead');
+
+    const tsEl = document.getElementById('employee-ts');
+    if (empTs) { empTs.destroy(); empTs = null; }
+    tsEl.innerHTML = '';
+    empTs = new TomSelect(tsEl, {
+        valueField: 'id',
+        labelField: 'label',
+        searchField: 'label',
+        placeholder: 'Search by name or email…',
+        options: EMPLOYEES.map(e => ({
+            id:    e.id,
+            label: `${e.last_name}, ${e.first_name}${e.email ? ' · ' + e.email : ''}`,
+        })),
+        create: false,
+        dropdownParent: 'body',
+        onItemAdd(val) {
+            addVpLead(parseInt(val));
+            empTs.clear(true);
+        },
+    });
+    document.getElementById('modal-overlay').classList.add('open');
+}
+
+async function addVpLead(employeeId) {
+    const { vpAreaId } = modalState;
+    const res = await api({ action: 'add_vp_lead', vp_area_id: vpAreaId, employee_id: employeeId });
+    if (res.success && !res.duplicate) {
+        const emp = EMPLOYEES.find(e => e.id == employeeId);
+        if (emp) {
+            modalState.roles.push({
+                role_id: res.lead_id, role: '_vp_lead',
+                employee_id: emp.id,
+                first_name: emp.first_name, last_name: emp.last_name, email: emp.email,
+            });
+        }
+        renderModalPeople('_vp_lead');
+        refreshVpLeadCell(modalState.siteId);
+    }
+}
+
+async function removeVpLead(leadId) {
+    const res = await api({ action: 'remove_vp_lead', lead_id: leadId });
+    if (res.success) {
+        modalState.roles = modalState.roles.filter(r => r.role_id != leadId);
+        renderModalPeople('_vp_lead');
+        refreshVpLeadCell(modalState.siteId);
+    }
+}
+
+function refreshVpLeadCell(siteId) {
+    const row  = document.querySelector(`tr[data-id="${siteId}"]`);
+    if (!row) return;
+    const cell = row.querySelector('td[data-vp-area-id]');
+    if (!cell) return;
+    const people = modalState.roles || [];
     cell.innerHTML = people.length
         ? people.map(p =>
             `<span class="badge" style="background:${badgeColor(p.last_name+p.first_name)}"

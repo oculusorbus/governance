@@ -153,6 +153,40 @@ switch ($action) {
         echo json_encode($stmt->fetchAll());
         break;
 
+    // ── Get VP leads for a VP area ────────────────────────────────────────
+    case 'get_vp_leads':
+        $vpAreaId = (int)($input['vp_area_id'] ?? 0);
+        $stmt = $pdo->prepare("
+            SELECT val.id AS lead_id,
+                   e.id AS employee_id, e.first_name, e.last_name, e.email
+            FROM vp_area_leads val
+            JOIN employees e ON val.employee_id = e.id
+            WHERE val.vp_area_id = ?
+            ORDER BY e.last_name, e.first_name
+        ");
+        $stmt->execute([$vpAreaId]);
+        echo json_encode(['success' => true, 'leads' => $stmt->fetchAll()]);
+        break;
+
+    // ── Add a VP lead ─────────────────────────────────────────────────────
+    case 'add_vp_lead':
+        $vpAreaId   = (int)($input['vp_area_id']   ?? 0);
+        $employeeId = (int)($input['employee_id'] ?? 0);
+        $check = $pdo->prepare("SELECT id FROM vp_area_leads WHERE vp_area_id=? AND employee_id=?");
+        $check->execute([$vpAreaId, $employeeId]);
+        if ($check->fetch()) { echo json_encode(['success' => true, 'duplicate' => true]); break; }
+        $pdo->prepare("INSERT INTO vp_area_leads (vp_area_id, employee_id) VALUES (?,?)")
+            ->execute([$vpAreaId, $employeeId]);
+        echo json_encode(['success' => true, 'lead_id' => (int)$pdo->lastInsertId()]);
+        break;
+
+    // ── Remove a VP lead ──────────────────────────────────────────────────
+    case 'remove_vp_lead':
+        $leadId = (int)($input['lead_id'] ?? 0);
+        $pdo->prepare("DELETE FROM vp_area_leads WHERE id = ?")->execute([$leadId]);
+        echo json_encode(['success' => true]);
+        break;
+
     // ── Add a new site row ────────────────────────────────────────────────
     case 'add_site':
         $url = trim($input['url'] ?? '');
