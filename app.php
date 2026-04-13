@@ -664,7 +664,7 @@ foreach ($toggleCols as $key):
             <div class="new-person-fields">
                 <input type="text" id="np-first" placeholder="First name">
                 <input type="text" id="np-last"  placeholder="Last name">
-                <input type="text" id="np-email" placeholder="Email (optional)" class="full-width">
+                <input type="text" id="np-email" placeholder="Email" class="full-width">
             </div>
             <button id="btn-create-emp" onclick="createAndAddEmployee()">Add to Role</button>
         </div>
@@ -1359,8 +1359,8 @@ async function createAndAddEmployee() {
     const last  = document.getElementById('np-last').value.trim();
     const email = document.getElementById('np-email').value.trim();
 
-    if (!first || !last) {
-        alert('First and last name are required.');
+    if (!first || !last || !email) {
+        alert('First name, last name, and email are all required.');
         return;
     }
 
@@ -1372,19 +1372,31 @@ async function createAndAddEmployee() {
         const res = await api({ action: 'add_employee', first_name: first, last_name: last, email });
         if (res.error) { alert('Error: ' + res.error); return; }
 
-        const newEmp = { id: res.id, first_name: first, last_name: last, email: email || null };
-        EMPLOYEES.push(newEmp);
-
-        // Add to Tom Select options
-        if (empTs) {
-            empTs.addOption({ id: newEmp.id, label: `${last}, ${first}${email ? ' · ' + email : ''}` });
+        let emp;
+        if (res.existing) {
+            // Use the record that already exists in the system
+            emp = EMPLOYEES.find(e => e.id === res.id);
+            if (!emp) {
+                // Employee was created after page load — add to local array
+                emp = { id: res.id, first_name: res.first_name, last_name: res.last_name, email: res.email };
+                EMPLOYEES.push(emp);
+                if (empTs) empTs.addOption({ id: emp.id,
+                    label: `${emp.last_name}, ${emp.first_name} · ${emp.email}` });
+            }
+            const matchDesc = res.match === 'email' ? 'email address' : 'name';
+            btn.textContent = `Assigning existing…`;
+        } else {
+            emp = { id: res.id, first_name: first, last_name: last, email };
+            EMPLOYEES.push(emp);
+            if (empTs) empTs.addOption({ id: emp.id,
+                label: `${last}, ${first} · ${email}` });
         }
 
-        // Assign to role
+        // Assign to role (duplicate guard is handled server-side)
         if (modalState.isVpLead) {
-            await addVpLead(newEmp.id);
+            await addVpLead(emp.id);
         } else {
-            await addPersonToRole(newEmp.id);
+            await addPersonToRole(emp.id);
         }
 
         // Reset form

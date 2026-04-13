@@ -210,9 +210,33 @@ try { switch ($action) {
         $first = trim($input['first_name'] ?? '');
         $last  = trim($input['last_name']  ?? '');
         $email = strtolower(trim($input['email'] ?? ''));
-        if (!$first || !$last) { echo json_encode(['error' => 'First and last name required']); break; }
+        if (!$first || !$last || !$email) {
+            echo json_encode(['error' => 'First name, last name, and email are required']); break;
+        }
+        // Return existing record if email already in use
+        $stmt = $pdo->prepare("SELECT id, first_name, last_name, email FROM employees WHERE email = ?");
+        $stmt->execute([$email]);
+        $existing = $stmt->fetch();
+        if ($existing) {
+            echo json_encode(['success' => true, 'id' => (int)$existing['id'],
+                'existing' => true, 'match' => 'email',
+                'first_name' => $existing['first_name'], 'last_name' => $existing['last_name'],
+                'email' => $existing['email']]);
+            break;
+        }
+        // Return existing record if exact name already in use
+        $stmt = $pdo->prepare("SELECT id, first_name, last_name, email FROM employees WHERE first_name = ? AND last_name = ?");
+        $stmt->execute([$first, $last]);
+        $existing = $stmt->fetch();
+        if ($existing) {
+            echo json_encode(['success' => true, 'id' => (int)$existing['id'],
+                'existing' => true, 'match' => 'name',
+                'first_name' => $existing['first_name'], 'last_name' => $existing['last_name'],
+                'email' => $existing['email']]);
+            break;
+        }
         $pdo->prepare("INSERT INTO employees (first_name, last_name, email) VALUES (?,?,?)")
-            ->execute([$first, $last, $email ?: null]);
+            ->execute([$first, $last, $email]);
         echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
         break;
 
