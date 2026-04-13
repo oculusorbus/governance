@@ -437,25 +437,23 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* ── DubBot columns ──────────────────────────────────────────── */
         .grp-dubbot { background:#0D7A5F; }
-        .col-db-pages        { min-width:60px;  max-width:60px;  text-align:right; }
-        .col-db-score        { min-width:68px;  max-width:68px;  text-align:center; }
-        .col-db-accessibility,
-        .col-db-bestpractices,
-        .col-db-webgovernance { min-width:82px;  max-width:82px;  text-align:center; }
+        .col-db-score         { min-width:68px;  max-width:68px;  text-align:center; }
+        .col-db-accessibility { min-width:100px; max-width:100px; text-align:center; }
+        .col-db-bestpractices { min-width:88px;  max-width:88px;  text-align:center; }
+        .col-db-webgovernance { min-width:80px;  max-width:80px;  text-align:center; }
         .col-db-badlinks,
         .col-db-seo,
-        .col-db-spelling,
-        .col-db-profanity    { min-width:72px;  max-width:72px;  text-align:center; }
+        .col-db-spelling      { min-width:72px;  max-width:72px;  text-align:center; }
+        .col-db-pages         { min-width:60px;  max-width:60px;  text-align:right; }
         .db-score { font-size:12px; font-weight:600; }
         .db-good  { color:#15803d; }
         .db-ok    { color:#b45309; }
         .db-poor  { color:#dc2626; }
-        .db-spin  { display:inline-block; width:10px; height:10px; border:2px solid #EBE6E2;
-                    border-top-color:#265BF7; border-radius:50%; animation:spin .7s linear infinite; }
         @keyframes spin { to { transform:rotate(360deg); } }
-        #grp-dubbot { display:flex; align-items:center; gap:8px; }
-        .db-hdr-spin { display:inline-block; width:9px; height:9px; border:2px solid rgba(255,255,255,.3);
-                       border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+        .db-hdr-spin { display:inline-block; width:9px; height:9px;
+                       border:2px solid rgba(255,255,255,.3); border-top-color:#fff;
+                       border-radius:50%; animation:spin .7s linear infinite;
+                       vertical-align:middle; margin:0 3px; }
         .db-hdr-status { font-size:10px; font-weight:400; letter-spacing:0; opacity:.85; }
         .db-hdr-error  { font-size:10px; font-weight:400; letter-spacing:0; color:#fca5a5; }
 
@@ -493,8 +491,8 @@ $toggleCols = [
     'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
     'support_platform','support_intake_url','datastudio_url',
     'server','platform','audience','category','second_category',
-    'db-pages','db-score','db-accessibility','db-badlinks','db-seo',
-    'db-spelling','db-bestpractices','db-webgovernance','db-profanity',
+    'db-score','db-accessibility','db-badlinks','db-seo',
+    'db-spelling','db-bestpractices','db-webgovernance','db-pages',
 ];
 $colLabels = [
     'description'=>'Description','vp_area'=>'VP Area','vp_lead'=>'VP Lead',
@@ -504,11 +502,10 @@ $colLabels = [
     'support_intake_url'=>'Intake URL','datastudio_url'=>'Datastudio',
     'server'=>'Server','platform'=>'Platform','audience'=>'Audience',
     'category'=>'Category','second_category'=>'2nd Category',
-    'db-pages'=>'DB: Pages','db-score'=>'DB: Score',
-    'db-accessibility'=>'DB: Accessibility','db-badlinks'=>'DB: Bad Links',
-    'db-seo'=>'DB: SEO','db-spelling'=>'DB: Spelling',
+    'db-score'=>'DB: Score','db-accessibility'=>'DB: Accessibility',
+    'db-badlinks'=>'DB: Bad Links','db-seo'=>'DB: SEO','db-spelling'=>'DB: Spelling',
     'db-bestpractices'=>'DB: Best Practices','db-webgovernance'=>'DB: Web Gov.',
-    'db-profanity'=>'DB: Profanity',
+    'db-pages'=>'DB: Pages',
 ];
 $defaultHidden = ['description'];
 foreach ($toggleCols as $key):
@@ -535,7 +532,7 @@ foreach ($toggleCols as $key):
         <th colspan="2" class="grp-support">Support</th>
         <th colspan="3" class="grp-technical">Technical</th>
         <th colspan="3" class="grp-classification">Classification</th>
-        <th colspan="9" class="grp-dubbot" id="grp-dubbot">DubBot</th>
+        <th colspan="8" class="grp-dubbot" id="grp-dubbot">DubBot</th>
     </tr>
     <!-- Column headers -->
     <tr class="headers">
@@ -557,15 +554,14 @@ foreach ($toggleCols as $key):
         <th class="col-audience">Audience <?= filterBtn('audience') ?></th>
         <th class="col-category">Category <?= filterBtn('category') ?></th>
         <th class="col-second_category">2nd Category <?= filterBtn('second_category') ?></th>
-        <th class="col-db-pages">Pages</th>
         <th class="col-db-score">Score</th>
-        <th class="col-db-accessibility">Access.</th>
+        <th class="col-db-accessibility">Accessibility</th>
         <th class="col-db-badlinks">Bad Links</th>
         <th class="col-db-seo">SEO</th>
         <th class="col-db-spelling">Spelling</th>
         <th class="col-db-bestpractices">Best Prac.</th>
         <th class="col-db-webgovernance">Web Gov.</th>
-        <th class="col-db-profanity">Profanity</th>
+        <th class="col-db-pages">Pages</th>
     </tr>
 </thead>
 <tbody>
@@ -746,15 +742,14 @@ foreach ($toggleCols as $key):
         </td>
 
         <!-- DubBot (populated asynchronously by JS) -->
-        <td class="col-db-pages"         data-db-col="pages"><span class="db-spin"></span></td>
-        <td class="col-db-score"         data-db-col="score"><span class="db-spin"></span></td>
-        <td class="col-db-accessibility" data-db-col="accessibility"><span class="db-spin"></span></td>
-        <td class="col-db-badlinks"      data-db-col="badLinks"><span class="db-spin"></span></td>
-        <td class="col-db-seo"           data-db-col="seo"><span class="db-spin"></span></td>
-        <td class="col-db-spelling"      data-db-col="spelling"><span class="db-spin"></span></td>
-        <td class="col-db-bestpractices" data-db-col="bestPractices"><span class="db-spin"></span></td>
-        <td class="col-db-webgovernance" data-db-col="webGovernance"><span class="db-spin"></span></td>
-        <td class="col-db-profanity"     data-db-col="profanity"><span class="db-spin"></span></td>
+        <td class="col-db-score"         data-db-col="score"></td>
+        <td class="col-db-accessibility" data-db-col="accessibility"></td>
+        <td class="col-db-badlinks"      data-db-col="badLinks"></td>
+        <td class="col-db-seo"           data-db-col="seo"></td>
+        <td class="col-db-spelling"      data-db-col="spelling"></td>
+        <td class="col-db-bestpractices" data-db-col="bestPractices"></td>
+        <td class="col-db-webgovernance" data-db-col="webGovernance"></td>
+        <td class="col-db-pages"         data-db-col="pages"></td>
 
     </tr>
 <?php endforeach; ?>
@@ -860,8 +855,8 @@ const ALL_TOGGLE_COLS = ['description','vp_area','vp_lead','college_dept',
     'college_communicator','site_owner','content_lead','tech_lead','admin_contact',
     'support_platform','support_intake_url','datastudio_url',
     'server','platform','audience','category','second_category',
-    'db-pages','db-score','db-accessibility','db-badlinks','db-seo',
-    'db-spelling','db-bestpractices','db-webgovernance','db-profanity'];
+    'db-score','db-accessibility','db-badlinks','db-seo',
+    'db-spelling','db-bestpractices','db-webgovernance','db-pages'];
 
 const DEFAULT_HIDDEN = ['description'];
 const storedCols     = localStorage.getItem('hiddenCols');
@@ -1850,37 +1845,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── DubBot integration ─────────────────────────────────────────────────────
-const DB_FRAGMENT = `
-  pagesCount online
-  latestStatsSnapshot {
-    score
-    accessibility  { score total }
-    bestPractices  { score total }
-    webGovernance  { score total }
-    seo            { score total }
-    badLinks       { score total }
-    spelling       { score total }
-    profanity      { score total }
-  }
-`;
 
-// Raw fetch — returns full {data, errors} so the caller can inspect errors
-// (e.g. complexity limits) without throwing. Use for batch stat queries.
-async function dbFetch(query) {
+// Error-checked GraphQL call — throws on proxy errors or GraphQL errors.
+// Used only for discovery queries.
+async function dbGql(query) {
     const res  = await fetch('dubbot.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
     });
     const json = await res.json();
-    if (json.error) throw new Error(json.error);  // proxy-level error (auth, config)
-    return json;                                   // {data, errors}
-}
-
-// Error-checked fetch — throws on any GraphQL error.
-// Use only for discovery queries where errors are fatal.
-async function dbGql(query) {
-    const json = await dbFetch(query);
+    if (json.error)  throw new Error(json.error);
     if (json.errors) throw new Error(json.errors.map(e => e.message).join('; '));
     return json.data;
 }
@@ -1939,11 +1914,9 @@ async function loadDubBotData() {
     dbSetStatus('loading', 'Connecting…');
 
     // ── Step 1: discover accounts and their sites ──────────────────────────
-    // Four strategies mirror the adaptive discovery in the DubBot source.
     let accounts = [];
-
     const discoveryStrategies = [
-        // A: siteMemberships — groups by account to build account→sites map
+        // A: siteMemberships — group by account
         async () => {
             const data = await dbGql(`{
                 currentUser {
@@ -1972,7 +1945,7 @@ async function loadDubBotData() {
                 .map(m => m.account).filter(Boolean)
                 .map(a => ({ ...a, sites: dbExtractList(a.sites) }));
         },
-        // C: membership (singular) → account.sites[]
+        // C: membership (singular)
         async () => {
             const data = await dbGql(`{
                 currentUser {
@@ -1982,7 +1955,7 @@ async function loadDubBotData() {
             const acc = data?.currentUser?.membership?.account;
             return acc ? [{ ...acc, sites: dbExtractList(acc.sites) }] : [];
         },
-        // D: currentMembership → account.sites[]
+        // D: currentMembership
         async () => {
             const data = await dbGql(`{
                 currentUser {
@@ -2035,62 +2008,27 @@ async function loadDubBotData() {
         return;
     }
 
-    dbSetStatus('loading', `Loading stats for ${matched.length} site${matched.length !== 1 ? 's' : ''}…`);
-
-    // ── Step 4: adaptive parallel batching ────────────────────────────────
-    // Uses dbFetch (raw) so we can inspect errors for complexity limits
-    // without throwing — same pattern as the DubBot source.
-    async function fetchBatch(batch, offset) {
-        const aliases = batch.map((r, j) =>
-            `s_${offset + j}: site(siteId:"${r.siteId}", accountId:"${r.accountId}") { ${DB_FRAGMENT} }`
-        ).join('\n');
-        return dbFetch(`{ ${aliases} }`);  // returns raw {data, errors}
-    }
-
-    function applyBatch(json, batch, offset) {
-        const data = json.data || {};
-        batch.forEach((r, j) => dbFillRow(r.row, data[`s_${offset + j}`] ?? null));
-    }
+    // ── Step 4: single request to PHP — server handles batching via curl_multi
+    // dubbot.php tries everything in one GraphQL request; if it hits a complexity
+    // limit it parses the error, calculates batch size, and fires all batches in
+    // parallel with curl_multi — one browser round trip regardless.
+    dbSetStatus('loading', `Fetching stats for ${matched.length} matched site${matched.length !== 1 ? 's' : ''}…`);
 
     try {
-        // Round 1: try all sites in one aliased request
-        const first      = await fetchBatch(matched, 0);
-        const complexErr = (first.errors || []).find(e => /complexity/i.test(e.message));
-
-        if (!complexErr) {
-            applyBatch(first, matched, 0);
-            dbSetStatus('done', `${matched.length} / ${allRows.length} matched`);
-            return;
-        }
-
-        // Complexity limit hit — parse the error to find the safe batch size,
-        // then fire all batches simultaneously (one more round trip, no matter
-        // how many batches are needed).
-        let batchSize = 5;
-        const cm = complexErr.message.match(/complexity of (\d+).*max complexity of (\d+)/i);
-        if (cm) {
-            const perItem = parseInt(cm[1]) / matched.length;
-            batchSize = Math.max(1, Math.floor(parseInt(cm[2]) / perItem));
-        }
-
-        const batches = [];
-        for (let i = 0; i < matched.length; i += batchSize)
-            batches.push({ rows: matched.slice(i, i + batchSize), offset: i });
-
-        dbSetStatus('loading', `${batches.length} parallel batch${batches.length !== 1 ? 'es' : ''}…`);
-
-        const results = await Promise.all(
-            batches.map(b => fetchBatch(b.rows, b.offset).catch(() => null))
-        );
-
-        let loaded = 0;
-        results.forEach((json, bi) => {
-            if (!json) return;
-            applyBatch(json, batches[bi].rows, batches[bi].offset);
-            loaded += batches[bi].rows.length;
+        const res = await fetch('dubbot.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'fetchAllStats',
+                sites:  matched.map(r => ({ siteId: r.siteId, accountId: r.accountId })),
+            }),
         });
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
 
-        dbSetStatus('done', `${loaded} / ${allRows.length} matched`);
+        const data = json.data || {};
+        matched.forEach((r, j) => dbFillRow(r.row, data[`s_${j}`] ?? null));
+        dbSetStatus('done', `${matched.length} / ${allRows.length} sites matched`);
 
     } catch (e) {
         console.error('DubBot stats load failed:', e);
