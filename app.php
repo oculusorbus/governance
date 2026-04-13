@@ -385,7 +385,7 @@ $colLabels = [
     'description'=>'Description','vp_area'=>'VP Area','vp_lead'=>'VP Lead',
     'college_dept'=>'College/Dept','college_communicator'=>'Communicator',
     'site_owner'=>'Site Owner','content_lead'=>'Content Lead','tech_lead'=>'Tech Lead',
-    'admin_contact'=>'Admin','support_platform'=>'Support Platform',
+    'admin_contact'=>'Admin Contact','support_platform'=>'Support Platform',
     'support_intake_url'=>'Intake URL','datastudio_url'=>'Datastudio',
     'server'=>'Server','platform'=>'Platform','audience'=>'Audience',
     'category'=>'Category','second_category'=>'2nd Category',
@@ -428,7 +428,7 @@ foreach ($toggleCols as $key):
         <th class="col-site_owner">Owner <?= filterBtn('site_owner') ?></th>
         <th class="col-content_lead">Content Lead <?= filterBtn('content_lead') ?></th>
         <th class="col-tech_lead">Tech Lead <?= filterBtn('tech_lead') ?></th>
-        <th class="col-admin_contact">Admin <?= filterBtn('admin_contact') ?></th>
+        <th class="col-admin_contact">Admin Contact <?= filterBtn('admin_contact') ?></th>
         <th class="col-support_platform">Support Platform <?= filterBtn('support_platform') ?></th>
         <th class="col-support_intake_url">Intake</th>
         <th class="col-datastudio_url">Studio</th>
@@ -1103,7 +1103,7 @@ const ROLE_LABELS = {
     site_owner:           'Site Owner',
     content_lead:         'Content Lead',
     tech_lead:            'Tech Lead',
-    admin_contact:        'Admin',
+    admin_contact:        'Admin Contact',
 };
 
 async function openPeopleModal(siteId, role, cell) {
