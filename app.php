@@ -516,12 +516,9 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                         opacity:0; transition:opacity .1s; }
         #cell-tooltip.visible { opacity:1; }
     </style>
-    <?php
-    // Hide default-hidden columns before first paint to prevent flash.
-    // JS will re-apply localStorage preferences on DOMContentLoaded.
-    $cssRules = implode(',', array_map(fn($k) => '.col-' . $k, $defaultHidden));
-    echo "<style id=\"col-hide-defaults\">$cssRules { display:none; }</style>\n";
-    ?>
+    <!-- Hide default-hidden columns before first paint to prevent flash.
+         JS re-applies localStorage prefs on DOMContentLoaded. -->
+    <style id="col-hide-defaults">.col-description { display:none; }</style>
 </head>
 <body>
 
