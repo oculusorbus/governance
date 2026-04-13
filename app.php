@@ -279,7 +279,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .col-site_owner,
         .col-content_lead,
         .col-tech_lead,
-        .col-admin_contact      { min-width:70px;  max-width:70px;  }
+        .col-admin_contact      { min-width:100px; max-width:100px; }
         .col-support_platform   { min-width:140px; max-width:140px; }
         .col-support_intake_url,
         .col-datastudio_url     { min-width:62px;  max-width:62px;  text-align:center; }
