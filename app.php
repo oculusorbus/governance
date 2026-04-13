@@ -169,11 +169,11 @@ $employeesJson = json_encode($employees,  JSON_HEX_TAG | JSON_HEX_APOS);
         #filter-clear:hover { background:#f8fafc; }
 
         /* ── Table wrapper ────────────────────────────────────────────── */
-        /* isolation:isolate creates a stacking context that scopes all
-           sticky-cell z-indices inside it, so the body-level Tom Select
-           dropdown (z-index 99999) always paints above the table. */
+        /* position:relative + z-index:1 creates a stacking context that
+           scopes all sticky-cell z-indices inside it, so the body-level
+           Tom Select dropdown (z-index 99999) paints above the table. */
         #table-wrap { overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 140px);
-                      isolation:isolate; }
+                      position:relative; z-index:1; }
 
         /* ── Table ────────────────────────────────────────────────────── */
         table { border-collapse:collapse; width:max-content; }

@@ -40,7 +40,7 @@ const FK_FIELDS = [
     'second_category_id'    => 'categories',
 ];
 
-switch ($action) {
+try { switch ($action) {
 
     // ── Update a plain text or FK field on a site ─────────────────────────
     case 'update_site':
@@ -197,4 +197,7 @@ switch ($action) {
 
     default:
         echo json_encode(['error' => 'Unknown action']);
+
+} } catch (Throwable $e) {
+    echo json_encode(['error' => $e->getMessage()]);
 }
