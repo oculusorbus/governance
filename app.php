@@ -327,7 +327,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                                                 transform:translateY(-50%); pointer-events:none; }
 
         /* Site column (combined URL + Site Name) */
-        td.col-site { position:relative; overflow:hidden; padding:4px 8px; }
+        td.col-site { overflow:hidden; padding:4px 8px; }
         .site-inner { display:flex; align-items:center; gap:4px; overflow:hidden; }
         .site-inner a, .site-inner > span { flex:1; min-width:0; overflow:hidden;
             text-overflow:ellipsis; white-space:nowrap; text-decoration:none; }
@@ -453,6 +453,11 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .db-spin  { display:inline-block; width:10px; height:10px; border:2px solid #EBE6E2;
                     border-top-color:#265BF7; border-radius:50%; animation:spin .7s linear infinite; }
         @keyframes spin { to { transform:rotate(360deg); } }
+        #grp-dubbot { display:flex; align-items:center; gap:8px; }
+        .db-hdr-spin { display:inline-block; width:9px; height:9px; border:2px solid rgba(255,255,255,.3);
+                       border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+        .db-hdr-status { font-size:10px; font-weight:400; letter-spacing:0; opacity:.85; }
+        .db-hdr-error  { font-size:10px; font-weight:400; letter-spacing:0; color:#fca5a5; }
 
         /* ── Cell tooltip ─────────────────────────────────────────────── */
         #cell-tooltip { position:fixed; pointer-events:none; z-index:99998;
@@ -530,7 +535,7 @@ foreach ($toggleCols as $key):
         <th colspan="2" class="grp-support">Support</th>
         <th colspan="3" class="grp-technical">Technical</th>
         <th colspan="3" class="grp-classification">Classification</th>
-        <th colspan="9" class="grp-dubbot">DubBot</th>
+        <th colspan="9" class="grp-dubbot" id="grp-dubbot">DubBot</th>
     </tr>
     <!-- Column headers -->
     <tr class="headers">
