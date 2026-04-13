@@ -269,6 +269,8 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .sticky-1 { position:sticky; left:0;     z-index:5; background:#fff; min-width:220px; max-width:220px; }
         .sticky-2 { position:sticky; left:220px; z-index:5; background:#fff; min-width:200px; max-width:200px; }
         thead .sticky-1, thead .sticky-2 { z-index:15; }
+        thead tr.groups .sticky-1 { background:#1e3a5f; }
+        thead tr.groups .sticky-2 { background:#1e3a5f; }
 
         /* Column widths */
         .col-description        { min-width:240px; max-width:240px; }
