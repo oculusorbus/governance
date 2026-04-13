@@ -124,6 +124,10 @@ function dbScoreBadge(float $score): string {
     return '<span class="db-score ' . $cls . '">' . number_format($score, 1) . '%</span>';
 }
 
+function dbScoreAttr($val): string {
+    return $val !== null ? ' data-db-saved="' . (float)$val . '"' : '';
+}
+
 function initials(string $first, string $last): string {
     return strtoupper(substr($first, 0, 1) . substr($last, 0, 1)) ?: '?';
 }
@@ -781,11 +785,7 @@ foreach ($toggleCols as $key):
         </td>
 
         <!-- DubBot (pre-populated from DB; refreshable via JS) -->
-        <?php
-        // Build a pseudo site-stats object mirroring what the JS API returns
-        $dbHas = $site['db_score'] !== null;
-        function dbScoreAttr($val) { return $val !== null ? ' data-db-saved="' . (float)$val . '"' : ''; }
-        ?>
+        <?php $dbHas = $site['db_score'] !== null; ?>
         <td class="col-db-score"         data-db-col="score"<?= dbScoreAttr($site['db_score']) ?>><?php
             if ($dbHas) echo dbScoreBadge((float)$site['db_score']); ?></td>
         <td class="col-db-accessibility" data-db-col="accessibility"<?= dbScoreAttr($site['db_accessibility']) ?>><?php
