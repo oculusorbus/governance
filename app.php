@@ -518,6 +518,16 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                         box-shadow:0 4px 14px rgba(3,32,68,.35);
                         opacity:0; transition:opacity .1s; }
         #cell-tooltip.visible { opacity:1; }
+
+        /* ── Global search ────────────────────────────────────────────── */
+        #global-search { width:220px; padding:5px 10px; border:none; border-radius:6px;
+                         font-size:12px; font-family:'Libre Franklin', system-ui, sans-serif;
+                         background:rgba(255,255,255,.15); color:#fff; outline:none;
+                         transition:background .15s, box-shadow .15s; }
+        #global-search::placeholder { color:rgba(255,255,255,.5); }
+        #global-search:focus { background:rgba(255,255,255,.25);
+                               box-shadow:0 0 0 2px rgba(200,220,255,.4); }
+        #global-search::-webkit-search-cancel-button { cursor:pointer; }
     </style>
     <!-- Hide default-hidden columns before first paint to prevent flash.
          JS re-applies localStorage prefs on DOMContentLoaded. -->
@@ -532,6 +542,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 <div id="topbar">
     <img src="utsa-logo.svg" alt="UT San Antonio" height="20" style="flex-shrink:0">
     <h1>Website Governance Directory</h1>
+    <input id="global-search" type="search" placeholder="Search all columns…" autocomplete="off">
     <span id="row-count"></span>
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
@@ -633,6 +644,25 @@ $defaultHidden = ['description'];
     $siteRoles= $rolesBySite[$sid] ?? [];
     $vpLeads  = $site['vp_area_id'] ? ($vpByArea[$site['vp_area_id']] ?? []) : [];
 
+    // Aggregated search string for global search box
+    $searchParts = [
+        $site['url'] ?? '', $site['site_name'] ?? '', $site['description'] ?? '',
+        $site['vp_area'] ?? '', $site['college_dept'] ?? '', $site['server'] ?? '',
+        $site['platform'] ?? '', $site['audience'] ?? '',
+        $site['category'] ?? '', $site['second_category'] ?? '',
+    ];
+    foreach ($vpLeads as $p) {
+        $searchParts[] = ($p['first_name'] ?? '') . ' ' . ($p['last_name'] ?? '');
+        if (!empty($p['email'])) $searchParts[] = $p['email'];
+    }
+    foreach ($peopleRoles as $role) {
+        foreach ($siteRoles[$role] ?? [] as $p) {
+            $searchParts[] = ($p['first_name'] ?? '') . ' ' . ($p['last_name'] ?? '');
+            if (!empty($p['email'])) $searchParts[] = $p['email'];
+        }
+    }
+    $searchStr = strtolower(implode(' ', array_filter($searchParts)));
+
     // Data attributes for JS filtering (lowercase for case-insensitive match)
     $da = implode(' ', [
         'data-url="'              . h(strtolower($site['url'] ?? ''))               . '"',
@@ -653,7 +683,7 @@ $defaultHidden = ['description'];
         'data-admin_contact="'        . h(implode('|', array_column($siteRoles['admin_contact']        ?? [], 'emp_id'))) . '"',
     ]);
 ?>
-    <tr data-id="<?= $sid ?>" <?= $da ?>>
+    <tr data-id="<?= $sid ?>" data-search="<?= h($searchStr) ?>" <?= $da ?>>
 
         <!-- Site (combined URL + Site Name, sticky) -->
         <?php
@@ -1047,6 +1077,10 @@ function applyColVisibility() {
 window.addEventListener('DOMContentLoaded', () => {
     applyColVisibility();
     updateRowCount();
+    document.getElementById('global-search').addEventListener('input', e => {
+        searchQuery = e.target.value.toLowerCase().trim();
+        applyFilters();
+    });
     // Close any open inline edit when the table scrolls (prevents stale dropdown position)
     document.getElementById('table-wrap').addEventListener('scroll', () => {
         // Don't cancel while a TomSelect dropdown is open (its onDropdownOpen
@@ -1078,6 +1112,7 @@ const FILTER_COLS = {
 };
 
 const activeFilters = {};   // col → { type, value } | { type, values:Set }
+let searchQuery      = '';  // global search box
 let filterPopCol     = null;
 let filterPopPending = null;
 
@@ -1085,6 +1120,7 @@ function applyFilters() {
     let visible = 0;
     document.querySelectorAll('#main-table tbody tr[data-id]').forEach(row => {
         let show = true;
+        if (searchQuery && !(row.dataset.search || '').includes(searchQuery)) show = false;
         for (const [col, f] of Object.entries(activeFilters)) {
             if (f.type === 'text') {
                 let match;
@@ -1112,7 +1148,7 @@ function applyFilters() {
     });
     updateRowCount(visible);
     document.getElementById('btn-clear-filters').style.display =
-        Object.keys(activeFilters).length ? '' : 'none';
+        (Object.keys(activeFilters).length || searchQuery) ? '' : 'none';
 }
 
 function clearAllFilters() {
@@ -1120,6 +1156,8 @@ function clearAllFilters() {
         delete activeFilters[col];
         markFilterBtn(col, false);
     }
+    searchQuery = '';
+    document.getElementById('global-search').value = '';
     applyFilters();
 }
 
