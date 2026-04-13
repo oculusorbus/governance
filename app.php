@@ -1846,16 +1846,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── DubBot integration ─────────────────────────────────────────────────────
 
-// Error-checked GraphQL call — throws on proxy errors or GraphQL errors.
-// Used only for discovery queries.
-async function dbGql(query) {
-    const res  = await fetch('dubbot.php', {
+// Raw GraphQL call — returns full {data, errors} without throwing.
+// Used for stats fetches so complexity errors can be inspected.
+async function dbFetch(query) {
+    const res = await fetch('dubbot.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
     });
     const json = await res.json();
-    if (json.error)  throw new Error(json.error);
+    if (json.error) throw new Error(json.error);
+    return json;  // {data, errors}
+}
+
+// Error-checked GraphQL call — throws on proxy errors or GraphQL errors.
+// Used only for discovery queries.
+async function dbGql(query) {
+    const json = await dbFetch(query);
     if (json.errors) throw new Error(json.errors.map(e => e.message).join('; '));
     return json.data;
 }
@@ -2026,7 +2033,7 @@ async function loadDubBotData() {
         const aliases = batch.map((r, j) =>
             `s_${offset + j}: site(siteId:"${r.siteId}", accountId:"${r.accountId}") { ${DB_FRAGMENT} }`
         ).join('\n');
-        return dbGql(`{ ${aliases} }`);
+        return dbFetch(`{ ${aliases} }`);  // returns {data, errors}
     }
 
     function applyBatch(data, batch, offset) {
@@ -2038,10 +2045,10 @@ async function loadDubBotData() {
     try {
         // First attempt: all sites in one request
         const first = await fetchBatch(matched, 0);
-        const complexErr = (first?.errors || []).find(e => /complexity/i.test(e.message));
+        const complexErr = (first.errors || []).find(e => /complexity/i.test(e.message));
 
         if (!complexErr) {
-            applyBatch(first, matched, 0);
+            applyBatch(first.data, matched, 0);
             dbSetStatus('done', `${matched.length} / ${allRows.length} sites matched`);
             return;
         }
@@ -2064,8 +2071,8 @@ async function loadDubBotData() {
         const results = await Promise.all(
             batches.map(b => fetchBatch(b.rows, b.offset).catch(() => null))
         );
-        results.forEach((data, bi) => {
-            if (data) applyBatch(data, batches[bi].rows, batches[bi].offset);
+        results.forEach((json, bi) => {
+            if (json?.data) applyBatch(json.data, batches[bi].rows, batches[bi].offset);
         });
         dbSetStatus('done', `${matched.length} / ${allRows.length} sites matched`);
 
