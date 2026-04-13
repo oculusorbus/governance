@@ -393,15 +393,15 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .badge:hover { transform:scale(1.15); }
         .empty-cell { color:#D5CFC8; }
 
-        /* Link icon */
-        .link-icon { display:inline-flex; align-items:center; justify-content:center;
-                     width:26px; height:26px; border-radius:6px; background:#C8DCFF;
-                     color:#032044; font-size:14px; cursor:pointer; text-decoration:none; }
-        .link-icon:hover { background:#afc8f5; }
-        .link-edit-btn { display:inline-flex; align-items:center; justify-content:center;
-                         width:26px; height:26px; border-radius:6px; background:#EBE6E2;
-                         color:#A09080; font-size:14px; cursor:pointer; border:none; }
-        .link-edit-btn:hover { background:#D5CFC8; color:#332F21; }
+        /* Link cells */
+        .link-cell { cursor:pointer; text-align:center; }
+        .link-cell:hover { background:rgba(200,220,255,.35) !important; }
+        .link-cell-icon { display:inline-flex; align-items:center; justify-content:center;
+                          width:26px; height:26px; border-radius:6px; background:#C8DCFF;
+                          font-size:14px; pointer-events:none; }
+        .link-cell-add  { display:inline-flex; align-items:center; justify-content:center;
+                          width:22px; height:22px; border-radius:6px; background:#EBE6E2;
+                          color:#A09080; font-size:16px; font-weight:300; pointer-events:none; }
 
         /* ── Tom Select overrides ─────────────────────────────────────── */
         .ts-wrapper { min-width:100%; }
@@ -713,29 +713,26 @@ foreach ($toggleCols as $key):
         </td>
 
         <!-- Support Intake URL -->
-        <td class="col-support_intake_url">
-            <?php if ($site['support_intake_url']): ?>
-                <?php if (str_contains($site['support_intake_url'], '/')): ?>
-                    <a class="link-icon" href="<?= h($site['support_intake_url']) ?>"
-                       target="_blank" title="<?= h($site['support_intake_url']) ?>">🔗</a>
-                <?php else: ?>
-                    <a class="link-icon" href="mailto:<?= h($site['support_intake_url']) ?>"
-                       title="<?= h($site['support_intake_url']) ?>">✉</a>
-                <?php endif; ?>
+        <?php $intakeUrl = $site['support_intake_url'] ?? ''; $intakeJ = json_encode($intakeUrl, JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_APOS); ?>
+        <td class="col-support_intake_url link-cell" data-link-type="intake" data-site-id="<?= $sid ?>"
+            data-url="<?= h($intakeUrl) ?>" onclick="editLink(<?= $sid ?>, 'intake', <?= $intakeJ ?>)"
+            title="<?= $intakeUrl ? h($intakeUrl) : 'Set intake URL' ?>">
+            <?php if ($intakeUrl): ?>
+                <span class="link-cell-icon">🔗</span>
             <?php else: ?>
-                <button class="link-edit-btn" title="Set intake URL"
-                        onclick="editLink(<?= $sid ?>, 'intake', '')">+</button>
+                <span class="link-cell-add">+</span>
             <?php endif; ?>
         </td>
 
         <!-- Datastudio URL -->
-        <td class="col-datastudio_url">
-            <?php if ($site['datastudio_url']): ?>
-                <a class="link-icon" href="<?= h($site['datastudio_url']) ?>"
-                   target="_blank" title="<?= h($site['datastudio_url']) ?>">📊</a>
+        <?php $dsUrl = $site['datastudio_url'] ?? ''; $dsJ = json_encode($dsUrl, JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_APOS); ?>
+        <td class="col-datastudio_url link-cell" data-link-type="datastudio" data-site-id="<?= $sid ?>"
+            data-url="<?= h($dsUrl) ?>" onclick="editLink(<?= $sid ?>, 'datastudio', <?= $dsJ ?>)"
+            title="<?= $dsUrl ? h($dsUrl) : 'Set Datastudio URL' ?>">
+            <?php if ($dsUrl): ?>
+                <span class="link-cell-icon">📊</span>
             <?php else: ?>
-                <button class="link-edit-btn" title="Set Datastudio URL"
-                        onclick="editLink(<?= $sid ?>, 'datastudio', '')">+</button>
+                <span class="link-cell-add">+</span>
             <?php endif; ?>
         </td>
 
@@ -839,12 +836,21 @@ foreach ($toggleCols as $key):
 <div id="link-overlay" onclick="if(event.target===this)closeLinkModal()"
      style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:12px;padding:24px;width:500px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-        <h2 id="link-modal-title" style="margin:0 0 12px;font-size:15px;font-weight:700"></h2>
-        <input id="link-input" type="text" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;margin-bottom:12px;outline:none"
-               placeholder="https://… or email address">
+        <h2 id="link-modal-title" style="margin:0 0 4px;font-size:15px;font-weight:700;color:#032044"></h2>
+        <p id="link-modal-site" style="margin:0 0 14px;font-size:12px;color:#A09080"></p>
+        <div id="link-current-wrap" style="display:none;margin-bottom:14px;padding:10px 12px;background:#F8F4F1;border-radius:8px;border:1px solid #EBE6E2">
+            <div style="font-size:11px;font-weight:600;color:#A09080;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Current URL</div>
+            <a id="link-current-url" href="#" target="_blank"
+               style="font-size:12px;color:#265BF7;word-break:break-all;text-decoration:none;">
+            </a>
+        </div>
+        <label style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px" id="link-input-label">New URL</label>
+        <input id="link-input" type="text" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;margin-bottom:12px;outline:none;box-sizing:border-box"
+               placeholder="https://…">
         <div style="display:flex;gap:8px">
-            <button onclick="saveLinkModal()" style="flex:1;padding:8px;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600">Save</button>
-            <button onclick="closeLinkModal()" style="flex:1;padding:8px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer;font-weight:600">Cancel</button>
+            <button onclick="saveLinkModal()" style="flex:1;padding:8px;background:#265BF7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600">Save</button>
+            <button id="link-clear-btn" onclick="clearLinkModal()" style="padding:8px 14px;background:#fff;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font-weight:600">Clear</button>
+            <button onclick="closeLinkModal()" style="flex:1;padding:8px;background:#F2EDE9;border:none;border-radius:8px;cursor:pointer;font-weight:600">Cancel</button>
         </div>
     </div>
 </div>
@@ -1347,12 +1353,32 @@ async function saveFkEdit(td, val, lookupKey, fkField) {
 let linkState = {};
 
 function editLink(siteId, linkType, currentUrl) {
-    linkState = { siteId, linkType };
-    document.getElementById('link-modal-title').textContent =
-        linkType === 'intake' ? 'Support Intake URL' : 'Datastudio URL';
-    document.getElementById('link-input').value = currentUrl || '';
-    const ov = document.getElementById('link-overlay');
-    ov.style.display = 'flex';
+    linkState = { siteId, linkType, currentUrl: currentUrl || '' };
+    const label = linkType === 'intake' ? 'Support Intake URL' : 'Datastudio URL';
+    document.getElementById('link-modal-title').textContent = label;
+
+    // Show site name in subtitle
+    const row  = document.querySelector(`tr[data-id="${siteId}"]`);
+    const site = row?.querySelector('td.col-site a, td.col-site span')?.textContent?.trim() || '';
+    document.getElementById('link-modal-site').textContent = site;
+
+    // Show current URL as clickable link
+    const curWrap = document.getElementById('link-current-wrap');
+    const curLink = document.getElementById('link-current-url');
+    if (currentUrl) {
+        curLink.href        = currentUrl.includes('/') ? currentUrl : 'mailto:' + currentUrl;
+        curLink.textContent = currentUrl;
+        curWrap.style.display = 'block';
+    } else {
+        curWrap.style.display = 'none';
+    }
+
+    // Label and clear button
+    document.getElementById('link-input-label').textContent = currentUrl ? 'Replace with new URL' : 'URL';
+    document.getElementById('link-clear-btn').style.display = currentUrl ? '' : 'none';
+    document.getElementById('link-input').value = '';
+
+    document.getElementById('link-overlay').style.display = 'flex';
     setTimeout(() => document.getElementById('link-input').focus(), 50);
 }
 
@@ -1361,12 +1387,37 @@ function closeLinkModal() {
     linkState = {};
 }
 
+async function clearLinkModal() {
+    const { siteId, linkType } = linkState;
+    const res = await api({ action: 'update_link', site_id: siteId, link_type: linkType, url: '' });
+    if (res.success) updateLinkCell(siteId, linkType, '');
+    closeLinkModal();
+}
+
 async function saveLinkModal() {
     const url = document.getElementById('link-input').value.trim();
-    const { siteId, linkType } = linkState;
-    const res = await api({ action: 'update_link', site_id: siteId, link_type: linkType, url });
-    if (res.success) location.reload(); // simplest refresh for link cells
+    const { siteId, linkType, currentUrl } = linkState;
+    const finalUrl = url || currentUrl;   // empty input = keep current
+    if (!finalUrl) { closeLinkModal(); return; }
+    const res = await api({ action: 'update_link', site_id: siteId, link_type: linkType, url: finalUrl });
+    if (res.success) updateLinkCell(siteId, linkType, finalUrl);
     closeLinkModal();
+}
+
+function updateLinkCell(siteId, linkType, url) {
+    const col = linkType === 'intake' ? 'col-support_intake_url' : 'col-datastudio_url';
+    const td  = document.querySelector(`tr[data-id="${siteId}"] td.${col}`);
+    if (!td) return;
+    td.dataset.url = url;
+    td.title       = url || (linkType === 'intake' ? 'Set intake URL' : 'Set Datastudio URL');
+    // Update onclick to pass new url
+    td.onclick = () => editLink(parseInt(siteId), linkType, url);
+    if (url) {
+        const icon = linkType === 'intake' ? '🔗' : '📊';
+        td.innerHTML = `<span class="link-cell-icon">${icon}</span>`;
+    } else {
+        td.innerHTML = `<span class="link-cell-add">+</span>`;
+    }
 }
 
 // ── People modal ───────────────────────────────────────────────────────────
