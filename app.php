@@ -262,7 +262,7 @@ $employeesJson = json_encode($employees,  JSON_HEX_TAG | JSON_HEX_APOS);
         .ts-control  { font-size:12px; border:2px solid #3b82f6 !important;
                        border-radius:4px !important; min-height:28px !important;
                        padding:2px 6px !important; box-shadow:none !important; }
-        .ts-dropdown { font-size:12px; z-index:99999 !important; }
+        .ts-dropdown { font-size:12px; z-index:99999 !important; background:#fff !important; }
 
         /* ── Modal ────────────────────────────────────────────────────── */
         #modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45);
