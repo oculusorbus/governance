@@ -154,11 +154,11 @@ try { switch ($action) {
         break;
 
     // ── Get VP leads for a VP area ────────────────────────────────────────
+    // vp_area_leads has no surrogate id; use employee_id as the identifier.
     case 'get_vp_leads':
         $vpAreaId = (int)($input['vp_area_id'] ?? 0);
         $stmt = $pdo->prepare("
-            SELECT val.id AS lead_id,
-                   e.id AS employee_id, e.first_name, e.last_name, e.email
+            SELECT e.id AS lead_id, e.first_name, e.last_name, e.email
             FROM vp_area_leads val
             JOIN employees e ON val.employee_id = e.id
             WHERE val.vp_area_id = ?
@@ -172,18 +172,21 @@ try { switch ($action) {
     case 'add_vp_lead':
         $vpAreaId   = (int)($input['vp_area_id']   ?? 0);
         $employeeId = (int)($input['employee_id'] ?? 0);
-        $check = $pdo->prepare("SELECT id FROM vp_area_leads WHERE vp_area_id=? AND employee_id=?");
+        $check = $pdo->prepare("SELECT 1 FROM vp_area_leads WHERE vp_area_id=? AND employee_id=?");
         $check->execute([$vpAreaId, $employeeId]);
         if ($check->fetch()) { echo json_encode(['success' => true, 'duplicate' => true]); break; }
         $pdo->prepare("INSERT INTO vp_area_leads (vp_area_id, employee_id) VALUES (?,?)")
             ->execute([$vpAreaId, $employeeId]);
-        echo json_encode(['success' => true, 'lead_id' => (int)$pdo->lastInsertId()]);
+        // Return employee_id as lead_id (used as remove key since table has no surrogate id)
+        echo json_encode(['success' => true, 'lead_id' => $employeeId]);
         break;
 
     // ── Remove a VP lead ──────────────────────────────────────────────────
     case 'remove_vp_lead':
-        $leadId = (int)($input['lead_id'] ?? 0);
-        $pdo->prepare("DELETE FROM vp_area_leads WHERE id = ?")->execute([$leadId]);
+        $employeeId = (int)($input['lead_id']     ?? 0);  // lead_id IS employee_id
+        $vpAreaId   = (int)($input['vp_area_id']  ?? 0);
+        $pdo->prepare("DELETE FROM vp_area_leads WHERE vp_area_id = ? AND employee_id = ?")
+            ->execute([$vpAreaId, $employeeId]);
         echo json_encode(['success' => true]);
         break;
 

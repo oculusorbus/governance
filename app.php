@@ -730,6 +730,15 @@ function openEdit(td) {
             items: currentId ? [String(currentId)] : [],
             create: false,
             dropdownParent: 'body',
+            onDropdownOpen(dropdown) {
+                const rect = this.control.getBoundingClientRect();
+                Object.assign(dropdown.style, {
+                    position: 'fixed',
+                    zIndex:   '99999',
+                    top:  rect.bottom + 'px',
+                    left: rect.left   + 'px',
+                });
+            },
             onChange(val) {
                 saveFkEdit(td, val, lookupKey, fkField);
             },
@@ -870,6 +879,15 @@ async function openPeopleModal(siteId, role, cell) {
         })),
         create: false,
         dropdownParent: 'body',
+        onDropdownOpen(dropdown) {
+            const rect = this.control.getBoundingClientRect();
+            Object.assign(dropdown.style, {
+                position: 'fixed',
+                zIndex:   '99999',
+                top:  rect.bottom + 'px',
+                left: rect.left   + 'px',
+            });
+        },
         onItemAdd(val) {
             addPersonToRole(parseInt(val));
             empTs.clear(true);
@@ -977,6 +995,15 @@ async function openVpLeadModal(siteId, vpAreaId, cell) {
         })),
         create: false,
         dropdownParent: 'body',
+        onDropdownOpen(dropdown) {
+            const rect = this.control.getBoundingClientRect();
+            Object.assign(dropdown.style, {
+                position: 'fixed',
+                zIndex:   '99999',
+                top:  rect.bottom + 'px',
+                left: rect.left   + 'px',
+            });
+        },
         onItemAdd(val) {
             addVpLead(parseInt(val));
             empTs.clear(true);
@@ -1015,7 +1042,7 @@ async function addVpLead(employeeId) {
 }
 
 async function removeVpLead(leadId) {
-    const res = await api({ action: 'remove_vp_lead', lead_id: leadId });
+    const res = await api({ action: 'remove_vp_lead', lead_id: leadId, vp_area_id: modalState.vpAreaId });
     if (res.success) {
         modalState.roles = modalState.roles.filter(r => r.role_id != leadId);
         renderModalPeople('_vp_lead');
