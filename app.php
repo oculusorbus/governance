@@ -713,9 +713,9 @@ foreach ($toggleCols as $key):
         </td>
 
         <!-- Support Intake URL -->
-        <?php $intakeUrl = $site['support_intake_url'] ?? ''; $intakeJ = json_encode($intakeUrl, JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_APOS); ?>
+        <?php $intakeUrl = $site['support_intake_url'] ?? ''; $intakeJ = json_encode($intakeUrl, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
         <td class="col-support_intake_url link-cell" data-link-type="intake" data-site-id="<?= $sid ?>"
-            data-url="<?= h($intakeUrl) ?>" onclick="editLink(<?= $sid ?>, 'intake', <?= $intakeJ ?>)"
+            data-url="<?= h($intakeUrl) ?>" onclick="editLink(<?= $sid ?>, 'intake', <?= h($intakeJ) ?>)"
             title="<?= $intakeUrl ? h($intakeUrl) : 'Set intake URL' ?>">
             <?php if ($intakeUrl): ?>
                 <span class="link-cell-icon">🔗</span>
@@ -725,9 +725,9 @@ foreach ($toggleCols as $key):
         </td>
 
         <!-- Datastudio URL -->
-        <?php $dsUrl = $site['datastudio_url'] ?? ''; $dsJ = json_encode($dsUrl, JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_APOS); ?>
+        <?php $dsUrl = $site['datastudio_url'] ?? ''; $dsJ = json_encode($dsUrl, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
         <td class="col-datastudio_url link-cell" data-link-type="datastudio" data-site-id="<?= $sid ?>"
-            data-url="<?= h($dsUrl) ?>" onclick="editLink(<?= $sid ?>, 'datastudio', <?= $dsJ ?>)"
+            data-url="<?= h($dsUrl) ?>" onclick="editLink(<?= $sid ?>, 'datastudio', <?= h($dsJ) ?>)"
             title="<?= $dsUrl ? h($dsUrl) : 'Set Datastudio URL' ?>">
             <?php if ($dsUrl): ?>
                 <span class="link-cell-icon">📊</span>
