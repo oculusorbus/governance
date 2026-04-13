@@ -258,7 +258,9 @@ $employeesJson = json_encode($employees,  JSON_HEX_TAG | JSON_HEX_APOS);
         .ts-control  { font-size:12px; border:2px solid #3b82f6 !important;
                        border-radius:4px !important; min-height:28px !important;
                        padding:2px 6px !important; box-shadow:none !important; }
-        .ts-dropdown { font-size:12px; z-index:9999; }
+        .ts-dropdown { font-size:12px; z-index:99999 !important; }
+        /* Force dropdowns appended to body above sticky table elements */
+        body > .ts-dropdown { position:fixed !important; z-index:99999 !important; }
 
         /* ── Modal ────────────────────────────────────────────────────── */
         #modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45);
@@ -623,6 +625,10 @@ function applyColVisibility() {
 window.addEventListener('DOMContentLoaded', () => {
     applyColVisibility();
     updateRowCount();
+    // Close any open inline edit when the table scrolls (prevents stale dropdown position)
+    document.getElementById('table-wrap').addEventListener('scroll', () => {
+        if (activeCell) cancelEdit();
+    });
 });
 
 // ── Filtering ──────────────────────────────────────────────────────────────
@@ -952,7 +958,7 @@ async function openVpLeadModal(siteId, vpAreaId, cell) {
         (nameCell?.dataset.value || urlCell?.dataset.value || '');
 
     const data = await api({ action: 'get_vp_leads', vp_area_id: vpAreaId });
-    modalState.roles = (data.leads || []).map(l => ({ ...l, role: '_vp_lead' }));
+    modalState.roles = (data.leads || []).map(l => ({ ...l, role_id: l.lead_id, role: '_vp_lead' }));
     renderModalPeople('_vp_lead');
 
     const tsEl = document.getElementById('employee-ts');
