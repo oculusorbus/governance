@@ -294,6 +294,11 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .filter-pop-actions .btn-clear:hover { background:#D5CFC8; }
         .filter-pop-actions .btn-apply { background:#265BF7; color:#fff; }
         .filter-pop-actions .btn-apply:hover { background:#1847BF; }
+        #filter-pop-copy-btn { width:100%; padding:5px; border-radius:6px; border:none;
+                               cursor:pointer; font-size:12px; font-weight:600;
+                               background:#F8F4F1; color:#332F21; transition:background .15s, color .15s; }
+        #filter-pop-copy-btn:hover { background:#EBE6E2; }
+        #filter-pop-copy-btn.copied { background:#15803d !important; color:#fff; }
         #btn-clear-filters { background:#D3430D; color:#fff; }
 
         /* ── Table wrapper ────────────────────────────────────────────── */
@@ -999,6 +1004,8 @@ $defaultHidden = ['description'];
         <button class="btn-clear" onclick="clearFilterFromPop()">Clear</button>
         <button class="btn-apply" onclick="applyFilterFromPop()">Apply</button>
     </div>
+    <div class="filter-pop-sep"></div>
+    <button id="filter-pop-copy-btn" onclick="copyColumnData(filterPopCol)">Copy column</button>
 </div>
 
 <script>
@@ -1182,6 +1189,12 @@ function openFilter(event, col) {
 
     buildFilterPopover(col, def);
 
+    const visCount = [...document.querySelectorAll('#main-table tbody tr[data-id]')]
+        .filter(r => r.style.display !== 'none').length;
+    const copyBtn = document.getElementById('filter-pop-copy-btn');
+    copyBtn.textContent = `Copy ${visCount} row${visCount !== 1 ? 's' : ''}`;
+    copyBtn.classList.remove('copied');
+
     const rect = event.currentTarget.getBoundingClientRect();
     pop.style.top  = (rect.bottom + 4) + 'px';
     pop.style.left = rect.left + 'px';
@@ -1320,6 +1333,49 @@ function clearFilterFromPop() {
 function closeFilter() {
     document.getElementById('filter-popover').classList.remove('open');
     filterPopCol = null; filterPopPending = null;
+}
+
+const PEOPLE_COLS = new Set(['vp_lead','college_communicator','site_owner','content_lead','tech_lead','admin_contact']);
+
+function copyColumnData(col) {
+    const rows = [...document.querySelectorAll('#main-table tbody tr[data-id]')]
+        .filter(r => r.style.display !== 'none');
+
+    const lines = rows.map(row => {
+        const td = row.querySelector(`td.col-${col}`);
+        if (!td) return '';
+
+        if (col === 'site') {
+            const a = td.querySelector('.site-inner a');
+            if (a) return a.textContent.trim();
+            const span = td.querySelector('.site-inner > span:not(.empty-cell)');
+            return span ? span.textContent.trim() : '';
+        }
+
+        if (PEOPLE_COLS.has(col)) {
+            const badges = [...td.querySelectorAll('.badge[data-tip]')];
+            if (!badges.length) return '';
+            // data-tip format: "Last, First · email" — take name before ·
+            return badges.map(b => b.dataset.tip.split('·')[0].trim()).join(', ');
+        }
+
+        // Editable cells store original-case value in data-value
+        if (td.dataset.value !== undefined) return td.dataset.value;
+
+        const text = td.textContent.trim();
+        return text === '—' ? '' : text;
+    });
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        const btn = document.getElementById('filter-pop-copy-btn');
+        btn.classList.add('copied');
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => {
+            const n = rows.length;
+            btn.textContent = `Copy ${n} row${n !== 1 ? 's' : ''}`;
+            btn.classList.remove('copied');
+        }, 1500);
+    });
 }
 
 function markFilterBtn(col, active) {
