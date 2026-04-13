@@ -1059,9 +1059,11 @@ const ALL_TOGGLE_COLS = ['url','site','description','vp_area','vp_lead','college
     'db-score','db-accessibility','db-badlinks','db-seo',
     'db-spelling','db-bestpractices','db-webgovernance','db-pages'];
 
-const DEFAULT_HIDDEN = ['site', 'description'];
-const storedCols     = localStorage.getItem('hiddenCols');
-const hiddenCols     = new Set(storedCols !== null ? JSON.parse(storedCols) : DEFAULT_HIDDEN);
+const DEFAULT_HIDDEN  = ['site', 'description'];
+const COLS_VERSION    = '2'; // bump whenever DEFAULT_HIDDEN changes
+const storedCols      = localStorage.getItem('colsVersion') === COLS_VERSION
+                          ? localStorage.getItem('hiddenCols') : null;
+const hiddenCols      = new Set(storedCols !== null ? JSON.parse(storedCols) : DEFAULT_HIDDEN);
 
 function toggleColPanel() {
     document.getElementById('col-panel').classList.toggle('open');
@@ -1071,6 +1073,7 @@ function toggleCol(key, visible) {
     if (visible) hiddenCols.delete(key);
     else         hiddenCols.add(key);
     localStorage.setItem('hiddenCols', JSON.stringify([...hiddenCols]));
+    localStorage.setItem('colsVersion', COLS_VERSION);
     applyColVisibility();
 }
 
@@ -1080,6 +1083,7 @@ function toggleGroup(groupKey, visible) {
         else         hiddenCols.add(cb.dataset.col);
     });
     localStorage.setItem('hiddenCols', JSON.stringify([...hiddenCols]));
+    localStorage.setItem('colsVersion', COLS_VERSION);
     applyColVisibility();
 }
 
