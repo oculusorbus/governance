@@ -192,7 +192,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         #topbar { display:flex; align-items:center; gap:12px; padding:10px 16px;
                   background:#032044; color:#fff; position:sticky; top:0; z-index:50; }
         #topbar h1 { font-family:'Arsenal', system-ui, sans-serif; font-size:16px;
-                     font-weight:700; margin:0; flex:1; letter-spacing:-.01em; }
+                     font-weight:700; margin:0; flex:1; letter-spacing:-.01em; position:relative; top:-1px; }
         #topbar button { font-size:12px; padding:5px 12px; border:none; border-radius:6px;
                          cursor:pointer; font-weight:600; transition:background .15s;
                          font-family:'Libre Franklin', system-ui, sans-serif; }
@@ -282,7 +282,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
              background:#fff; }
 
         tr:hover td { background:rgba(200,220,255,.2); }
-        tr:hover td.sticky-1, tr:hover td.sticky-2 { background:#DCE8FF; }
+        tr:hover td.sticky-1 { background:#DCE8FF; }
 
         /* Sticky columns
            z-index hierarchy:
@@ -290,18 +290,15 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
              15 — sticky body cells (pinned left; must cover scrolling body cells
                   AND non-sticky header cells as they slide over the frozen columns)
              10 — non-sticky header cells (pinned top; covers scrolling body rows) */
-        .sticky-1 { position:sticky; left:0;     z-index:15; background:#fff; min-width:220px; max-width:220px; }
-        .sticky-2 { position:sticky; left:220px; z-index:15; background:#fff; min-width:200px; max-width:200px; }
+        .sticky-1 { position:sticky; left:0; z-index:15; background:#fff; min-width:280px; max-width:280px; }
         /* Must beat specificity of "thead tr.headers th { z-index:10 }" ([0,1,3])
-           so both overrides use two classes + the element chain → [0,2,3] */
-        thead tr.headers th.sticky-1,
-        thead tr.headers th.sticky-2 { z-index:20; }
-        thead tr.groups  th.sticky-1,
-        thead tr.groups  th.sticky-2 { z-index:20; }
+           so the override uses two classes + the element chain → [0,2,3] */
+        thead tr.headers th.sticky-1 { z-index:20; }
+        thead tr.groups  th.sticky-1 { z-index:20; }
         thead tr.groups .sticky-1 { background:#0D3B6E; }
-        thead tr.groups .sticky-2 { background:#0D3B6E; }
 
         /* Column widths */
+        .col-site               { min-width:280px; max-width:280px; }
         .col-description        { min-width:240px; max-width:240px; }
         .col-vp_area            { min-width:100px; max-width:100px; }
         .col-vp_lead            { min-width:120px; max-width:120px; }
@@ -326,6 +323,20 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         td.editable:not(.editing):hover::after { content:'✎'; font-size:10px; color:#D5CFC8;
                                                 position:absolute; right:4px; top:50%;
                                                 transform:translateY(-50%); pointer-events:none; }
+
+        /* Site column (combined URL + Site Name) */
+        td.col-site { display:flex !important; align-items:center; gap:4px;
+                      overflow:visible; padding:4px 8px; }
+        td.col-site a, td.col-site > span { flex:1; min-width:0; overflow:hidden;
+            text-overflow:ellipsis; white-space:nowrap; text-decoration:none; }
+        td.col-site a { color:#265BF7; }
+        td.col-site > span.empty-cell { color:#D5CFC8; }
+        .site-edit-btn { flex-shrink:0; opacity:0; background:none; border:none;
+                         cursor:pointer; color:#A09080; font-size:11px;
+                         padding:2px 3px; border-radius:3px; line-height:1;
+                         transition:opacity .1s, color .1s; }
+        td.col-site:hover .site-edit-btn { opacity:1; }
+        .site-edit-btn:hover { color:#265BF7 !important; background:#EBE6E2; }
 
         /* Editing state */
         td.editing { padding:2px 4px; overflow:visible; }
@@ -416,11 +427,10 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         #btn-create-emp:disabled { background:#DBB485; cursor:not-allowed; }
 
         /* Zebra stripe */
-        tbody tr:nth-child(even) td                          { background:#F8F4F1; }
-        tbody tr:nth-child(even) td.sticky-1,
-        tbody tr:nth-child(even) td.sticky-2                 { background:#F2EDE9; }
-        tbody tr:hover td                                    { background:rgba(200,220,255,.25) !important; }
-        tbody tr:hover td.sticky-1, tbody tr:hover td.sticky-2 { background:#DCE8FF !important; }
+        tbody tr:nth-child(even) td           { background:#F8F4F1; }
+        tbody tr:nth-child(even) td.sticky-1  { background:#F2EDE9; }
+        tbody tr:hover td                     { background:rgba(200,220,255,.25) !important; }
+        tbody tr:hover td.sticky-1            { background:#DCE8FF !important; }
 
         /* ── Cell tooltip ─────────────────────────────────────────────── */
         #cell-tooltip { position:fixed; pointer-events:none; z-index:99998;
@@ -484,7 +494,7 @@ foreach ($toggleCols as $key):
 <thead>
     <!-- Group headers -->
     <tr class="groups">
-        <th colspan="2" class="grp-identity sticky-1">Website</th>
+        <th colspan="1" class="grp-identity sticky-1">Website</th>
         <th colspan="1" class="grp-identity col-description">&#8203;</th>
         <th colspan="3" class="grp-governance">Governance</th>
         <th colspan="5" class="grp-people">People</th>
@@ -494,8 +504,7 @@ foreach ($toggleCols as $key):
     </tr>
     <!-- Column headers -->
     <tr class="headers">
-        <th class="sticky-1 col-url">URL <?= filterBtn('url') ?></th>
-        <th class="sticky-2 col-site_name">Site Name <?= filterBtn('site_name') ?></th>
+        <th class="sticky-1 col-site">Site <?= filterBtn('site') ?></th>
         <th class="col-description">Description <?= filterBtn('description') ?></th>
         <th class="col-vp_area">VP Area <?= filterBtn('vp_area') ?></th>
         <th class="col-vp_lead">VP Lead <?= filterBtn('vp_lead') ?></th>
@@ -544,24 +553,25 @@ foreach ($toggleCols as $key):
 ?>
     <tr data-id="<?= $sid ?>" <?= $da ?>>
 
-        <!-- URL (sticky) -->
-        <td class="sticky-1 col-url editable"
-            data-site-id="<?= $sid ?>" data-field="url" data-type="text"
-            data-value="<?= h($site['url']) ?>"
-            title="<?= h($site['url']) ?>">
-            <?php if ($site['url']): ?>
-                <a href="https://<?= h($site['url']) ?>" target="_blank"
-                   style="color:#265BF7;text-decoration:none"
-                   onclick="event.stopPropagation()"><?= h($site['url']) ?></a>
+        <!-- Site (combined URL + Site Name, sticky) -->
+        <?php
+        $display   = $site['site_name'] ?: $site['url'];
+        $href      = $site['url'] ? 'https://' . h($site['url']) : '';
+        $siteNameJ = json_encode((string)($site['site_name'] ?? ''));
+        $urlJ      = json_encode((string)($site['url']       ?? ''));
+        ?>
+        <td class="sticky-1 col-site" data-site-id="<?= $sid ?>"
+            title="<?= h($display) ?>">
+            <?php if ($href): ?>
+                <a href="<?= $href ?>" target="_blank"
+                   onclick="event.stopPropagation()"><?= h($display) ?></a>
+            <?php elseif ($display): ?>
+                <span><?= h($display) ?></span>
+            <?php else: ?>
+                <span class="empty-cell">—</span>
             <?php endif; ?>
-        </td>
-
-        <!-- Site Name (sticky) -->
-        <td class="sticky-2 col-site_name editable"
-            data-site-id="<?= $sid ?>" data-field="site_name" data-type="text"
-            data-value="<?= h($site['site_name']) ?>"
-            title="<?= h($site['site_name']) ?>">
-            <?= h($site['site_name']) ?>
+            <button class="site-edit-btn"
+                    onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= $siteNameJ ?>,<?= $urlJ ?>)">✎</button>
         </td>
 
         <!-- Description -->
@@ -751,6 +761,27 @@ foreach ($toggleCols as $key):
     </div>
 </div>
 
+<!-- ── Site Edit Modal ──────────────────────────────────────────────────── -->
+<div id="site-edit-overlay" onclick="if(event.target===this)closeSiteEditModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(3,32,68,.5);z-index:200;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(3,32,68,.3)">
+        <h2 style="font-family:'Arsenal',system-ui,sans-serif;margin:0 0 16px;font-size:17px;font-weight:700;color:#032044">Edit Site</h2>
+        <label style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Site Name</label>
+        <input id="site-edit-name" type="text" placeholder="My Site Name"
+               style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
+        <label style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#A09080">(without https://)</span></label>
+        <input id="site-edit-url" type="text" placeholder="site.utsa.edu"
+               style="width:100%;font-size:13px;border:1px solid #D5CFC8;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
+        <p id="site-edit-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
+        <div style="display:flex;gap:8px">
+            <button id="site-edit-save" onclick="saveSiteEditModal()"
+                    style="flex:1;padding:8px;background:#D3430D;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Save</button>
+            <button onclick="closeSiteEditModal()"
+                    style="flex:1;padding:8px;background:#EBE6E2;color:#332F21;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <!-- ── Column filter popover ────────────────────────────────────────────── -->
 <div id="filter-popover">
     <div id="filter-pop-content"></div>
@@ -814,8 +845,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // type:'set'    → data attr must be in selected Set of lowercase labels
 // type:'people' → pipe-delimited emp IDs; row shown if any ID is in selected Set
 const FILTER_COLS = {
-    url:                  { type:'text' },
-    site_name:            { type:'text' },
+    site:                 { type:'text' },   // searches both data-url and data-site_name
     description:          { type:'text' },
     vp_area:              { type:'set',    lookup:'vp_areas' },
     vp_lead:              { type:'people' },
@@ -842,8 +872,19 @@ function applyFilters() {
     document.querySelectorAll('#main-table tbody tr[data-id]').forEach(row => {
         let show = true;
         for (const [col, f] of Object.entries(activeFilters)) {
+            if (f.type === 'text') {
+                let match;
+                if (col === 'site') {
+                    // Search across both URL and site name
+                    const uv = (row.dataset['url']       || '').toLowerCase();
+                    const nv = (row.dataset['site_name'] || '').toLowerCase();
+                    match = uv.includes(f.value) || nv.includes(f.value);
+                } else {
+                    match = (row.dataset[col] || '').toLowerCase().includes(f.value);
+                }
+                if (!match) { show = false; break; }
+            }
             const v = (row.dataset[col] || '').toLowerCase();
-            if (f.type === 'text' && !v.includes(f.value)) { show = false; break; }
             if (f.type === 'set'  && !f.values.has(v))     { show = false; break; }
             if (f.type === 'people') {
                 const ids = v.split('|').filter(Boolean);
@@ -1235,15 +1276,12 @@ const ROLE_LABELS = {
 async function openPeopleModal(siteId, role, cell) {
     modalState = { siteId, role, cell };
 
-    // Get site name from row
-    const row      = cell.closest('tr');
-    const nameCell = row.querySelector('td.col-site_name');
-    const siteName = nameCell ? nameCell.dataset.value || nameCell.textContent.trim() : '';
-    const urlCell  = row.querySelector('td.col-url');
-    const siteUrl  = urlCell ? urlCell.dataset.value || '' : '';
+    const row       = cell.closest('tr');
+    const siteCell  = row.querySelector('td.col-site');
+    const siteLabel = siteCell ? (siteCell.title || siteCell.textContent.trim()) : '';
 
     document.getElementById('modal-title').textContent    = ROLE_LABELS[role] || role;
-    document.getElementById('modal-subtitle').textContent = siteName || siteUrl;
+    document.getElementById('modal-subtitle').textContent = siteLabel;
 
     const data = await api({ action: 'get_roles', site_id: siteId });
     modalState.roles = data.roles || [];
@@ -1516,12 +1554,11 @@ async function openVpLeadModal(siteId, vpAreaId, cell) {
     if (!vpAreaId) { alert('Assign a VP Area to this site first.'); return; }
     modalState = { siteId, role: '_vp_lead', vpAreaId, cell, isVpLead: true };
 
-    const row      = cell.closest('tr');
-    const urlCell  = row.querySelector('td.col-url');
-    const nameCell = row.querySelector('td.col-site_name');
+    const row       = cell.closest('tr');
+    const siteCell  = row.querySelector('td.col-site');
+    const siteLabel = siteCell ? (siteCell.title || siteCell.textContent.trim()) : '';
     document.getElementById('modal-title').textContent    = 'VP Lead';
-    document.getElementById('modal-subtitle').textContent =
-        (nameCell?.dataset.value || urlCell?.dataset.value || '');
+    document.getElementById('modal-subtitle').textContent = siteLabel;
 
     // Open the modal immediately with an empty list so the UI is never blocked
     modalState.roles = [];
@@ -1611,6 +1648,90 @@ function refreshVpLeadCell(siteId) {
         : '<span class="empty-cell">—</span>';
 }
 
+// ── Site edit modal (URL + Site Name) ──────────────────────────────────────
+let siteEditId = null;
+
+function openSiteEditModal(siteId, siteName, url) {
+    siteEditId = siteId;
+    document.getElementById('site-edit-name').value  = siteName || '';
+    document.getElementById('site-edit-url').value   = url      || '';
+    document.getElementById('site-edit-error').style.display = 'none';
+    const overlay = document.getElementById('site-edit-overlay');
+    overlay.style.display = 'flex';
+    setTimeout(() => document.getElementById('site-edit-name').focus(), 50);
+}
+
+function closeSiteEditModal() {
+    document.getElementById('site-edit-overlay').style.display = 'none';
+    siteEditId = null;
+}
+
+async function saveSiteEditModal() {
+    const siteId = siteEditId;
+    const name   = document.getElementById('site-edit-name').value.trim();
+    const url    = document.getElementById('site-edit-url').value.trim();
+    const errEl  = document.getElementById('site-edit-error');
+    const btn    = document.getElementById('site-edit-save');
+
+    if (!url) {
+        errEl.textContent = 'URL is required.';
+        errEl.style.display = 'block';
+        document.getElementById('site-edit-url').focus();
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+        const [r1, r2] = await Promise.all([
+            api({ action:'update_site', site_id:siteId, field:'site_name', value:name }),
+            api({ action:'update_site', site_id:siteId, field:'url',       value:url  }),
+        ]);
+        if (r1.error || r2.error) {
+            errEl.textContent = r1.error || r2.error;
+            errEl.style.display = 'block';
+            return;
+        }
+
+        // Update the DOM cell
+        const row = document.querySelector(`tr[data-id="${siteId}"]`);
+        if (row) {
+            const td      = row.querySelector('td.col-site');
+            const display = name || url;
+            let a = td.querySelector('a');
+            if (!a) {
+                a = document.createElement('a');
+                a.target = '_blank';
+                a.addEventListener('click', e => e.stopPropagation());
+                td.prepend(a);
+                // Remove any plain <span> that was there
+                const s = td.querySelector(':scope > span:not(.empty-cell)');
+                if (s) s.remove();
+                const ec = td.querySelector('.empty-cell');
+                if (ec) ec.remove();
+            }
+            a.textContent = display;
+            a.href = 'https://' + url;
+            td.title = display;
+
+            // Refresh the button's onclick with fresh values
+            const editBtn = td.querySelector('.site-edit-btn');
+            if (editBtn) editBtn.onclick = e => {
+                e.stopPropagation();
+                openSiteEditModal(siteId, name, url);
+            };
+
+            // Keep row data attrs in sync for filtering
+            row.dataset.url       = url.toLowerCase();
+            row.dataset.site_name = name.toLowerCase();
+        }
+        closeSiteEditModal();
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+    }
+}
+
 // ── Add new site ───────────────────────────────────────────────────────────
 function addSite() {
     const overlay = document.getElementById('add-site-overlay');
@@ -1661,6 +1782,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-site-input').addEventListener('keydown', e => {
         if (e.key === 'Enter')  saveAddSiteModal();
         if (e.key === 'Escape') closeAddSiteModal();
+    });
+    ['site-edit-name','site-edit-url'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', e => {
+            if (e.key === 'Enter')  saveSiteEditModal();
+            if (e.key === 'Escape') closeSiteEditModal();
+        });
     });
 });
 
