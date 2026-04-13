@@ -577,7 +577,7 @@ foreach ($toggleCols as $key):
                 <?php endif; ?>
             </div>
             <button class="site-edit-btn"
-                    onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= $siteNameJ ?>,<?= $urlJ ?>)">✎</button>
+                    onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>)">✎</button>
         </td>
 
         <!-- Description -->
