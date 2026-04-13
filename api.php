@@ -190,6 +190,32 @@ try { switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
+    // ── Update an employee's name or email ───────────────────────────────
+    case 'update_employee':
+        $empId = (int)($input['employee_id'] ?? 0);
+        $field = $input['field'] ?? '';
+        $value = trim($input['value'] ?? '');
+        $allowed = ['first_name', 'last_name', 'email'];
+        if (!in_array($field, $allowed, true) || !$empId) {
+            echo json_encode(['error' => 'Invalid field or ID']); break;
+        }
+        if ($field === 'email') $value = strtolower($value);
+        $pdo->prepare("UPDATE employees SET `$field` = ? WHERE id = ?")
+            ->execute([$value ?: null, $empId]);
+        echo json_encode(['success' => true]);
+        break;
+
+    // ── Add a new employee ────────────────────────────────────────────────
+    case 'add_employee':
+        $first = trim($input['first_name'] ?? '');
+        $last  = trim($input['last_name']  ?? '');
+        $email = strtolower(trim($input['email'] ?? ''));
+        if (!$first || !$last) { echo json_encode(['error' => 'First and last name required']); break; }
+        $pdo->prepare("INSERT INTO employees (first_name, last_name, email) VALUES (?,?,?)")
+            ->execute([$first, $last, $email ?: null]);
+        echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
+        break;
+
     // ── Add a new site row ────────────────────────────────────────────────
     case 'add_site':
         $url = trim($input['url'] ?? '');

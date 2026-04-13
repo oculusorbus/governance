@@ -353,6 +353,35 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                        font-weight:600; color:#475569; }
         #modal-close:hover { background:#e2e8f0; }
 
+        /* Editable employee name/email spans */
+        .emp-editable { cursor:pointer; padding:1px 3px; border-radius:3px;
+                        transition:background .1s; display:inline; }
+        .emp-editable:hover { background:#eff6ff; }
+        .emp-editable.emp-email { color:#94a3b8; font-size:11px; }
+        .emp-editable.emp-no-email { color:#cbd5e1; font-size:10px; }
+        .emp-editable.emp-no-email::after { content:'+ email'; }
+        .emp-field-input { font-size:13px; border:1px solid #3b82f6; border-radius:3px;
+                           padding:1px 5px; outline:none; min-width:80px; max-width:160px; }
+        .emp-field-input[data-field="email"] { font-size:11px; color:#94a3b8; max-width:200px; }
+
+        /* New person form */
+        .modal-new-toggle { margin-top:10px; text-align:center; }
+        #btn-new-person-toggle { background:none; border:none; color:#3b82f6; font-size:12px;
+                                 cursor:pointer; padding:0; font-weight:600; }
+        #btn-new-person-toggle:hover { text-decoration:underline; }
+        #new-person-form { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+                           padding:12px; margin-top:8px; }
+        .new-person-fields { display:grid; grid-template-columns:1fr 1fr; gap:6px;
+                             margin-bottom:10px; }
+        .new-person-fields input { padding:5px 8px; border:1px solid #cbd5e1; border-radius:6px;
+                                   font-size:12px; outline:none; }
+        .new-person-fields input:focus { border-color:#3b82f6; }
+        .new-person-fields input.full-width { grid-column:1/-1; }
+        #btn-create-emp { width:100%; padding:7px; background:#3b82f6; color:#fff; border:none;
+                          border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; }
+        #btn-create-emp:hover:not(:disabled) { background:#2563eb; }
+        #btn-create-emp:disabled { background:#93c5fd; cursor:not-allowed; }
+
         /* Zebra stripe */
         tbody tr:nth-child(even) td { background:#fafbfc; }
         tbody tr:nth-child(even) td.sticky { background:#f5f7fa; }
@@ -627,6 +656,17 @@ foreach ($toggleCols as $key):
         <div class="modal-add">
             <label>Add Person</label>
             <select id="employee-ts" placeholder="Search by name or email…"></select>
+        </div>
+        <div class="modal-new-toggle">
+            <button id="btn-new-person-toggle" onclick="toggleNewPersonForm()">+ Not in system?</button>
+        </div>
+        <div id="new-person-form" style="display:none">
+            <div class="new-person-fields">
+                <input type="text" id="np-first" placeholder="First name">
+                <input type="text" id="np-last"  placeholder="Last name">
+                <input type="text" id="np-email" placeholder="Email (optional)" class="full-width">
+            </div>
+            <button id="btn-create-emp" onclick="createAndAddEmployee()">Add to Role</button>
         </div>
         <button id="modal-close" onclick="closePeopleModal()">Close</button>
     </div>
@@ -1163,18 +1203,27 @@ function renderModalPeople(role) {
         list.innerHTML = '<p style="color:#94a3b8;font-size:12px;margin:0 0 8px">No one assigned yet.</p>';
         return;
     }
-    list.innerHTML = people.map(p => `
+    const removeFunc = modalState.isVpLead ? 'removeVpLead' : 'removePersonFromRole';
+    list.innerHTML = people.map(p => {
+        const eid = p.employee_id;
+        const emailClass = p.email ? 'emp-editable emp-email' : 'emp-editable emp-no-email';
+        return `
         <div class="modal-person">
             <span class="badge" style="background:${badgeColor(p.last_name + p.first_name)};flex-shrink:0">
                 ${initials(p.first_name, p.last_name)}
             </span>
             <div class="modal-person-info">
-                <div class="name">${escHtml(p.last_name)}, ${escHtml(p.first_name)}</div>
-                <div class="email">${escHtml(p.email || '')}</div>
+                <div class="name">
+                    <span class="emp-editable" data-field="last_name" data-emp-id="${eid}" onclick="editEmpField(this)">${escHtml(p.last_name)}</span>,
+                    <span class="emp-editable" data-field="first_name" data-emp-id="${eid}" onclick="editEmpField(this)">${escHtml(p.first_name)}</span>
+                </div>
+                <div class="email">
+                    <span class="${emailClass}" data-field="email" data-emp-id="${eid}" onclick="editEmpField(this)">${escHtml(p.email || '')}</span>
+                </div>
             </div>
-            <button class="btn-remove" onclick="${modalState.isVpLead ? 'removeVpLead' : 'removePersonFromRole'}(${p.role_id})" title="Remove">×</button>
-        </div>
-    `).join('');
+            <button class="btn-remove" onclick="${removeFunc}(${p.role_id})" title="Remove">×</button>
+        </div>`;
+    }).join('');
 }
 
 async function addPersonToRole(employeeId) {
@@ -1206,7 +1255,147 @@ async function removePersonFromRole(roleId) {
 function closePeopleModal() {
     if (empTs) { empTs.destroy(); empTs = null; }
     document.getElementById('modal-overlay').classList.remove('open');
+    // Reset new-person form
+    document.getElementById('new-person-form').style.display = 'none';
+    document.getElementById('btn-new-person-toggle').textContent = '+ Not in system?';
+    document.getElementById('np-first').value = '';
+    document.getElementById('np-last').value  = '';
+    document.getElementById('np-email').value = '';
     modalState = {};
+}
+
+// ── Inline employee name / email editing ───────────────────────────────────
+function editEmpField(span) {
+    const field   = span.dataset.field;
+    const empId   = span.dataset.empId;
+    const origVal = span.classList.contains('emp-no-email') ? '' : span.textContent.trim();
+
+    const input = document.createElement('input');
+    input.type  = 'text';
+    input.value = origVal;
+    input.className = 'emp-field-input';
+    input.dataset.field   = field;
+    input.dataset.empId   = empId;
+    input.dataset.origVal = origVal;
+    if (field === 'email') input.setAttribute('data-field', 'email');
+
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let saved = false;
+    const done = () => { if (!saved) { saved = true; saveEmpField(input); } };
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter')  { e.preventDefault(); done(); }
+        if (e.key === 'Escape') { saved = true; restoreEmpSpan(input); }
+    });
+    input.addEventListener('blur', done);
+}
+
+function restoreEmpSpan(input) {
+    if (!input.parentNode) return;
+    const span = buildEmpSpan(input.dataset.field, input.dataset.empId, input.dataset.origVal);
+    input.replaceWith(span);
+}
+
+function buildEmpSpan(field, empId, val) {
+    const span = document.createElement('span');
+    const isEmail = field === 'email';
+    if (isEmail) {
+        span.className = val ? 'emp-editable emp-email' : 'emp-editable emp-no-email';
+    } else {
+        span.className = 'emp-editable';
+    }
+    span.dataset.field = field;
+    span.dataset.empId = empId;
+    span.textContent   = val;
+    span.onclick       = function() { editEmpField(this); };
+    return span;
+}
+
+async function saveEmpField(input) {
+    if (!input.parentNode) return;
+    const field   = input.dataset.field;
+    const empId   = input.dataset.empId;
+    const origVal = input.dataset.origVal;
+    const newVal  = input.value.trim();
+
+    // Restore span optimistically
+    const span = buildEmpSpan(field, empId, newVal);
+    input.replaceWith(span);
+
+    if (newVal === origVal) return;
+
+    const res = await api({ action: 'update_employee', employee_id: parseInt(empId), field, value: newVal });
+    if (res.success) {
+        // Update in-memory EMPLOYEES
+        const emp = EMPLOYEES.find(e => e.id == empId);
+        if (emp) emp[field] = newVal || null;
+        // Update modalState.roles so badge re-renders correctly
+        (modalState.roles || []).forEach(r => { if (r.employee_id == empId) r[field] = newVal; });
+        // Re-render to update the badge initials/color if name changed
+        if (field !== 'email') renderModalPeople(modalState.role || '_vp_lead');
+    } else {
+        span.textContent = origVal;
+        if (field === 'email') {
+            span.className = origVal ? 'emp-editable emp-email' : 'emp-editable emp-no-email';
+        }
+        console.error('update_employee error:', res.error);
+    }
+}
+
+// ── New person form ────────────────────────────────────────────────────────
+function toggleNewPersonForm() {
+    const form = document.getElementById('new-person-form');
+    const btn  = document.getElementById('btn-new-person-toggle');
+    const open = form.style.display === 'none' || form.style.display === '';
+    form.style.display = open ? 'block' : 'none';
+    btn.textContent    = open ? '− Cancel' : '+ Not in system?';
+    if (open) document.getElementById('np-first').focus();
+}
+
+async function createAndAddEmployee() {
+    const first = document.getElementById('np-first').value.trim();
+    const last  = document.getElementById('np-last').value.trim();
+    const email = document.getElementById('np-email').value.trim();
+
+    if (!first || !last) {
+        alert('First and last name are required.');
+        return;
+    }
+
+    const btn = document.getElementById('btn-create-emp');
+    btn.disabled = true;
+    btn.textContent = 'Adding…';
+
+    try {
+        const res = await api({ action: 'add_employee', first_name: first, last_name: last, email });
+        if (res.error) { alert('Error: ' + res.error); return; }
+
+        const newEmp = { id: res.id, first_name: first, last_name: last, email: email || null };
+        EMPLOYEES.push(newEmp);
+
+        // Add to Tom Select options
+        if (empTs) {
+            empTs.addOption({ id: newEmp.id, label: `${last}, ${first}${email ? ' · ' + email : ''}` });
+        }
+
+        // Assign to role
+        if (modalState.isVpLead) {
+            await addVpLead(newEmp.id);
+        } else {
+            await addPersonToRole(newEmp.id);
+        }
+
+        // Reset form
+        document.getElementById('np-first').value = '';
+        document.getElementById('np-last').value  = '';
+        document.getElementById('np-email').value = '';
+        toggleNewPersonForm();
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Add to Role';
+    }
 }
 
 function refreshRoleCell(siteId, role) {
@@ -1274,7 +1463,7 @@ async function openVpLeadModal(siteId, vpAreaId, cell) {
     try {
         const data = await api({ action: 'get_vp_leads', vp_area_id: vpAreaId });
         if (data.error) throw new Error(data.error);
-        modalState.roles = (data.leads || []).map(l => ({ ...l, role_id: l.lead_id, role: '_vp_lead' }));
+        modalState.roles = (data.leads || []).map(l => ({ ...l, role_id: l.lead_id, role: '_vp_lead', employee_id: l.lead_id }));
         renderModalPeople('_vp_lead');
     } catch(e) {
         console.error('VP leads load failed:', e);
