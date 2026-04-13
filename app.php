@@ -410,7 +410,8 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                          cursor:pointer; color:#A09080; font-size:11px;
                          padding:2px 3px; border-radius:3px; line-height:1;
                          transition:opacity .1s, color .1s; }
-        td.col-site:hover .site-edit-btn { opacity:1; }
+        td.col-site:hover .site-edit-btn,
+        td.col-url:hover  .site-edit-btn { opacity:1; }
         .site-edit-btn:hover { color:#265BF7 !important; background:#EBE6E2; }
 
         /* Editing state */
@@ -730,6 +731,8 @@ $defaultHidden = ['site', 'description'];
                     <span class="empty-cell">—</span>
                 <?php endif; ?>
             </div>
+            <button class="site-edit-btn"
+                    onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>)">✎</button>
         </td>
 
         <!-- Site (name + edit button) -->
@@ -2270,6 +2273,30 @@ async function saveSiteEditModal() {
             // Refresh the button's onclick with fresh values
             const editBtn = td.querySelector('.site-edit-btn');
             if (editBtn) editBtn.onclick = e => {
+                e.stopPropagation();
+                openSiteEditModal(siteId, name, url);
+            };
+
+            // Update URL td
+            const urlTd    = row.querySelector('td.col-url');
+            const urlInner = urlTd.querySelector('.site-inner');
+            let urlA = urlInner.querySelector('a');
+            if (url) {
+                if (!urlA) {
+                    urlA = document.createElement('a');
+                    urlA.target = '_blank';
+                    urlA.addEventListener('click', e => e.stopPropagation());
+                    urlInner.innerHTML = '';
+                    urlInner.appendChild(urlA);
+                }
+                urlA.textContent = url;
+                urlA.href = 'https://' + url;
+            } else {
+                urlInner.innerHTML = '<span class="empty-cell">—</span>';
+            }
+            urlTd.title = url;
+            const urlEditBtn = urlTd.querySelector('.site-edit-btn');
+            if (urlEditBtn) urlEditBtn.onclick = e => {
                 e.stopPropagation();
                 openSiteEditModal(siteId, name, url);
             };
