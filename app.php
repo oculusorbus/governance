@@ -720,6 +720,24 @@ foreach ($toggleCols as $key):
     </div>
 </div>
 
+<!-- ── Add Site Modal ───────────────────────────────────────────────────── -->
+<div id="add-site-overlay" onclick="if(event.target===this)closeAddSiteModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(3,32,68,.5);z-index:200;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(3,32,68,.3)">
+        <h2 style="font-family:'Arsenal',system-ui,sans-serif;margin:0 0 4px;font-size:17px;font-weight:700;color:#032044">Add New Site</h2>
+        <p style="margin:0 0 16px;font-size:12px;color:#A09080">Enter the domain without https:// (e.g. newsite.utsa.edu)</p>
+        <input id="add-site-input" type="text" placeholder="newsite.utsa.edu"
+               style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
+        <p id="add-site-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
+        <div style="display:flex;gap:8px">
+            <button onclick="saveAddSiteModal()"
+                    style="flex:1;padding:8px;background:#D3430D;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Add Site</button>
+            <button onclick="closeAddSiteModal()"
+                    style="flex:1;padding:8px;background:#EBE6E2;color:#332F21;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <!-- ── Column filter popover ────────────────────────────────────────────── -->
 <div id="filter-popover">
     <div id="filter-pop-content"></div>
@@ -1560,13 +1578,57 @@ function refreshVpLeadCell(siteId) {
 }
 
 // ── Add new site ───────────────────────────────────────────────────────────
-async function addSite() {
-    const url = prompt('Enter the URL for the new site (e.g. newsite.utsa.edu):');
-    if (!url || !url.trim()) return;
-    const res = await api({ action: 'add_site', url: url.trim() });
-    if (res.success) location.reload();
-    else alert('Error: ' + (res.error || 'Unknown error'));
+function addSite() {
+    const overlay = document.getElementById('add-site-overlay');
+    const input   = document.getElementById('add-site-input');
+    const err     = document.getElementById('add-site-error');
+    input.value   = '';
+    err.style.display = 'none';
+    overlay.style.display = 'flex';
+    setTimeout(() => input.focus(), 50);
 }
+
+function closeAddSiteModal() {
+    document.getElementById('add-site-overlay').style.display = 'none';
+}
+
+async function saveAddSiteModal() {
+    const input = document.getElementById('add-site-input');
+    const err   = document.getElementById('add-site-error');
+    const url   = input.value.trim();
+
+    if (!url) {
+        err.textContent = 'Please enter a URL.';
+        err.style.display = 'block';
+        input.focus();
+        return;
+    }
+
+    const btn = document.querySelector('#add-site-overlay button');
+    btn.disabled = true;
+    btn.textContent = 'Adding…';
+
+    try {
+        const res = await api({ action: 'add_site', url });
+        if (res.success) {
+            location.reload();
+        } else {
+            err.textContent = res.error || 'An error occurred.';
+            err.style.display = 'block';
+        }
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Add Site';
+    }
+}
+
+// Allow Enter key to submit the add-site modal
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('add-site-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter')  saveAddSiteModal();
+        if (e.key === 'Escape') closeAddSiteModal();
+    });
+});
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 async function api(payload) {
