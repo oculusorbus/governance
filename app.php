@@ -156,7 +156,7 @@ function renderBadges(array $people): string {
         $ini   = initials((string)$p['first_name'], (string)$p['last_name']);
         $color = badgeColor($p['last_name'] . $p['first_name']);
         $tip   = h(trim($p['last_name'] . ', ' . $p['first_name']) . ($p['email'] ? ' · ' . $p['email'] : ''));
-        $out  .= "<span class=\"badge\" style=\"background:$color\" title=\"$tip\">$ini</span>";
+        $out  .= "<span class=\"badge\" style=\"background:$color\" data-tip=\"$tip\">$ini</span>";
     }
     return $out;
 }
@@ -2430,10 +2430,15 @@ function badgeColor(name) {
     const tbody = document.querySelector('#main-table tbody');
     if (!tbody) return;
 
+    function tipTarget(el) {
+        // Prefer innermost data-tip (badges), fall back to td[title]
+        return el.closest('[data-tip]') || el.closest('td[title]');
+    }
+
     tbody.addEventListener('mouseover', e => {
-        const td = e.target.closest('td[title]');
-        if (!td) { hide(); return; }
-        const text = td.getAttribute('title');
+        const target = tipTarget(e.target);
+        if (!target) { hide(); return; }
+        const text = target.dataset.tip || target.getAttribute('title');
         if (!text) { hide(); return; }
         show(text, e.clientX, e.clientY);
     });
@@ -2444,10 +2449,9 @@ function badgeColor(name) {
     });
 
     tbody.addEventListener('mouseout', e => {
-        // Only hide when we leave a td[title] entirely (not into a child)
-        const td = e.target.closest('td[title]');
-        if (!td) return;
-        if (!td.contains(e.relatedTarget)) hide();
+        const target = tipTarget(e.target);
+        if (!target) return;
+        if (!target.contains(e.relatedTarget)) hide();
     });
 
     // Hide if user clicks (going into edit mode)
