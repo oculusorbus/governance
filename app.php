@@ -718,7 +718,7 @@ foreach ($toggleCols as $key):
             data-url="<?= h($intakeUrl) ?>" onclick="editLink(<?= $sid ?>, 'intake', <?= h($intakeJ) ?>)"
             title="<?= $intakeUrl ? h($intakeUrl) : 'Set intake URL' ?>">
             <?php if ($intakeUrl): ?>
-                <span class="link-cell-icon">🔗</span>
+                <span class="link-cell-icon"><?= str_contains($intakeUrl, '/') ? '🔗' : '✉' ?></span>
             <?php else: ?>
                 <span class="link-cell-add">+</span>
             <?php endif; ?>
@@ -1413,7 +1413,7 @@ function updateLinkCell(siteId, linkType, url) {
     // Update onclick to pass new url
     td.onclick = () => editLink(parseInt(siteId), linkType, url);
     if (url) {
-        const icon = linkType === 'intake' ? '🔗' : '📊';
+        const icon = linkType === 'datastudio' ? '📊' : (url.includes('/') ? '🔗' : '✉');
         td.innerHTML = `<span class="link-cell-icon">${icon}</span>`;
     } else {
         td.innerHTML = `<span class="link-cell-add">+</span>`;
