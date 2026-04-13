@@ -261,6 +261,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         thead tr.groups th { font-family:'Arsenal', system-ui, sans-serif;
                               font-size:11px; font-weight:700; text-transform:uppercase;
                               letter-spacing:.06em; color:#fff; padding:5px 8px;
+                              line-height:18px;
                               border-right:2px solid rgba(255,255,255,.25);
                               position:sticky; top:0; z-index:10; }
         .grp-identity       { background:#0D3B6E; } /* Midnight lighter */
