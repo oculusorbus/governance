@@ -1085,14 +1085,24 @@ function getPopoverOptions(col, def) {
 function buildFilterPopover(col, def) {
     const content = document.getElementById('filter-pop-content');
     if (def.type === 'text') {
+        const placeholder = col === 'site' ? 'Filter by site name or URL…' : 'Filter…';
+        const hint        = col === 'site' ? '<div style="font-size:10px;color:#A09080;margin-bottom:2px">Searches both site name and URL</div>' : '';
         content.innerHTML =
-            `<input type="text" id="filter-pop-text" placeholder="Filter…"
+            `${hint}<input type="text" id="filter-pop-text" placeholder="${placeholder}"
                     value="${escHtml(filterPopPending.value)}">`;
         const inp = document.getElementById('filter-pop-text');
         inp.focus(); inp.select();
+        inp.addEventListener('input', () => {
+            const val = inp.value.trim().toLowerCase();
+            filterPopPending.value = val;
+            if (val) activeFilters[col] = { type: 'text', value: val };
+            else     delete activeFilters[col];
+            markFilterBtn(col, !!activeFilters[col]);
+            applyFilters();
+        });
         inp.addEventListener('keydown', e => {
-            if (e.key === 'Enter')  applyFilterFromPop();
-            if (e.key === 'Escape') closeFilter();
+            if (e.key === 'Enter')  closeFilter();
+            if (e.key === 'Escape') { inp.value = ''; inp.dispatchEvent(new Event('input')); closeFilter(); }
         });
     } else {
         const opts = getPopoverOptions(col, def);
