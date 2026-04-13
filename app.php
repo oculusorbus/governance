@@ -420,9 +420,21 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         tbody tr:nth-child(even) td.sticky-2                 { background:#F2EDE9; }
         tbody tr:hover td                                    { background:rgba(200,220,255,.25) !important; }
         tbody tr:hover td.sticky-1, tbody tr:hover td.sticky-2 { background:#DCE8FF !important; }
+
+        /* ── Cell tooltip ─────────────────────────────────────────────── */
+        #cell-tooltip { position:fixed; pointer-events:none; z-index:99998;
+                        background:#032044; color:#fff; font-size:12px; line-height:1.4;
+                        padding:5px 9px; border-radius:6px; max-width:420px;
+                        white-space:pre-wrap; word-break:break-all;
+                        box-shadow:0 4px 14px rgba(3,32,68,.35);
+                        opacity:0; transition:opacity .1s; }
+        #cell-tooltip.visible { opacity:1; }
     </style>
 </head>
 <body>
+
+<!-- ── Cell tooltip ─────────────────────────────────────────────────────── -->
+<div id="cell-tooltip"></div>
 
 <!-- ── Top bar ──────────────────────────────────────────────────────────── -->
 <div id="topbar">
@@ -1678,6 +1690,69 @@ function badgeColor(name) {
     for (const c of String(name||'')) h = (h * 31 + c.charCodeAt(0)) & 0x7fffffff;
     return palette[h % palette.length];
 }
+
+// ── Cell tooltip ───────────────────────────────────────────────────────────
+(function () {
+    const tip   = document.getElementById('cell-tooltip');
+    const PAD   = 12;   // px gap from cursor
+    let   shown = false;
+
+    function show(text, x, y) {
+        tip.textContent = text;
+        tip.classList.add('visible');
+        shown = true;
+        position(x, y);
+    }
+
+    function hide() {
+        tip.classList.remove('visible');
+        shown = false;
+    }
+
+    function position(cx, cy) {
+        // Try below-right first; flip if it would clip the viewport
+        tip.style.left = '0';
+        tip.style.top  = '0';
+        const tw = tip.offsetWidth;
+        const th = tip.offsetHeight;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        let x = cx + PAD;
+        let y = cy + PAD;
+        if (x + tw > vw - 4) x = cx - tw - PAD;
+        if (y + th > vh - 4) y = cy - th - PAD;
+        tip.style.left = x + 'px';
+        tip.style.top  = y + 'px';
+    }
+
+    // Event delegation on the whole table body
+    const tbody = document.querySelector('#main-table tbody');
+    if (!tbody) return;
+
+    tbody.addEventListener('mouseover', e => {
+        const td = e.target.closest('td[title]');
+        if (!td) { hide(); return; }
+        const text = td.getAttribute('title');
+        if (!text) { hide(); return; }
+        show(text, e.clientX, e.clientY);
+    });
+
+    tbody.addEventListener('mousemove', e => {
+        if (!shown) return;
+        position(e.clientX, e.clientY);
+    });
+
+    tbody.addEventListener('mouseout', e => {
+        // Only hide when we leave a td[title] entirely (not into a child)
+        const td = e.target.closest('td[title]');
+        if (!td) return;
+        if (!td.contains(e.relatedTarget)) hide();
+    });
+
+    // Hide if user clicks (going into edit mode)
+    tbody.addEventListener('click', hide);
+})();
 </script>
 </body>
 </html>
