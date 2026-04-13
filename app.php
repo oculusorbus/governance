@@ -1393,7 +1393,11 @@ function editLink(siteId, linkType, currentUrl, platform) {
     }
 
     // Label and clear button
-    document.getElementById('link-input-label').textContent = currentUrl ? 'Replace with new URL' : 'URL';
+    const urlLabel = linkType === 'intake'
+        ? (currentUrl ? 'Replace with new URL or email address' : 'URL or email address')
+        : (currentUrl ? 'Replace with new URL' : 'URL');
+    document.getElementById('link-input-label').textContent = urlLabel;
+    document.getElementById('link-input').placeholder = linkType === 'intake' ? 'https://… or email address' : 'https://…';
     document.getElementById('link-clear-btn').style.display = currentUrl ? '' : 'none';
     document.getElementById('link-input').value = '';
 
