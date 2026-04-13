@@ -316,6 +316,21 @@ try { switch ($action) {
         echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
         break;
 
+    // ── Delete a site and all directly linked data ────────────────────────
+    case 'delete_site':
+        $siteId = (int)($input['site_id'] ?? 0);
+        if (!$siteId) { echo json_encode(['error' => 'Invalid site ID']); break; }
+        // Verify it exists
+        $check = $pdo->prepare("SELECT id FROM sites WHERE id = ?");
+        $check->execute([$siteId]);
+        if (!$check->fetch()) { echo json_encode(['error' => 'Site not found']); break; }
+        // Delete child records first to avoid FK constraint errors
+        $pdo->prepare("DELETE FROM site_roles   WHERE site_id = ?")->execute([$siteId]);
+        $pdo->prepare("DELETE FROM dubbot_stats WHERE site_id = ?")->execute([$siteId]);
+        $pdo->prepare("DELETE FROM sites        WHERE id      = ?")->execute([$siteId]);
+        echo json_encode(['success' => true]);
+        break;
+
     default:
         echo json_encode(['error' => 'Unknown action']);
 

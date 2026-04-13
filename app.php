@@ -909,18 +909,52 @@ $defaultHidden = ['description'];
      style="display:none;position:fixed;inset:0;background:rgba(3,32,68,.5);z-index:200;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(3,32,68,.3)">
         <h2 style="font-family:'Arsenal',system-ui,sans-serif;margin:0 0 16px;font-size:17px;font-weight:700;color:#032044">Edit Site</h2>
-        <label style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Site Name</label>
-        <input id="site-edit-name" type="text" placeholder="My Site Name"
-               style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
-        <label style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#A09080">(without https://)</span></label>
-        <input id="site-edit-url" type="text" placeholder="site.utsa.edu"
-               style="width:100%;font-size:13px;border:1px solid #D5CFC8;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
-        <p id="site-edit-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
-        <div style="display:flex;gap:8px">
-            <button id="site-edit-save" onclick="saveSiteEditModal()"
-                    style="flex:1;padding:8px;background:#D3430D;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Save</button>
-            <button onclick="closeSiteEditModal()"
-                    style="flex:1;padding:8px;background:#EBE6E2;color:#332F21;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+
+        <!-- Edit fields -->
+        <div id="site-edit-fields">
+            <label style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Site Name</label>
+            <input id="site-edit-name" type="text" placeholder="My Site Name"
+                   style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
+            <label style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#A09080">(without https://)</span></label>
+            <input id="site-edit-url" type="text" placeholder="site.utsa.edu"
+                   style="width:100%;font-size:13px;border:1px solid #D5CFC8;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
+            <p id="site-edit-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
+            <div style="display:flex;gap:8px">
+                <button id="site-edit-save" onclick="saveSiteEditModal()"
+                        style="flex:1;padding:8px;background:#D3430D;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Save</button>
+                <button onclick="closeSiteEditModal()"
+                        style="flex:1;padding:8px;background:#EBE6E2;color:#332F21;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+            </div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid #EBE6E2;text-align:right">
+                <button onclick="showDeleteConfirm()"
+                        style="background:none;border:none;color:#dc2626;font-size:12px;cursor:pointer;padding:0;font-weight:600;text-decoration:underline">
+                    Delete this site…
+                </button>
+            </div>
+        </div>
+
+        <!-- Delete confirmation (hidden by default) -->
+        <div id="site-delete-confirm" style="display:none">
+            <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:8px;padding:14px;margin-bottom:16px">
+                <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#991b1b">⚠ This cannot be undone.</p>
+                <p style="margin:0;font-size:12px;color:#7f1d1d;line-height:1.5">
+                    Deleting this site will permanently remove all associated roles, DubBot stats,
+                    and any other data linked to it. The site cannot be recovered.
+                </p>
+            </div>
+            <p style="margin:0 0 14px;font-size:13px;color:#332F21">
+                Are you sure you want to delete <strong id="site-delete-label"></strong>?
+            </p>
+            <div style="display:flex;gap:8px">
+                <button onclick="confirmDeleteSite()"
+                        style="flex:1;padding:8px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700">
+                    Yes, delete permanently
+                </button>
+                <button onclick="hideDeleteConfirm()"
+                        style="flex:1;padding:8px;background:#EBE6E2;color:#332F21;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">
+                    Cancel
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -1938,7 +1972,43 @@ function openSiteEditModal(siteId, siteName, url) {
 
 function closeSiteEditModal() {
     document.getElementById('site-edit-overlay').style.display = 'none';
+    hideDeleteConfirm();
     siteEditId = null;
+}
+
+function showDeleteConfirm() {
+    const name = document.getElementById('site-edit-name').value.trim()
+               || document.getElementById('site-edit-url').value.trim()
+               || 'this site';
+    document.getElementById('site-delete-label').textContent = name;
+    document.getElementById('site-edit-fields').style.display  = 'none';
+    document.getElementById('site-delete-confirm').style.display = 'block';
+}
+
+function hideDeleteConfirm() {
+    document.getElementById('site-edit-fields').style.display    = 'block';
+    document.getElementById('site-delete-confirm').style.display = 'none';
+}
+
+async function confirmDeleteSite() {
+    const siteId = siteEditId;
+    const btn = document.querySelector('#site-delete-confirm button');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+    const res = await api({ action: 'delete_site', site_id: siteId });
+    if (res.error) {
+        btn.disabled = false;
+        btn.textContent = 'Yes, delete permanently';
+        document.getElementById('site-edit-error').textContent = res.error;
+        document.getElementById('site-edit-error').style.display = 'block';
+        hideDeleteConfirm();
+        return;
+    }
+    // Remove the row from the table
+    const row = document.querySelector(`tr[data-id="${siteId}"]`);
+    if (row) row.remove();
+    updateRowCount(document.querySelectorAll('#main-table tbody tr[data-id]:not([style*="display: none"])').length);
+    closeSiteEditModal();
 }
 
 async function saveSiteEditModal() {
