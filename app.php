@@ -200,6 +200,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Website Governance</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 
     <!-- UTSA Brand Fonts (Arsenal = headline, Libre Franklin = body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
