@@ -123,8 +123,38 @@ function renderBadges(array $people): string {
     return $out;
 }
 
-$lookupsJson   = json_encode($lookups,    JSON_HEX_TAG | JSON_HEX_APOS);
-$employeesJson = json_encode($employees,  JSON_HEX_TAG | JSON_HEX_APOS);
+// ── Employee options per people column (for filter popovers) ─────────────
+$peopleRoles = ['college_communicator','site_owner','content_lead','tech_lead','admin_contact'];
+$filterPeople = ['vp_lead' => []];
+foreach ($peopleRoles as $r) $filterPeople[$r] = [];
+$seen = array_fill_keys(array_keys($filterPeople), []);
+
+foreach ($vpByArea as $leads) {
+    foreach ($leads as $l) {
+        if (!isset($seen['vp_lead'][$l['emp_id']])) {
+            $seen['vp_lead'][$l['emp_id']] = true;
+            $filterPeople['vp_lead'][] = ['id' => (int)$l['emp_id'],
+                'label' => $l['last_name'] . ', ' . $l['first_name']];
+        }
+    }
+}
+foreach ($rolesBySite as $roles) {
+    foreach ($peopleRoles as $role) {
+        foreach ($roles[$role] ?? [] as $p) {
+            if (!isset($seen[$role][$p['emp_id']])) {
+                $seen[$role][$p['emp_id']] = true;
+                $filterPeople[$role][] = ['id' => (int)$p['emp_id'],
+                    'label' => $p['last_name'] . ', ' . $p['first_name']];
+            }
+        }
+    }
+}
+foreach ($filterPeople as &$opts) usort($opts, fn($a,$b) => strcmp($a['label'],$b['label']));
+unset($opts);
+
+$lookupsJson      = json_encode($lookups,       JSON_HEX_TAG | JSON_HEX_APOS);
+$employeesJson    = json_encode($employees,     JSON_HEX_TAG | JSON_HEX_APOS);
+$filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -392,13 +422,13 @@ foreach ($toggleCols as $key):
         <th class="sticky-2 col-site_name">Site Name <?= filterBtn('site_name') ?></th>
         <th class="col-description">Description <?= filterBtn('description') ?></th>
         <th class="col-vp_area">VP Area <?= filterBtn('vp_area') ?></th>
-        <th class="col-vp_lead">VP Lead</th>
+        <th class="col-vp_lead">VP Lead <?= filterBtn('vp_lead') ?></th>
         <th class="col-college_dept">College/Dept <?= filterBtn('college_dept') ?></th>
-        <th class="col-college_communicator">Communicator</th>
-        <th class="col-site_owner">Owner</th>
-        <th class="col-content_lead">Content Lead</th>
-        <th class="col-tech_lead">Tech Lead</th>
-        <th class="col-admin_contact">Admin Contact</th>
+        <th class="col-college_communicator">Communicator <?= filterBtn('college_communicator') ?></th>
+        <th class="col-site_owner">Owner <?= filterBtn('site_owner') ?></th>
+        <th class="col-content_lead">Content Lead <?= filterBtn('content_lead') ?></th>
+        <th class="col-tech_lead">Tech Lead <?= filterBtn('tech_lead') ?></th>
+        <th class="col-admin_contact">Admin Contact <?= filterBtn('admin_contact') ?></th>
         <th class="col-support_platform">Support Platform <?= filterBtn('support_platform') ?></th>
         <th class="col-support_intake_url">Intake</th>
         <th class="col-datastudio_url">Studio</th>
@@ -427,7 +457,13 @@ foreach ($toggleCols as $key):
         'data-platform="'         . h(strtolower($site['platform'] ?? ''))          . '"',
         'data-audience="'         . h(strtolower($site['audience'] ?? ''))          . '"',
         'data-category="'         . h(strtolower($site['category'] ?? ''))          . '"',
-        'data-second_category="'  . h(strtolower($site['second_category'] ?? ''))   . '"',
+        'data-second_category="'      . h(strtolower($site['second_category'] ?? ''))                          . '"',
+        'data-vp_lead="'              . h(implode('|', array_column($vpLeads, 'emp_id')))                        . '"',
+        'data-college_communicator="' . h(implode('|', array_column($siteRoles['college_communicator'] ?? [], 'emp_id'))) . '"',
+        'data-site_owner="'           . h(implode('|', array_column($siteRoles['site_owner']           ?? [], 'emp_id'))) . '"',
+        'data-content_lead="'         . h(implode('|', array_column($siteRoles['content_lead']         ?? [], 'emp_id'))) . '"',
+        'data-tech_lead="'            . h(implode('|', array_column($siteRoles['tech_lead']            ?? [], 'emp_id'))) . '"',
+        'data-admin_contact="'        . h(implode('|', array_column($siteRoles['admin_contact']        ?? [], 'emp_id'))) . '"',
     ]);
 ?>
     <tr data-id="<?= $sid ?>" <?= $da ?>>
@@ -621,8 +657,9 @@ foreach ($toggleCols as $key):
 
 <script>
 // ── Data from PHP ──────────────────────────────────────────────────────────
-const LOOKUPS   = <?= $lookupsJson ?>;
-const EMPLOYEES = <?= $employeesJson ?>;
+const LOOKUPS        = <?= $lookupsJson ?>;
+const EMPLOYEES      = <?= $employeesJson ?>;
+const PEOPLE_OPTIONS = <?= $filterPeopleJson ?>;
 
 // ── Column visibility ──────────────────────────────────────────────────────
 const ALL_TOGGLE_COLS = ['description','vp_area','vp_lead','college_dept',
@@ -666,20 +703,27 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Column filters ─────────────────────────────────────────────────────────
-// type:'text' → substring match on data attr
-// type:'set'  → row's data attr must be in the selected Set of lowercase labels
+// type:'text'   → substring match on data attr
+// type:'set'    → data attr must be in selected Set of lowercase labels
+// type:'people' → pipe-delimited emp IDs; row shown if any ID is in selected Set
 const FILTER_COLS = {
-    url:              { type:'text' },
-    site_name:        { type:'text' },
-    description:      { type:'text' },
-    vp_area:          { type:'set', lookup:'vp_areas' },
-    college_dept:     { type:'set', lookup:'colleges_depts' },
-    support_platform: { type:'set', lookup:'support_platforms' },
-    server:           { type:'set', lookup:'servers' },
-    platform:         { type:'set', lookup:'platforms' },
-    audience:         { type:'set', lookup:'audiences' },
-    category:         { type:'set', lookup:'categories' },
-    second_category:  { type:'set', lookup:'categories' },
+    url:                  { type:'text' },
+    site_name:            { type:'text' },
+    description:          { type:'text' },
+    vp_area:              { type:'set',    lookup:'vp_areas' },
+    vp_lead:              { type:'people' },
+    college_dept:         { type:'set',    lookup:'colleges_depts' },
+    college_communicator: { type:'people' },
+    site_owner:           { type:'people' },
+    content_lead:         { type:'people' },
+    tech_lead:            { type:'people' },
+    admin_contact:        { type:'people' },
+    support_platform:     { type:'set',    lookup:'support_platforms' },
+    server:               { type:'set',    lookup:'servers' },
+    platform:             { type:'set',    lookup:'platforms' },
+    audience:             { type:'set',    lookup:'audiences' },
+    category:             { type:'set',    lookup:'categories' },
+    second_category:      { type:'set',    lookup:'categories' },
 };
 
 const activeFilters = {};   // col → { type, value } | { type, values:Set }
@@ -692,8 +736,14 @@ function applyFilters() {
         let show = true;
         for (const [col, f] of Object.entries(activeFilters)) {
             const v = (row.dataset[col] || '').toLowerCase();
-            if (f.type === 'text'  && !v.includes(f.value))  { show = false; break; }
-            if (f.type === 'set'   && !f.values.has(v))      { show = false; break; }
+            if (f.type === 'text' && !v.includes(f.value)) { show = false; break; }
+            if (f.type === 'set'  && !f.values.has(v))     { show = false; break; }
+            if (f.type === 'people') {
+                const ids = v.split('|').filter(Boolean);
+                if (ids.length === 0) {
+                    if (!f.values.has('')) { show = false; break; }
+                } else if (!ids.some(id => f.values.has(id))) { show = false; break; }
+            }
         }
         row.style.display = show ? '' : 'none';
         if (show) visible++;
@@ -725,9 +775,9 @@ function openFilter(event, col) {
     if (def.type === 'text') {
         filterPopPending = { type:'text', value: current ? current.value : '' };
     } else {
-        const opts   = allSetOptions(def.lookup);
+        const opts   = getPopoverOptions(col, def);
         const active = current ? current.values : new Set(opts.map(o => o.val));
-        filterPopPending = { type:'set', values: new Set(active) };
+        filterPopPending = { type: def.type, values: new Set(active) };
     }
 
     buildFilterPopover(col, def);
@@ -750,6 +800,17 @@ function allSetOptions(lookupKey) {
     return [{ val:'', label:'(None)' }, ...items];
 }
 
+function allPeopleOptions(col) {
+    const items = (PEOPLE_OPTIONS[col] || []).map(o => ({ val: String(o.id), label: o.label }));
+    return [{ val:'', label:'(None)' }, ...items];
+}
+
+function getPopoverOptions(col, def) {
+    if (def.type === 'set')    return allSetOptions(def.lookup);
+    if (def.type === 'people') return allPeopleOptions(col);
+    return [];
+}
+
 function buildFilterPopover(col, def) {
     const content = document.getElementById('filter-pop-content');
     if (def.type === 'text') {
@@ -763,7 +824,7 @@ function buildFilterPopover(col, def) {
             if (e.key === 'Escape') closeFilter();
         });
     } else {
-        const opts = allSetOptions(def.lookup);
+        const opts = getPopoverOptions(col, def);
         const allChecked = opts.every(o => filterPopPending.values.has(o.val));
         const rows = opts.map(o => {
             const chk = filterPopPending.values.has(o.val) ? 'checked' : '';
@@ -829,10 +890,10 @@ function applyFilterFromPop() {
         if (val) activeFilters[col] = { type:'text', value: val };
         else     delete activeFilters[col];
     } else {
-        const allVals = new Set(allSetOptions(def.lookup).map(o => o.val));
+        const allVals = new Set(getPopoverOptions(col, def).map(o => o.val));
         const isAll   = [...allVals].every(v => filterPopPending.values.has(v));
         if (isAll) delete activeFilters[col];
-        else       activeFilters[col] = { type:'set', values: new Set(filterPopPending.values) };
+        else       activeFilters[col] = { type: def.type, values: new Set(filterPopPending.values) };
     }
     markFilterBtn(col, !!activeFilters[col]);
     applyFilters();
