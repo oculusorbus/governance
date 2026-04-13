@@ -323,8 +323,8 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         /* Editable cells */
         td.editable { cursor:pointer; }
         td.editable:hover { background:rgba(200,220,255,.2) !important; }
-        td.editable:hover::after { content:'✎'; font-size:10px; color:#D5CFC8;
-                                    margin-left:4px; float:right; }
+        td.editable:not(.editing):hover::after { content:'✎'; font-size:10px; color:#D5CFC8;
+                                                margin-left:4px; float:right; }
 
         /* Editing state */
         td.editing { padding:2px 4px; overflow:visible; }
@@ -790,7 +790,9 @@ window.addEventListener('DOMContentLoaded', () => {
     updateRowCount();
     // Close any open inline edit when the table scrolls (prevents stale dropdown position)
     document.getElementById('table-wrap').addEventListener('scroll', () => {
-        if (activeCell) cancelEdit();
+        // Don't cancel while a TomSelect dropdown is open (its onDropdownOpen
+        // restores scroll position, which itself fires this scroll event)
+        if (activeCell && !activeTomSelect) cancelEdit();
     });
 });
 
@@ -1082,6 +1084,8 @@ function openEdit(td) {
             create: false,
             dropdownParent: 'body',
             onDropdownOpen(dropdown) {
+                const wrap = document.getElementById('table-wrap');
+                const savedLeft = wrap ? wrap.scrollLeft : 0;
                 const rect = this.control.getBoundingClientRect();
                 Object.assign(dropdown.style, {
                     position: 'fixed',
@@ -1089,6 +1093,8 @@ function openEdit(td) {
                     top:  rect.bottom + 'px',
                     left: rect.left   + 'px',
                 });
+                // Browser auto-scrolls to focus the input; restore scroll position
+                if (wrap) setTimeout(() => { wrap.scrollLeft = savedLeft; }, 0);
             },
             onChange(val) {
                 saveFkEdit(td, val, lookupKey, fkField);
