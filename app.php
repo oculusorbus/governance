@@ -437,7 +437,7 @@ foreach ($toggleCols as $key):
 <thead>
     <!-- Group headers -->
     <tr class="groups">
-        <th colspan="2" class="grp-identity sticky-1">Identity</th>
+        <th colspan="2" class="grp-identity sticky-1">Website</th>
         <th colspan="1" class="grp-identity col-description">&#8203;</th>
         <th colspan="3" class="grp-governance">Governance</th>
         <th colspan="5" class="grp-people">People</th>
