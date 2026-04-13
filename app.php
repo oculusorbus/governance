@@ -1081,7 +1081,19 @@ function openEdit(td) {
             searchField: 'label',
             options: [{ id: '', label: '— clear —' }, ...LOOKUPS[lookupKey]],
             items: currentId ? [String(currentId)] : [],
-            create: false,
+            create(input, callback) {
+                const label = input.trim();
+                if (!label) { callback(); return; }
+                api({ action: 'add_lookup', key: lookupKey, value: label }).then(res => {
+                    if (res.id) {
+                        const opt = { id: res.id, label };
+                        if (!res.existing) LOOKUPS[lookupKey].push(opt);
+                        callback(opt);
+                    } else {
+                        callback();
+                    }
+                });
+            },
             dropdownParent: 'body',
             onDropdownOpen(dropdown) {
                 const rect = this.control.getBoundingClientRect();

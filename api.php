@@ -190,6 +190,34 @@ try { switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
+    // ── Add a new row to a lookup table ──────────────────────────────────
+    case 'add_lookup':
+        $key   = $input['key']   ?? '';
+        $value = trim($input['value'] ?? '');
+        $map   = [
+            'vp_areas'          => ['vp_areas',         'code'],
+            'colleges_depts'    => ['colleges_depts',    'name'],
+            'support_platforms' => ['support_platforms', 'name'],
+            'servers'           => ['servers',           'name'],
+            'platforms'         => ['platforms',         'name'],
+            'audiences'         => ['audiences',         'name'],
+            'categories'        => ['categories',        'name'],
+        ];
+        if (!isset($map[$key]) || $value === '') {
+            echo json_encode(['error' => 'Invalid lookup or empty value']); break;
+        }
+        [$table, $field] = $map[$key];
+        $stmt = $pdo->prepare("SELECT id FROM `$table` WHERE `$field` = ?");
+        $stmt->execute([$value]);
+        $existing = $stmt->fetch();
+        if ($existing) {
+            echo json_encode(['success' => true, 'id' => (int)$existing['id'], 'existing' => true]);
+            break;
+        }
+        $pdo->prepare("INSERT INTO `$table` (`$field`) VALUES (?)")->execute([$value]);
+        echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
+        break;
+
     // ── Update an employee's name or email ───────────────────────────────
     case 'update_employee':
         $empId = (int)($input['employee_id'] ?? 0);
