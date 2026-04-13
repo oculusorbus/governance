@@ -641,8 +641,9 @@ foreach ($toggleCols as $key):
         $siteNameJ = json_encode((string)($site['site_name'] ?? ''), $flags);
         $urlJ      = json_encode((string)($site['url']       ?? ''), $flags);
         ?>
+        <?php $tooltip = $display . ($site['url'] && $site['site_name'] ? "\n" . $site['url'] : ''); ?>
         <td class="sticky-1 col-site" data-site-id="<?= $sid ?>"
-            title="<?= h($display) ?>">
+            title="<?= h($tooltip) ?>">
             <div class="site-inner">
                 <?php if ($href): ?>
                     <a href="<?= $href ?>" target="_blank"
@@ -841,12 +842,17 @@ foreach ($toggleCols as $key):
         </div>
         <div id="link-platform-wrap" style="display:none;margin-bottom:14px">
             <label style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px">Support Platform</label>
-            <select id="link-platform-select" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;outline:none;background:#fff">
+            <select id="link-platform-select" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;outline:none;background:#fff;margin-bottom:5px">
                 <option value="">— none —</option>
                 <?php foreach ($lookups['support_platforms'] as $sp): ?>
                 <option value="<?= $sp['id'] ?>"><?= h($sp['label']) ?></option>
                 <?php endforeach; ?>
             </select>
+            <div id="link-platform-add-row" style="display:flex;gap:6px;align-items:center">
+                <input id="link-platform-new" type="text" placeholder="Add new platform…"
+                       style="flex:1;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;outline:none">
+                <button onclick="addLinkPlatform()" style="padding:4px 10px;font-size:12px;font-weight:600;background:#265BF7;color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">+ Add</button>
+            </div>
         </div>
         <label style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px" id="link-input-label">New URL</label>
         <input id="link-input" type="text" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;margin-bottom:12px;outline:none;box-sizing:border-box"
@@ -1427,6 +1433,24 @@ async function saveLinkModal() {
     closeLinkModal();
 }
 
+async function addLinkPlatform() {
+    const input = document.getElementById('link-platform-new');
+    const name  = input.value.trim();
+    if (!name) return;
+    const res = await api({ action: 'add_lookup', key: 'support_platforms', value: name });
+    if (!res.id) return;
+    const sel = document.getElementById('link-platform-select');
+    // Add option if not already present
+    if (!sel.querySelector(`option[value="${res.id}"]`)) {
+        const opt = document.createElement('option');
+        opt.value       = res.id;
+        opt.textContent = name;
+        sel.appendChild(opt);
+    }
+    sel.value  = res.id;
+    input.value = '';
+}
+
 function updateLinkCell(siteId, linkType, url, platform) {
     const col = linkType === 'intake' ? 'col-support_intake_url' : 'col-datastudio_url';
     const td  = document.querySelector(`tr[data-id="${siteId}"] td.${col}`);
@@ -1892,7 +1916,7 @@ async function saveSiteEditModal() {
             }
             a.textContent = display;
             a.href = 'https://' + url;
-            td.title = display;
+            td.title = display + (name && url ? '\n' + url : '');
 
             // Refresh the button's onclick with fresh values
             const editBtn = td.querySelector('.site-edit-btn');
