@@ -316,6 +316,16 @@ try { switch ($action) {
         echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
         break;
 
+    // ── Activate or deactivate a site ────────────────────────────────────
+    case 'toggle_site_active':
+        $siteId   = (int)($input['site_id']   ?? 0);
+        $isActive = (int)(bool)($input['is_active'] ?? 1);
+        if (!$siteId) { echo json_encode(['error' => 'Invalid site ID']); break; }
+        $pdo->prepare("UPDATE sites SET is_active = ? WHERE id = ?")
+            ->execute([$isActive, $siteId]);
+        echo json_encode(['success' => true]);
+        break;
+
     // ── Delete a site and all directly linked data ────────────────────────
     case 'delete_site':
         $siteId = (int)($input['site_id'] ?? 0);

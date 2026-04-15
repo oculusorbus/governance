@@ -36,7 +36,7 @@ $pdo->exec("
 
 // ── Fetch all sites with joined display values ────────────────────────────
 $sites = $pdo->query("
-    SELECT s.id, s.url, s.site_name, s.description,
+    SELECT s.id, s.url, s.site_name, s.description, s.is_active,
         s.vp_area_id,            va.code  AS vp_area,
         s.college_dept_id,       cd.name  AS college_dept,
         s.support_platform_id,   sp.name  AS support_platform,
@@ -317,6 +317,22 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         #filter-pop-copy-btn.copied, #filter-pop-copy-btn2.copied { background:#15803d !important; color:#fff; }
         #btn-clear-filters { background:#D3430D; color:#fff; }
 
+        /* ── Active / inactive status filter ─────────────────────────── */
+        #status-filter { display:flex; border-radius:6px; overflow:hidden; border:1px solid rgba(255,255,255,.2); flex-shrink:0; }
+        .status-filter-btn { background:transparent; color:rgba(255,255,255,.6); border:none; padding:4px 10px;
+                             font-size:12px; font-weight:600; cursor:pointer; transition:background .15s, color .15s;
+                             font-family:'Libre Franklin', system-ui, sans-serif; }
+        .status-filter-btn:not(:last-child) { border-right:1px solid rgba(255,255,255,.2); }
+        .status-filter-btn.active { background:rgba(255,255,255,.15); color:#fff; }
+        .status-filter-btn:hover:not(.active) { background:rgba(255,255,255,.08); color:#fff; }
+
+        /* ── Inactive row styling ─────────────────────────────────────── */
+        tr.site-inactive td { opacity:.55; }
+        tr.site-inactive td a { color:#6B9FD4; }
+        .inactive-badge { display:inline-block; margin-left:6px; padding:1px 6px; font-size:10px;
+                          font-weight:700; background:#FEF3C7; color:#92400E; border-radius:4px;
+                          text-transform:uppercase; letter-spacing:.04em; vertical-align:middle; }
+
         /* ── Table wrapper ────────────────────────────────────────────── */
         /* position:relative + z-index:1 creates a stacking context that
            scopes all sticky-cell z-indices inside it, so the body-level
@@ -569,6 +585,11 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <h1>Website Governance Directory</h1>
     <input id="global-search" type="search" placeholder="Search all columns…" autocomplete="off">
     <span id="row-count"></span>
+    <div id="status-filter">
+        <button class="status-filter-btn" data-status="active"   onclick="setStatusFilter('active')">Active</button>
+        <button class="status-filter-btn" data-status="inactive" onclick="setStatusFilter('inactive')">Inactive</button>
+        <button class="status-filter-btn" data-status="all"      onclick="setStatusFilter('all')">All</button>
+    </div>
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
     <button id="btn-add"          onclick="addSite()">+ Add Site</button>
@@ -708,9 +729,11 @@ $defaultHidden = ['site', 'description'];
         'data-content_lead="'         . h(implode('|', array_column($siteRoles['content_lead']         ?? [], 'emp_id'))) . '"',
         'data-tech_lead="'            . h(implode('|', array_column($siteRoles['tech_lead']            ?? [], 'emp_id'))) . '"',
         'data-admin_contact="'        . h(implode('|', array_column($siteRoles['admin_contact']        ?? [], 'emp_id'))) . '"',
+        'data-is_active="'            . (int)($site['is_active'] ?? 1)                                                    . '"',
     ]);
+    $isActive = (int)($site['is_active'] ?? 1);
 ?>
-    <tr data-id="<?= $sid ?>" data-search="<?= h($searchStr) ?>" <?= $da ?>>
+    <tr data-id="<?= $sid ?>" data-search="<?= h($searchStr) ?>" <?= $da ?><?= $isActive ? '' : ' class="site-inactive"' ?>>
 
         <!-- Site (combined URL + Site Name, sticky) -->
         <?php
@@ -730,9 +753,10 @@ $defaultHidden = ['site', 'description'];
                 <?php else: ?>
                     <span class="empty-cell">—</span>
                 <?php endif; ?>
+                <?php if (!$isActive): ?><span class="inactive-badge">Inactive</span><?php endif; ?>
             </div>
             <button class="site-edit-btn"
-                    onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>)">✎</button>
+                    onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>,<?= $isActive ?>)">✎</button>
         </td>
 
         <!-- Site (name + edit button) -->
@@ -749,7 +773,7 @@ $defaultHidden = ['site', 'description'];
                 <?php endif; ?>
             </div>
             <button class="site-edit-btn"
-                    onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>)">✎</button>
+                    onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>,<?= $isActive ?>)">✎</button>
         </td>
 
         <!-- Description -->
@@ -998,10 +1022,42 @@ $defaultHidden = ['site', 'description'];
                 <button onclick="closeSiteEditModal()"
                         style="flex:1;padding:8px;background:#EBE6E2;color:#332F21;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
             </div>
-            <div style="margin-top:14px;padding-top:14px;border-top:1px solid #EBE6E2;text-align:right">
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid #EBE6E2;display:flex;justify-content:space-between;align-items:center">
+                <button id="site-deactivate-btn" onclick="showDeactivateConfirm()"
+                        style="background:none;border:none;color:#92400E;font-size:12px;cursor:pointer;padding:0;font-weight:600;text-decoration:underline">
+                    Deactivate this site…
+                </button>
                 <button onclick="showDeleteConfirm()"
                         style="background:none;border:none;color:#dc2626;font-size:12px;cursor:pointer;padding:0;font-weight:600;text-decoration:underline">
                     Delete this site…
+                </button>
+            </div>
+        </div>
+
+        <!-- Deactivate / Reactivate confirmation (hidden by default) -->
+        <div id="site-deactivate-confirm" style="display:none">
+            <div id="site-deactivate-warning" style="background:#fffbeb;border:2px solid #fcd34d;border-radius:8px;padding:14px;margin-bottom:16px">
+                <p style="margin:0;font-size:12px;color:#78350f;line-height:1.5">
+                    The site will be hidden from the default view but all data (roles, DubBot stats) will be preserved.
+                    You can reactivate it at any time.
+                </p>
+            </div>
+            <div id="site-reactivate-warning" style="display:none;background:#f0fdf4;border:2px solid #86efac;border-radius:8px;padding:14px;margin-bottom:16px">
+                <p style="margin:0;font-size:12px;color:#14532d;line-height:1.5">
+                    The site will be restored to the active view.
+                </p>
+            </div>
+            <p style="margin:0 0 14px;font-size:13px;color:#332F21">
+                <span id="site-deactivate-action-label">Deactivate</span> <strong id="site-deactivate-label"></strong>?
+            </p>
+            <div style="display:flex;gap:8px">
+                <button id="site-deactivate-confirm-btn" onclick="confirmToggleSiteActive()"
+                        style="flex:1;padding:8px;background:#D97706;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700">
+                    Yes, deactivate
+                </button>
+                <button onclick="hideDeactivateConfirm()"
+                        style="flex:1;padding:8px;background:#EBE6E2;color:#332F21;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">
+                    Cancel
                 </button>
             </div>
         </div>
@@ -1127,6 +1183,7 @@ function applyColVisibility() {
 
 window.addEventListener('DOMContentLoaded', () => {
     applyColVisibility();
+    initStatusFilter();
     updateRowCount();
     document.querySelectorAll('#main-table tbody tr[data-id]').forEach((r, i) => r.dataset.origIndex = i);
     document.getElementById('global-search').addEventListener('input', e => {
@@ -1169,10 +1226,32 @@ let searchQuery      = '';  // global search box
 let filterPopCol     = null;
 let filterPopPending = null;
 
+// ── Active / inactive status filter ───────────────────────────────────────
+let activeStatusFilter = localStorage.getItem('statusFilter') || 'active';
+
+function setStatusFilter(val) {
+    activeStatusFilter = val;
+    localStorage.setItem('statusFilter', val);
+    document.querySelectorAll('.status-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === val);
+    });
+    applyFilters();
+}
+
+// Initialise button state on load (called after DOMContentLoaded)
+function initStatusFilter() {
+    document.querySelectorAll('.status-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === activeStatusFilter);
+    });
+}
+
 function applyFilters() {
     let visible = 0;
     document.querySelectorAll('#main-table tbody tr[data-id]').forEach(row => {
         let show = true;
+        const isActive = row.dataset.is_active === '1';
+        if (activeStatusFilter === 'active'   && !isActive) show = false;
+        if (activeStatusFilter === 'inactive' &&  isActive) show = false;
         if (searchQuery && !(row.dataset.search || '').includes(searchQuery)) show = false;
         for (const [col, f] of Object.entries(activeFilters)) {
             if (f.type === 'text') {
@@ -2172,13 +2251,23 @@ function refreshVpLeadCell(siteId) {
 }
 
 // ── Site edit modal (URL + Site Name) ──────────────────────────────────────
-let siteEditId = null;
+let siteEditId       = null;
+let siteEditIsActive = true;
 
-function openSiteEditModal(siteId, siteName, url) {
-    siteEditId = siteId;
+function openSiteEditModal(siteId, siteName, url, isActive) {
+    siteEditId       = siteId;
+    siteEditIsActive = isActive !== 0 && isActive !== false;
     document.getElementById('site-edit-name').value  = siteName || '';
     document.getElementById('site-edit-url').value   = url      || '';
     document.getElementById('site-edit-error').style.display = 'none';
+    const deactivateBtn = document.getElementById('site-deactivate-btn');
+    if (siteEditIsActive) {
+        deactivateBtn.textContent = 'Deactivate this site…';
+        deactivateBtn.style.color = '#92400E';
+    } else {
+        deactivateBtn.textContent = 'Reactivate this site…';
+        deactivateBtn.style.color = '#15803d';
+    }
     const overlay = document.getElementById('site-edit-overlay');
     overlay.style.display = 'flex';
     setTimeout(() => document.getElementById('site-edit-name').focus(), 50);
@@ -2187,7 +2276,77 @@ function openSiteEditModal(siteId, siteName, url) {
 function closeSiteEditModal() {
     document.getElementById('site-edit-overlay').style.display = 'none';
     hideDeleteConfirm();
+    hideDeactivateConfirm();
     siteEditId = null;
+}
+
+function showDeactivateConfirm() {
+    const name = document.getElementById('site-edit-name').value.trim()
+               || document.getElementById('site-edit-url').value.trim()
+               || 'this site';
+    document.getElementById('site-deactivate-label').textContent = name;
+    const isDeactivating = siteEditIsActive;
+    document.getElementById('site-deactivate-warning').style.display   = isDeactivating ? '' : 'none';
+    document.getElementById('site-reactivate-warning').style.display   = isDeactivating ? 'none' : '';
+    document.getElementById('site-deactivate-action-label').textContent = isDeactivating ? 'Deactivate' : 'Reactivate';
+    const confirmBtn = document.getElementById('site-deactivate-confirm-btn');
+    confirmBtn.textContent   = isDeactivating ? 'Yes, deactivate' : 'Yes, reactivate';
+    confirmBtn.style.background = isDeactivating ? '#D97706' : '#15803d';
+    document.getElementById('site-edit-fields').style.display    = 'none';
+    document.getElementById('site-deactivate-confirm').style.display = 'block';
+}
+
+function hideDeactivateConfirm() {
+    document.getElementById('site-edit-fields').style.display        = 'block';
+    document.getElementById('site-deactivate-confirm').style.display = 'none';
+}
+
+async function confirmToggleSiteActive() {
+    const siteId    = siteEditId;
+    const newActive = siteEditIsActive ? 0 : 1;
+    const btn       = document.getElementById('site-deactivate-confirm-btn');
+    btn.disabled    = true;
+    btn.textContent = siteEditIsActive ? 'Deactivating…' : 'Reactivating…';
+    const res = await api({ action: 'toggle_site_active', site_id: siteId, is_active: newActive });
+    if (res.error) {
+        btn.disabled    = false;
+        btn.textContent = siteEditIsActive ? 'Yes, deactivate' : 'Yes, reactivate';
+        document.getElementById('site-edit-error').textContent   = res.error;
+        document.getElementById('site-edit-error').style.display = 'block';
+        hideDeactivateConfirm();
+        return;
+    }
+    // Update row in the table
+    const row = document.querySelector(`tr[data-id="${siteId}"]`);
+    if (row) {
+        row.dataset.is_active = String(newActive);
+        row.classList.toggle('site-inactive', newActive === 0);
+        const badge = row.querySelector('.inactive-badge');
+        if (newActive === 0 && !badge) {
+            const siteInner = row.querySelector('.sticky-1 .site-inner');
+            if (siteInner) {
+                const b = document.createElement('span');
+                b.className   = 'inactive-badge';
+                b.textContent = 'Inactive';
+                siteInner.appendChild(b);
+            }
+        } else if (newActive === 1 && badge) {
+            badge.remove();
+        }
+        // Update pencil button onclick for both URL and site name cells
+        row.querySelectorAll('.site-edit-btn').forEach(editBtn => {
+            editBtn.onclick = e => {
+                e.stopPropagation();
+                openSiteEditModal(siteId,
+                    document.getElementById('site-edit-name').value,
+                    document.getElementById('site-edit-url').value,
+                    newActive);
+            };
+        });
+    }
+    // Re-apply filters so the row hides/shows per the current status filter
+    applyFilters();
+    closeSiteEditModal();
 }
 
 function showDeleteConfirm() {
@@ -2274,7 +2433,7 @@ async function saveSiteEditModal() {
             const editBtn = td.querySelector('.site-edit-btn');
             if (editBtn) editBtn.onclick = e => {
                 e.stopPropagation();
-                openSiteEditModal(siteId, name, url);
+                openSiteEditModal(siteId, name, url, siteEditIsActive ? 1 : 0);
             };
 
             // Update URL td
@@ -2288,6 +2447,11 @@ async function saveSiteEditModal() {
                     urlA.addEventListener('click', e => e.stopPropagation());
                     urlInner.innerHTML = '';
                     urlInner.appendChild(urlA);
+                    // Re-append inactive badge if present
+                    const existingBadge = row.dataset.is_active === '0'
+                        ? (() => { const b = document.createElement('span'); b.className = 'inactive-badge'; b.textContent = 'Inactive'; return b; })()
+                        : null;
+                    if (existingBadge) urlInner.appendChild(existingBadge);
                 }
                 urlA.textContent = url;
                 urlA.href = 'https://' + url;
@@ -2298,7 +2462,7 @@ async function saveSiteEditModal() {
             const urlEditBtn = urlTd.querySelector('.site-edit-btn');
             if (urlEditBtn) urlEditBtn.onclick = e => {
                 e.stopPropagation();
-                openSiteEditModal(siteId, name, url);
+                openSiteEditModal(siteId, name, url, siteEditIsActive ? 1 : 0);
             };
 
             // Keep row data attrs in sync for filtering
