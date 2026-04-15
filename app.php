@@ -2290,6 +2290,7 @@ function showDeactivateConfirm() {
     document.getElementById('site-reactivate-warning').style.display   = isDeactivating ? 'none' : '';
     document.getElementById('site-deactivate-action-label').textContent = isDeactivating ? 'Deactivate' : 'Reactivate';
     const confirmBtn = document.getElementById('site-deactivate-confirm-btn');
+    confirmBtn.disabled     = false;
     confirmBtn.textContent   = isDeactivating ? 'Yes, deactivate' : 'Yes, reactivate';
     confirmBtn.style.background = isDeactivating ? '#D97706' : '#15803d';
     document.getElementById('site-edit-fields').style.display    = 'none';
