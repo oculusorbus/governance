@@ -1,3 +1,5 @@
 *.sql
 *.xlsx
+*.md
+*.txt
 .DS_Store
