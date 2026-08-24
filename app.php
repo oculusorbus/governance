@@ -169,6 +169,17 @@ function renderBadges(array $people): string {
     return $out;
 }
 
+// Full "First Last" names for a list of people, semicolon-separated —
+// used for export so files carry full names instead of badge initials.
+function fullNames(array $people): string {
+    $names = [];
+    foreach ($people as $p) {
+        $name = trim(($p['first_name'] ?? '') . ' ' . ($p['last_name'] ?? ''));
+        if ($name !== '') $names[] = $name;
+    }
+    return implode('; ', $names);
+}
+
 // ── Employee options per people column (for filter popovers) ─────────────
 $peopleRoles = ['college_communicator','site_owner','content_lead','tech_lead','admin_contact'];
 $filterPeople = ['vp_lead' => []];
@@ -219,6 +230,9 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
+    <!-- SheetJS (XLSX export) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <style>
         /*
          * UTSA Brand Colors
@@ -247,9 +261,23 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         #btn-cols:hover  { background:#254e8f; }
         #btn-add   { background:#D3430D; color:#fff; }
         #btn-add:hover   { background:#B94700; }
+        #btn-export { background:#1B3A6B; color:#fff; display:inline-flex; align-items:center; gap:5px; }
+        #btn-export:hover { background:#254e8f; }
         #btn-logout { background:#dc2626; color:#fff; }
         #btn-logout:hover { background:#b91c1c; }
         #row-count { font-size:12px; color:#C8DCFF; }
+
+        /* ── Export menu ─────────────────────────────────────────────── */
+        #export-wrap { position:relative; }
+        #export-menu { display:none; position:absolute; top:calc(100% + 6px); right:0;
+                       background:#fff; border:1px solid #EBE6E2; border-radius:8px;
+                       box-shadow:0 6px 20px rgba(3,32,68,.18); z-index:10000;
+                       min-width:160px; padding:6px; flex-direction:column; gap:2px; }
+        #export-menu.open { display:flex; }
+        #export-menu button { background:none; border:none; text-align:left; padding:7px 10px;
+                              border-radius:6px; font-size:12px; font-weight:600; color:#332F21;
+                              cursor:pointer; font-family:'Libre Franklin', system-ui, sans-serif; }
+        #export-menu button:hover { background:#F8F4F1; color:#032044; }
 
         /* ── Column visibility panel ──────────────────────────────────── */
         #col-panel { display:none; background:#032044; border-bottom:1px solid #021333;
@@ -593,6 +621,13 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
     <button id="btn-add"          onclick="addSite()">+ Add Site</button>
+    <div id="export-wrap">
+        <button id="btn-export" onclick="toggleExportMenu(event)">Export ▾</button>
+        <div id="export-menu">
+            <button onclick="exportTable('csv')">Export as CSV</button>
+            <button onclick="exportTable('xlsx')">Export as XLSX</button>
+        </div>
+    </div>
     <a href="logout.php"><button id="btn-logout">Sign Out</button></a>
 </div>
 
@@ -745,7 +780,7 @@ $defaultHidden = ['site', 'description'];
         ?>
         <?php $tooltip = $display . ($site['url'] && $site['site_name'] ? "\n" . $site['url'] : ''); ?>
         <!-- URL (primary sticky column) -->
-        <td class="sticky-1 col-url" title="<?= h($site['url']) ?>">
+        <td class="sticky-1 col-url" data-value="<?= h($site['url']) ?>" title="<?= h($site['url']) ?>">
             <div class="site-inner">
                 <?php if ($site['url']): ?>
                     <a href="https://<?= h($site['url']) ?>" target="_blank"
@@ -760,7 +795,7 @@ $defaultHidden = ['site', 'description'];
         </td>
 
         <!-- Site (name + edit button) -->
-        <td class="col-site" data-site-id="<?= $sid ?>"
+        <td class="col-site" data-site-id="<?= $sid ?>" data-value="<?= h($display) ?>"
             title="<?= h($tooltip) ?>">
             <div class="site-inner">
                 <?php if ($href): ?>
@@ -797,6 +832,7 @@ $defaultHidden = ['site', 'description'];
         <td class="col-vp_lead role-cell"
             data-site-id="<?= $sid ?>"
             data-vp-area-id="<?= (int)$site['vp_area_id'] ?>"
+            data-names="<?= h(fullNames($vpLeads)) ?>"
             onclick="openVpLeadModal(<?= $sid ?>, <?= (int)$site['vp_area_id'] ?>, this)">
             <?= renderBadges($vpLeads) ?>
         </td>
@@ -814,6 +850,7 @@ $defaultHidden = ['site', 'description'];
         <?php foreach (['college_communicator','site_owner','content_lead','tech_lead','admin_contact'] as $role): ?>
         <td class="col-<?= $role ?> role-cell"
             data-site-id="<?= $sid ?>" data-role="<?= $role ?>"
+            data-names="<?= h(fullNames($siteRoles[$role] ?? [])) ?>"
             onclick="openPeopleModal(<?= $sid ?>, '<?= $role ?>', this)">
             <?= renderBadges($siteRoles[$role] ?? []) ?>
         </td>
@@ -911,7 +948,8 @@ $defaultHidden = ['site', 'description'];
             if ($dbHas) echo dbScoreBadge((float)$site['db_best_practices']); ?></td>
         <td class="col-db-webgovernance" data-db-col="webGovernance"<?= dbScoreAttr($site['db_web_governance']) ?>><?php
             if ($dbHas) echo dbScoreBadge((float)$site['db_web_governance']); ?></td>
-        <td class="col-db-pages"         data-db-col="pages"><?php
+        <td class="col-db-pages"         data-db-col="pages"
+            data-value="<?= $site['db_pages_count'] !== null ? (int)$site['db_pages_count'] : '' ?>"><?php
             if ($dbHas && $site['db_pages_count'] !== null)
                 echo number_format((int)$site['db_pages_count']); ?></td>
 
@@ -1180,6 +1218,89 @@ function applyColVisibility() {
         gcb.indeterminate = numChecked > 0 && numChecked < kids.length;
     });
 }
+
+// ── Export (CSV / XLSX) ──────────────────────────────────────────────────
+// Exports exactly what's currently on screen: visible columns (per the
+// Columns panel), in their displayed order, for rows passing the active
+// status filter / search / column filters. People columns export full
+// names instead of the badge initials shown in the UI.
+const COLUMN_LABELS = {
+    url: 'URL', site: 'Site Name', description: 'Description',
+    vp_area: 'VP Area', vp_lead: 'VP Lead', college_dept: 'College/Dept',
+    college_communicator: 'Communicator', site_owner: 'Site Owner',
+    content_lead: 'Content Lead', tech_lead: 'Tech Lead', admin_contact: 'Admin Contact',
+    support_intake_url: 'Support Intake URL', datastudio_url: 'Datastudio URL',
+    server: 'Server', platform: 'Platform', audience: 'Audience',
+    category: 'Category', second_category: '2nd Category',
+    'db-score': 'DubBot Score', 'db-accessibility': 'DubBot Accessibility',
+    'db-badlinks': 'DubBot Bad Links', 'db-seo': 'DubBot SEO',
+    'db-spelling': 'DubBot Spelling', 'db-bestpractices': 'DubBot Best Practices',
+    'db-webgovernance': 'DubBot Web Governance', 'db-pages': 'DubBot Pages',
+};
+const PEOPLE_EXPORT_COLS = new Set(['vp_lead','college_communicator','site_owner','content_lead','tech_lead','admin_contact']);
+
+function extractCellValue(key, td) {
+    if (!td) return '';
+    if (PEOPLE_EXPORT_COLS.has(key)) return td.dataset.names || '';
+    if (key === 'support_intake_url' || key === 'datastudio_url') return td.dataset.url || '';
+    if (td.dataset.value !== undefined) return td.dataset.value;
+    if (key.startsWith('db-')) return td.dataset.dbSaved !== undefined ? td.dataset.dbSaved : '';
+    return (td.textContent || '').trim();
+}
+
+function buildExportTable() {
+    const cols    = ALL_TOGGLE_COLS.filter(k => !hiddenCols.has(k));
+    const headers = cols.map(k => COLUMN_LABELS[k] || k);
+    const rows    = [...document.querySelectorAll('#main-table tbody tr[data-id]')]
+        .filter(row => row.style.display !== 'none')
+        .map(row => cols.map(k => extractCellValue(k, row.querySelector('.col-' + k))));
+    return { headers, rows };
+}
+
+function exportFilename(ext) {
+    const stamp = new Date().toISOString().slice(0, 10);
+    return `website-governance-${stamp}.${ext}`;
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function csvEscape(v) {
+    v = String(v ?? '');
+    return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+
+function exportTable(format) {
+    const { headers, rows } = buildExportTable();
+    if (format === 'csv') {
+        const lines = [headers, ...rows].map(r => r.map(csvEscape).join(','));
+        downloadBlob(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' }),
+                     exportFilename('csv'));
+    } else {
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Website Governance');
+        XLSX.writeFile(wb, exportFilename('xlsx'));
+    }
+    closeExportMenu();
+}
+
+function toggleExportMenu(e) {
+    e.stopPropagation();
+    document.getElementById('export-menu').classList.toggle('open');
+}
+function closeExportMenu() {
+    document.getElementById('export-menu').classList.remove('open');
+}
+document.addEventListener('click', e => {
+    const wrap = document.getElementById('export-wrap');
+    if (wrap && !wrap.contains(e.target)) closeExportMenu();
+});
 
 window.addEventListener('DOMContentLoaded', () => {
     applyColVisibility();
