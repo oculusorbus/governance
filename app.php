@@ -7,6 +7,13 @@ if (empty($_SESSION['auth'])) {
     exit;
 }
 
+// TEMP DEBUG: reveals only lengths/bytes, never the actual secret values
+die(sprintf(
+    'DB_HOST=[%s] len=%d | DB_USER=[%s] len=%d | DB_PASS len=%d, hex(first 4)=%s, hex(last 4)=%s',
+    DB_HOST, strlen(DB_HOST), DB_USER, strlen(DB_USER),
+    strlen(DB_PASS), bin2hex(substr(DB_PASS, 0, 4)), bin2hex(substr(DB_PASS, -4))
+));
+
 try {
     $pdo = new PDO(
         'sqlsrv:Server=' . DB_HOST . ';Database=' . DB_NAME,
