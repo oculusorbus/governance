@@ -3,3 +3,4 @@
 *.md
 *.txt
 .DS_Store
+config.php
