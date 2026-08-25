@@ -7,13 +7,6 @@ if (empty($_SESSION['auth'])) {
     exit;
 }
 
-// TEMP DEBUG: reveals only lengths/bytes, never the actual secret values
-die(sprintf(
-    'DB_HOST=[%s] len=%d | DB_USER=[%s] len=%d | DB_PASS len=%d, hex(first 4)=%s, hex(last 4)=%s',
-    DB_HOST, strlen(DB_HOST), DB_USER, strlen(DB_USER),
-    strlen(DB_PASS), bin2hex(substr(DB_PASS, 0, 4)), bin2hex(substr(DB_PASS, -4))
-));
-
 try {
     $pdo = new PDO(
         'sqlsrv:Server=' . DB_HOST . ';Database=' . DB_NAME,
@@ -22,7 +15,7 @@ try {
          PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
     );
 } catch (PDOException $e) {
-    die('Database connection failed. ' . $e->getMessage()); // TEMP: revert to generic message once fixed
+    die('Database connection failed.');
 }
 
 // ── Ensure dubbot_stats table exists ─────────────────────────────────────
