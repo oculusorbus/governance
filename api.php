@@ -12,7 +12,7 @@ header('Content-Type: application/json');
 
 try {
     $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+        'sqlsrv:Server=' . DB_HOST . ';Database=' . DB_NAME,
         DB_USER, DB_PASS,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
          PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
@@ -49,13 +49,13 @@ try { switch ($action) {
         $value  = $input['value'] ?? null;
 
         if (in_array($field, TEXT_FIELDS, true)) {
-            $pdo->prepare("UPDATE sites SET `$field` = ? WHERE id = ?")
+            $pdo->prepare("UPDATE sites SET [$field] = ? WHERE id = ?")
                 ->execute([$value ?: null, $siteId]);
             echo json_encode(['success' => true]);
 
         } elseif (array_key_exists($field, FK_FIELDS)) {
             $val = ($value !== '' && $value !== null) ? (int)$value : null;
-            $pdo->prepare("UPDATE sites SET `$field` = ? WHERE id = ?")
+            $pdo->prepare("UPDATE sites SET [$field] = ? WHERE id = ?")
                 ->execute([$val, $siteId]);
             echo json_encode(['success' => true]);
 
@@ -80,21 +80,21 @@ try { switch ($action) {
         [$table, $fkCol] = $map[$linkType];
 
         if ($url === '') {
-            $pdo->prepare("UPDATE sites SET `$fkCol` = NULL WHERE id = ?")->execute([$siteId]);
+            $pdo->prepare("UPDATE sites SET [$fkCol] = NULL WHERE id = ?")->execute([$siteId]);
             echo json_encode(['success' => true, 'id' => null, 'url' => '']);
             break;
         }
 
-        $stmt = $pdo->prepare("SELECT id FROM `$table` WHERE url = ?");
+        $stmt = $pdo->prepare("SELECT id FROM [$table] WHERE url = ?");
         $stmt->execute([$url]);
         $row = $stmt->fetch();
         if ($row) {
             $linkId = $row['id'];
         } else {
-            $pdo->prepare("INSERT INTO `$table` (url) VALUES (?)")->execute([$url]);
+            $pdo->prepare("INSERT INTO [$table] (url) VALUES (?)")->execute([$url]);
             $linkId = (int)$pdo->lastInsertId();
         }
-        $pdo->prepare("UPDATE sites SET `$fkCol` = ? WHERE id = ?")->execute([$linkId, $siteId]);
+        $pdo->prepare("UPDATE sites SET [$fkCol] = ? WHERE id = ?")->execute([$linkId, $siteId]);
         echo json_encode(['success' => true, 'id' => $linkId, 'url' => $url]);
         break;
 
@@ -143,11 +143,10 @@ try { switch ($action) {
     case 'search_employees':
         $q = '%' . ($input['q'] ?? '') . '%';
         $stmt = $pdo->prepare("
-            SELECT id, first_name, last_name, email
+            SELECT TOP (25) id, first_name, last_name, email
             FROM employees
             WHERE last_name LIKE ? OR first_name LIKE ? OR email LIKE ?
             ORDER BY last_name, first_name
-            LIMIT 25
         ");
         $stmt->execute([$q, $q, $q]);
         echo json_encode($stmt->fetchAll());
@@ -207,14 +206,14 @@ try { switch ($action) {
             echo json_encode(['error' => 'Invalid lookup or empty value']); break;
         }
         [$table, $field] = $map[$key];
-        $stmt = $pdo->prepare("SELECT id FROM `$table` WHERE `$field` = ?");
+        $stmt = $pdo->prepare("SELECT id FROM [$table] WHERE [$field] = ?");
         $stmt->execute([$value]);
         $existing = $stmt->fetch();
         if ($existing) {
             echo json_encode(['success' => true, 'id' => (int)$existing['id'], 'existing' => true]);
             break;
         }
-        $pdo->prepare("INSERT INTO `$table` (`$field`) VALUES (?)")->execute([$value]);
+        $pdo->prepare("INSERT INTO [$table] ([$field]) VALUES (?)")->execute([$value]);
         echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
         break;
 
@@ -228,7 +227,7 @@ try { switch ($action) {
             echo json_encode(['error' => 'Invalid field or ID']); break;
         }
         if ($field === 'email') $value = strtolower($value);
-        $pdo->prepare("UPDATE employees SET `$field` = ? WHERE id = ?")
+        $pdo->prepare("UPDATE employees SET [$field] = ? WHERE id = ?")
             ->execute([$value ?: null, $empId]);
         echo json_encode(['success' => true]);
         break;
@@ -273,27 +272,30 @@ try { switch ($action) {
         $rows = $input['stats'] ?? [];
         if (empty($rows)) { echo json_encode(['success' => true, 'saved' => 0]); break; }
         $stmt = $pdo->prepare("
-            INSERT INTO dubbot_stats
-                (site_id, score, accessibility, best_practices, web_governance,
-                 seo, bad_links, spelling, pages_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                score          = VALUES(score),
-                accessibility  = VALUES(accessibility),
-                best_practices = VALUES(best_practices),
-                web_governance = VALUES(web_governance),
-                seo            = VALUES(seo),
-                bad_links      = VALUES(bad_links),
-                spelling       = VALUES(spelling),
-                pages_count    = VALUES(pages_count),
-                updated_at     = CURRENT_TIMESTAMP
+            MERGE dubbot_stats AS target
+            USING (SELECT ? AS site_id) AS src
+                ON target.site_id = src.site_id
+            WHEN MATCHED THEN
+                UPDATE SET
+                    score          = ?,
+                    accessibility  = ?,
+                    best_practices = ?,
+                    web_governance = ?,
+                    seo            = ?,
+                    bad_links      = ?,
+                    spelling       = ?,
+                    pages_count    = ?,
+                    updated_at     = SYSUTCDATETIME()
+            WHEN NOT MATCHED THEN
+                INSERT (site_id, score, accessibility, best_practices, web_governance,
+                        seo, bad_links, spelling, pages_count)
+                VALUES (src.site_id, ?, ?, ?, ?, ?, ?, ?, ?);
         ");
         $saved = 0;
         foreach ($rows as $r) {
             $siteId = (int)($r['site_id'] ?? 0);
             if (!$siteId) continue;
-            $stmt->execute([
-                $siteId,
+            $vals = [
                 isset($r['score'])          ? (float)$r['score']          : null,
                 isset($r['accessibility'])  ? (float)$r['accessibility']  : null,
                 isset($r['best_practices']) ? (float)$r['best_practices'] : null,
@@ -302,7 +304,9 @@ try { switch ($action) {
                 isset($r['bad_links'])      ? (float)$r['bad_links']      : null,
                 isset($r['spelling'])       ? (float)$r['spelling']       : null,
                 isset($r['pages_count'])    ? (int)$r['pages_count']      : null,
-            ]);
+            ];
+            // $vals appears twice: once for the MERGE's UPDATE branch, once for its INSERT branch
+            $stmt->execute([$siteId, ...$vals, ...$vals]);
             $saved++;
         }
         echo json_encode(['success' => true, 'saved' => $saved]);

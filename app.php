@@ -9,7 +9,7 @@ if (empty($_SESSION['auth'])) {
 
 try {
     $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+        'sqlsrv:Server=' . DB_HOST . ';Database=' . DB_NAME,
         DB_USER, DB_PASS,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
          PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
@@ -20,7 +20,8 @@ try {
 
 // ── Ensure dubbot_stats table exists ─────────────────────────────────────
 $pdo->exec("
-    CREATE TABLE IF NOT EXISTS dubbot_stats (
+    IF OBJECT_ID('dubbot_stats','U') IS NULL
+    CREATE TABLE dubbot_stats (
         site_id         INT PRIMARY KEY,
         score           DECIMAL(6,2),
         accessibility   DECIMAL(6,2),
@@ -30,7 +31,7 @@ $pdo->exec("
         bad_links       DECIMAL(6,2),
         spelling        DECIMAL(6,2),
         pages_count     INT,
-        updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at      DATETIME2 DEFAULT SYSUTCDATETIME()
     )
 ");
 
@@ -94,7 +95,7 @@ foreach ($pdo->query("
 
 // ── Lookup tables for FK dropdowns ───────────────────────────────────────
 function fetchLookup(PDO $pdo, string $table, string $labelField): array {
-    return $pdo->query("SELECT id, `$labelField` AS label FROM `$table` ORDER BY `$labelField`")->fetchAll();
+    return $pdo->query("SELECT id, [$labelField] AS label FROM [$table] ORDER BY [$labelField]")->fetchAll();
 }
 $lookups = [
     'vp_areas'          => fetchLookup($pdo, 'vp_areas',          'code'),
