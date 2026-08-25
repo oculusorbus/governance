@@ -15,7 +15,7 @@ try {
          PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
     );
 } catch (PDOException $e) {
-    die('Database connection failed.');
+    die('Database connection failed. ' . $e->getMessage()); // TEMP: revert to generic message once fixed
 }
 
 // ── Ensure dubbot_stats table exists ─────────────────────────────────────
