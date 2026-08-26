@@ -484,12 +484,22 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
             padding:3px 6px; outline:none; background:#fff; }
 
         /* Badges */
-        .badge { display:inline-flex; align-items:center; justify-content:center;
+        .badge { position:relative; display:inline-flex; align-items:center; justify-content:center;
                  width:26px; height:26px; border-radius:50%; color:#fff;
                  font-size:10px; font-weight:700; cursor:pointer;
                  margin:1px; transition:transform .1s; }
         .badge:hover { transform:scale(1.15); }
+        /* Not-enrolled-in-DubBot marker: a "!" glyph, not color alone (WCAG 1.4.1) —
+           the ring is a secondary reinforcement, the glyph is what actually carries
+           the meaning so it still reads correctly for colorblind users/in grayscale. */
         .badge.db-missing { box-shadow:0 0 0 2px #fff, 0 0 0 4px #EF4444; }
+        .badge.db-missing::after {
+            content:'!'; position:absolute; top:-5px; right:-5px;
+            width:14px; height:14px; border-radius:50%;
+            background:#fff; color:#B91C1C; border:1.5px solid #B91C1C;
+            font-size:10px; font-weight:900; line-height:13px; text-align:center;
+            box-shadow:0 1px 2px rgba(0,0,0,.35);
+        }
         .empty-cell { color:#D5CFC8; }
 
         /* Link cells */
