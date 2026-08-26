@@ -165,6 +165,24 @@ function sortBtn(string $col): string {
          . '</svg></button>';
 }
 
+// Not-enrolled-in-DubBot marker: DubBot's own "Dashboards" nav icon, rendered
+// small as a solid silhouette (the original's fine gear/ribbon detail doesn't
+// survive shrinking, so a flat fill reads better than trying to keep its
+// original multi-color styling). The empty `clip-path` DubBot's markup used
+// is dropped — it only clipped to the icon's own full canvas, so it did
+// nothing worth keeping. `aria-hidden`: purely decorative, the actual text
+// equivalent is the " · Not enrolled in DubBot" appended to the tooltip below.
+function dubbotMissingMarkerSvg(): string {
+    return '<svg class="db-missing-icon" viewBox="0 0 114 114" aria-hidden="true" focusable="false" fill="#B91C1C">'
+         . '<path d="M74.45 98.9l.2-.3.2-.3c.2-.4.5-1.1.7-1.9.2-.7.4-1.5.6-1.9l5.8-23.1 5.8-23.1c.1-.3 0-.5-.2-.7-.2-.2-.4-.3-.7-.3h-6.8l-.2.1-11 3.1-6.7 1.9c-3.1.9-6.5.9-9.6 0l-6.7-1.9-11-3.1c-.1 0-.1-.1-.2-.1h-6.6c-.3 0-.5.1-.7.3-.2.2-.2.5-.2.7l5.7 23.1 5.7 23.1c.2.4.4 1.2.6 1.9.2.7.4 1.4.7 1.8l.2.3.2.3-1.7 2.1-1.7 2.1c-.1.1-.1.2-.1.3 0 .1 0 .2.1.3l2.5 2.4 2.5 2.4c.1.1.2.1.3.1.1 0 .2 0 .3-.1l2.2-1.7 2.2-1.7.3.2.3.2c.8.4 1.6.8 2.4 1.1.8.3 1.7.6 2.5.8l.3.1.3.1.3 2.7.3 2.7c0 .1.1.2.2.3.1.1.2.1.3.1h7c.1 0 .2 0 .3-.1.1-.1.1-.2.2-.3l.3-2.4.3-2.4c0-.2.1-.3.2-.5.1-.1.3-.2.5-.3.9-.2 1.7-.5 2.5-.8.8-.3 1.6-.7 2.4-1.1h.2c.2-.1.3-.1.5-.1s.3.1.5.2l1.9 1.5 1.9 1.5c.1.1.2.1.3.1.1 0 .2 0 .3-.1l2.2-2.1 2.2-2.1c.2-.2.4-.5.4-.8 0-.3-.1-.6-.3-.9l-1.5-1.8-1.9-1.9zm-9.4-9.1c0 .1 0 .2-.1.3-.1.1-.2.1-.3.2l-.7.1-.7.1c-.1.3-.2.6-.3.8-.1.3-.2.5-.4.8l.5.6.5.6c.1.1.1.2.1.3 0 .1-.1.2-.1.3l-.8.8-.8.8c-.1.1-.2.1-.3.1-.1 0-.2 0-.3-.1l-.5-.4-.6-.4c-.2.1-.5.3-.8.4-.3.1-.6.2-1 .2l-.1.7-.1.7c0 .1-.1.2-.2.3-.1.1-.2.1-.3.1h-2.2c-.1 0-.2 0-.3-.1-.1-.1-.1-.2-.2-.3l-.1-.7-.1-.7c-.3-.1-.6-.2-.8-.3-.3-.1-.5-.2-.8-.4l-.6.5-.6.5c-.1.1-.2.1-.3.1-.1 0-.2-.1-.3-.1l-.8-.8-.8-.8c-.1-.1-.1-.2-.1-.3 0-.1 0-.2.1-.3l.5-.6.5-.6c-.1-.2-.3-.5-.4-.8-.1-.3-.2-.5-.3-.8l-.7-.1-.7-.1c-.1 0-.2-.1-.3-.2-.1-.1-.1-.2-.1-.3v-1.4h1.6l3.1-15 3.1-15c.2-.3.5-.4.8-.4.3 0 .6.2.8.4l2.9 15 2.9 15h1.5v1.3zM101.75 95.7v-4.6c0-.2 0-.5-.1-.7v-.1c0-2-1.6-3.7-3.5-3.8.1-.3.1-.6.1-1 0-1.4-.7-2.6-1.8-3.2 1.1-.6 1.9-1.9 1.8-3.3 0-1.6-1-3-2.4-3.5 1.2-.6 2.1-1.9 2.1-3.4 0-1.4-.8-2.7-1.9-3.3 1-.7 1.6-1.8 1.6-3.1 0-1.4-.7-2.6-1.9-3.3 1.1-.6 1.9-1.9 1.9-3.3 0-2.1-1.6-3.7-3.6-3.7h-2.3c-2 0-3.6 1.7-3.6 3.7 0 1.4.7 2.6 1.8 3.3-1.1.7-1.9 1.9-1.9 3.3s.8 2.6 1.9 3.3c-1 .7-1.6 1.8-1.6 3.1 0 1.6 1 3 2.4 3.5-1.2.6-2.1 1.9-2.1 3.4 0 1.4.7 2.6 1.9 3.3-1.1.6-1.9 1.9-1.9 3.3 0 .3.1.6.1.9-2 0-3.6 1.7-3.6 3.8v5.4c0 1.7 1.3 3 2.9 3 1.6 0 2.9-1.3 2.9-3v-1.6h4.8v1.6c0 1.7 1.3 3 2.9 3.1 1.8-.1 3.1-1.4 3.1-3.1z"></path>'
+         . '<circle cx="85.55" cy="60.5" r="7.2"></circle>'
+         . '<path d="M12.35 95.7c0 1.7 1.3 3 2.9 3.1 1.6 0 2.9-1.4 2.9-3.1v-1.6h4.8v1.6c0 1.7 1.3 3 2.9 3 1.6 0 2.9-1.4 2.9-3v-5.4c0-2.1-1.6-3.8-3.6-3.8.1-.3.1-.6.1-.9 0-1.4-.7-2.6-1.9-3.3 1.1-.6 1.9-1.8 1.9-3.3 0-1.5-.8-2.8-2.1-3.4 1.4-.5 2.4-1.9 2.4-3.5 0-1.3-.6-2.4-1.6-3.1 1.1-.7 1.9-1.9 1.9-3.3s-.8-2.6-1.9-3.3c1.1-.6 1.8-1.9 1.8-3.3 0-2.1-1.6-3.8-3.6-3.7h-2.3c-2 0-3.6 1.7-3.6 3.7 0 1.4.8 2.6 1.9 3.3-1.1.6-1.8 1.9-1.9 3.3 0 1.3.6 2.4 1.6 3.1-1.1.6-1.9 1.9-1.9 3.3 0 1.5.9 2.8 2.1 3.4-1.4.5-2.4 1.9-2.4 3.5 0 1.4.8 2.6 1.8 3.3-1.1.6-1.9 1.8-1.8 3.2 0 .3 0 .7.1 1-1.9.1-3.5 1.7-3.5 3.8v.1c.1.2.1.4.1.7v4.6z"></path>'
+         . '<circle cx="28.75" cy="60.5" r="7.2"></circle>'
+         . '<path d="M73.05 29.4c0 1.4-.6 2.7-1.5 3.6-.9.9-2.2 1.5-3.6 1.5s-2.7-.6-3.6-1.5c-.9-.9-1.5-2.2-1.5-3.6s.6-2.7 1.5-3.6c.9-.9 2.2-1.5 3.6-1.5s2.7.6 3.6 1.5c1 1 1.5 2.2 1.5 3.6zM51.45 29.4c0 1.4-.6 2.7-1.5 3.6-.9.9-2.2 1.5-3.6 1.5s-2.7-.6-3.6-1.5c-.9-.9-1.5-2.2-1.5-3.6s.6-2.7 1.5-3.6c.9-.9 2.2-1.5 3.6-1.5s2.7.6 3.6 1.5c1 1 1.5 2.2 1.5 3.6z"></path>'
+         . '<path d="M89.95 28.8l-3.1-.4-3.1-.4c-.3-1.2-.7-2.3-1.2-3.4s-1-2.2-1.6-3.2l1.9-2.4 1.9-2.4c.3-.4.4-.9.4-1.3 0-.5-.2-.9-.5-1.3l-3.2-3.2-3.1-3.2c-.3-.3-.8-.5-1.3-.6-.5-.1-.9.1-1.3.4l-2.4 2-2.4 1.9c-1-.6-2.1-1.1-3.2-1.6s-2.2-.8-3.4-1.1l-.4-3.1-.4-3.1c-.1-.5-.3-.9-.6-1.2-.4-.3-.8-.5-1.3-.5h-9c-.5 0-.9.2-1.3.5s-.6.7-.6 1.2l-.4 3.1-.4 3.1c-1.2.3-2.3.7-3.4 1.2s-2.2 1-3.2 1.6l-2.4-1.9-2.4-1.9c-.4-.3-.8-.4-1.3-.4s-.9.2-1.3.5l-3.2 3.2-3.2 3.2c-.3.3-.5.8-.6 1.3-.1.5.1.9.4 1.3l1.9 2.4 1.9 2.4c-.6 1-1.1 2.1-1.6 3.2s-.8 2.2-1.2 3.4l-3.1.4-3.1.4c-.5.1-.9.3-1.2.6-.3.3-.5.8-.5 1.3v8.9c0 .5.2.9.5 1.3.3.3.7.6 1.2.6l3.1.4 3.1.4 21.1 5.4c3.6.9 7.4.9 11 0l21.1-5.4 3.1-.4 3.1-.4c.5-.1.9-.3 1.2-.7.3-.3.5-.8.5-1.3v-8.9c0-.5-.2-.9-.5-1.3-.1-.3-.5-.6-1-.6zm-13.5 4.4c0 .1-.1.2-.2.3-.1.1-.2.1-.4.1l-.8-.1-.8-.1c-.2.3-.3.5-.6.8-.2.2-.4.5-.7.7l.3.8.3.8v.4c0 .1-.1.2-.2.3l-1 .4-1.1.6c-.1.1-.3.1-.4 0-.1 0-.2-.1-.3-.2l-.5-.7-.5-.7c-.3.1-.6.1-.9.2h-1l-.3.8-.3.8c-.1.1-.1.2-.3.3-.1.1-.2.1-.4 0l-1.1-.3-1.1-.3c-.1 0-.2-.1-.3-.2-.1-.1-.1-.2-.1-.4l.1-.8.1-.8c-.3-.2-.5-.4-.8-.6-.2-.2-.5-.4-.7-.7l-.8.3-.8.3h-.4c-.1 0-.2-.1-.3-.2l-.6-1.1-.6-1.1c-.1-.1-.1-.2-.1-.4 0-.1.1-.2.2-.3l.7-.5.7-.5c-.1-.3-.1-.6-.2-.9v-1l-.8-.3-.8-.3c-.1-.1-.2-.1-.3-.3-.1-.1-.1-.2 0-.4l.3-1.2.3-1.2c0-.1.1-.2.2-.3.1-.1.2-.1.4-.1l.8.1.8.1c.2-.3.4-.5.6-.8.2-.3.4-.5.7-.7l-.3-.8-.3-.8v-.4c0-.1.1-.2.2-.3l1.1-.6 1.1-.6c.1-.1.2-.1.4 0 .1 0 .2.1.3.2l.5.7.5.7c.3-.1.6-.1.9-.2h1l.3-.8.3-.8c0-.1.1-.2.3-.3.1-.1.3-.1.4 0l1.1.3 1.1.3c.1 0 .2.1.3.2.1.1.1.2.1.4l-.1.8-.1.8c.3.2.5.4.8.6.2.2.5.4.7.6l.8-.3.8-.3h.4c.1 0 .2.1.3.2l.6 1.1.6 1.1c.1.1.1.2 0 .4 0 .1-.1.2-.2.3l-.7.5-.5.9c.1.3.1.6.2.9v1l.8.3.8.3c.1 0 .2.1.3.3.1.1.1.2 0 .4l-.3 1.2-.5 1.1zm-21.2-6.8c.1.1.1.2 0 .4 0 .1-.1.2-.2.3l-.7.4-.7.5c.1.3.1.6.1 1v1l.8.4.8.4.3.3c0 .1.1.2 0 .4l-.4 1.1-.4 1.1c0 .1-.1.2-.2.3-.1.1-.2.1-.4.1l-.8-.4-.8-.2c-.2.3-.4.5-.6.8-.2.3-.4.5-.7.7l.3.8.3.8v.4c0 .1-.1.2-.2.3l-1.2.4-1.1.5c-.1.1-.2.1-.4 0-.1 0-.2-.1-.3-.2l-.4-.6-.4-.7c-.3.1-.6.1-1 .1h-1l-.4.8-.4.8c0 .1-.1.2-.3.2-.1 0-.3.1-.4 0l-1.1-.4-1-.4c-.1 0-.2-.1-.3-.2-.1-.1-.1-.2-.1-.4l.2-.8.2-.8c-.3-.2-.5-.4-.8-.6-.2-.2-.5-.4-.7-.7l-.8.3-.7.3h-.4c-.1 0-.2-.1-.3-.2l-.5-1.1-.5-1.1c-.1-.1-.1-.3 0-.4 0-.1.1-.2.2-.3l.7-.5.7-.5c-.1-.3-.1-.6-.1-1v-1l-.8-.4-.8-.4-.3-.3c0-.1-.1-.2 0-.4l.4-1.1.4-1.1c0-.1.1-.2.2-.3.1-.1.2-.1.4-.1l.8.2.8.2c.2-.3.4-.5.6-.8.2-.2.4-.5.7-.7l-.3-.8-.3-.8v-.4c0-.2.1-.2.3-.3l1.1-.5 1.1-.5c.1-.1.2-.1.4 0 .1 0 .2.1.3.2l.5.7.5.7c.3-.1.6-.1 1-.1h1l.4-.8.4-.8c.1-.1.2-.2.3-.2.1 0 .2-.1.4 0l.7.7 1.1.4c.1 0 .2.1.3.2.1.1.1.2.1.4l-.2.8-.2.8c.3.2.5.4.8.6.2.2.5.4.7.7l.8-.3.8-.3h.4c.1 0 .2.1.3.2l.5 1.1.5 1.1z"></path>'
+         . '</svg>';
+}
+
 // $checkDubbot: when true, badges for people confirmed (via a prior DubBot
 // refresh) NOT to have a DubBot account get a red ring. Only meaningful for
 // roles that are actually expected to work inside DubBot (content/tech lead).
@@ -182,8 +200,9 @@ function renderBadges(array $people, bool $checkDubbot = false): string {
         $cls     = 'badge' . ($missing ? ' db-missing' : '');
         $email   = h(strtolower((string)($p['email'] ?? '')));
         $empId   = (int)($p['emp_id'] ?? 0);
+        $marker  = $missing ? dubbotMissingMarkerSvg() : '';
         $out    .= "<span class=\"$cls\" style=\"background:$color\" data-tip=\"$tip\""
-                 . " data-email=\"$email\" data-emp-id=\"$empId\">$ini</span>";
+                 . " data-email=\"$email\" data-emp-id=\"$empId\">$ini$marker</span>";
     }
     return $out;
 }
@@ -493,11 +512,10 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
            the ring is a secondary reinforcement, the glyph is what actually carries
            the meaning so it still reads correctly for colorblind users/in grayscale. */
         .badge.db-missing { box-shadow:0 0 0 2px #fff, 0 0 0 4px #EF4444; }
-        .badge.db-missing::after {
-            content:'!'; position:absolute; top:-5px; right:-5px;
-            width:14px; height:14px; border-radius:50%;
-            background:#fff; color:#B91C1C; border:1.5px solid #B91C1C;
-            font-size:10px; font-weight:900; line-height:13px; text-align:center;
+        .db-missing-icon {
+            position:absolute; top:-6px; right:-6px;
+            width:15px; height:15px; border-radius:50%;
+            background:#fff; border:1.5px solid #B91C1C; padding:1.5px;
             box-shadow:0 1px 2px rgba(0,0,0,.35);
         }
         .empty-cell { color:#D5CFC8; }
@@ -1177,6 +1195,9 @@ $defaultHidden = ['site', 'description'];
 const LOOKUPS        = <?= $lookupsJson ?>;
 const EMPLOYEES      = <?= $employeesJson ?>;
 const PEOPLE_OPTIONS = <?= $filterPeopleJson ?>;
+// Same markup renderBadges() emits server-side, so the live post-refresh
+// toggle in checkDubbotEnrollment() below stays in sync with a fresh page load.
+const DB_MISSING_ICON_SVG = <?= json_encode(dubbotMissingMarkerSvg(), JSON_HEX_TAG | JSON_HEX_APOS) ?>;
 
 // ── Column visibility ──────────────────────────────────────────────────────
 const ALL_TOGGLE_COLS = ['url','site','description','vp_area','vp_lead','college_dept',
@@ -2970,6 +2991,14 @@ async function checkDubbotEnrollment(accounts) {
             const email    = badge.dataset.email || '';
             const enrolled = email ? emails.has(email) : false;
             badge.classList.toggle('db-missing', !enrolled);
+
+            // The corner marker is a real SVG element (PHP renders it on
+            // page load), not pure CSS — keep it in sync here too, since
+            // toggling the class alone won't insert/remove it.
+            const hasIcon = !!badge.querySelector('.db-missing-icon');
+            if (!enrolled && !hasIcon) badge.insertAdjacentHTML('beforeend', DB_MISSING_ICON_SVG);
+            else if (enrolled && hasIcon) badge.querySelector('.db-missing-icon').remove();
+
             byEmpId.set(empId, enrolled);
         });
 
