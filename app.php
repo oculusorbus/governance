@@ -35,6 +35,13 @@ $pdo->exec("
     )
 ");
 
+// ── Ensure employees.dubbot_enrolled tracking columns exist ──────────────
+// NULL = never checked; 0 = checked, not a DubBot user; 1 = checked, enrolled.
+$pdo->exec("
+    IF COL_LENGTH('employees','dubbot_enrolled') IS NULL
+        ALTER TABLE employees ADD dubbot_enrolled BIT NULL, dubbot_checked_at DATETIME2 NULL
+");
+
 // ── Fetch all sites with joined display values ────────────────────────────
 $sites = $pdo->query("
     SELECT s.id, s.url, s.site_name, s.description, s.is_active,
@@ -76,7 +83,7 @@ $sites = $pdo->query("
 $rolesBySite = [];
 foreach ($pdo->query("
     SELECT sr.id AS role_id, sr.site_id, sr.role,
-           e.id AS emp_id, e.first_name, e.last_name, e.email
+           e.id AS emp_id, e.first_name, e.last_name, e.email, e.dubbot_enrolled
     FROM site_roles sr JOIN employees e ON sr.employee_id = e.id
     ORDER BY sr.site_id, sr.role, e.last_name, e.first_name
 ") as $r) {
@@ -158,14 +165,25 @@ function sortBtn(string $col): string {
          . '</svg></button>';
 }
 
-function renderBadges(array $people): string {
+// $checkDubbot: when true, badges for people confirmed (via a prior DubBot
+// refresh) NOT to have a DubBot account get a red ring. Only meaningful for
+// roles that are actually expected to work inside DubBot (content/tech lead).
+function renderBadges(array $people, bool $checkDubbot = false): string {
     if (!$people) return '<span class="empty-cell">—</span>';
     $out = '';
     foreach ($people as $p) {
-        $ini   = initials((string)$p['first_name'], (string)$p['last_name']);
-        $color = badgeColor($p['last_name'] . $p['first_name']);
-        $tip   = h(trim($p['last_name'] . ', ' . $p['first_name']) . ($p['email'] ? ' · ' . $p['email'] : ''));
-        $out  .= "<span class=\"badge\" style=\"background:$color\" data-tip=\"$tip\">$ini</span>";
+        $ini     = initials((string)$p['first_name'], (string)$p['last_name']);
+        $color   = badgeColor($p['last_name'] . $p['first_name']);
+        $missing = $checkDubbot && array_key_exists('dubbot_enrolled', $p)
+                   && $p['dubbot_enrolled'] !== null && (int)$p['dubbot_enrolled'] === 0;
+        $tip     = h(trim($p['last_name'] . ', ' . $p['first_name'])
+                   . ($p['email'] ? ' · ' . $p['email'] : '')
+                   . ($missing ? ' · Not enrolled in DubBot' : ''));
+        $cls     = 'badge' . ($missing ? ' db-missing' : '');
+        $email   = h(strtolower((string)($p['email'] ?? '')));
+        $empId   = (int)($p['emp_id'] ?? 0);
+        $out    .= "<span class=\"$cls\" style=\"background:$color\" data-tip=\"$tip\""
+                 . " data-email=\"$email\" data-emp-id=\"$empId\">$ini</span>";
     }
     return $out;
 }
@@ -471,6 +489,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                  font-size:10px; font-weight:700; cursor:pointer;
                  margin:1px; transition:transform .1s; }
         .badge:hover { transform:scale(1.15); }
+        .badge.db-missing { box-shadow:0 0 0 2px #fff, 0 0 0 4px #EF4444; }
         .empty-cell { color:#D5CFC8; }
 
         /* Link cells */
@@ -853,7 +872,7 @@ $defaultHidden = ['site', 'description'];
             data-site-id="<?= $sid ?>" data-role="<?= $role ?>"
             data-names="<?= h(fullNames($siteRoles[$role] ?? [])) ?>"
             onclick="openPeopleModal(<?= $sid ?>, '<?= $role ?>', this)">
-            <?= renderBadges($siteRoles[$role] ?? []) ?>
+            <?= renderBadges($siteRoles[$role] ?? [], in_array($role, ['content_lead', 'tech_lead'], true)) ?>
         </td>
         <?php endforeach; ?>
 
@@ -2808,6 +2827,9 @@ async function loadDubBotData() {
     const totalDbSites = accounts.reduce((n, a) => n + a.sites.length, 0);
     dbSetStatus('loading', `Matching ${totalDbSites} DubBot sites…`);
 
+    // Independent of the site-stats fetch below — never blocks or fails it.
+    checkDubbotEnrollment(accounts).catch(e => console.error('DubBot enrollment check failed:', e));
+
     // ── Step 2: build normalized URL → {siteId, accountId} map ───────────
     const urlMap = {};
     for (const acc of accounts) {
@@ -2899,6 +2921,51 @@ async function loadDubBotData() {
         dbSetStatus('error', e.message);
         matched.forEach(r => dbFillRow(r.row, null));
     }
+}
+
+// ── Check which Content/Tech Leads have a DubBot account ───────────────────
+// Pulls every user across all discovered DubBot accounts, matches by email
+// against the Content Lead / Tech Lead badges on screen, rings the ones with
+// no match, and persists the result to employees.dubbot_enrolled so it
+// survives until the next refresh (see renderBadges()/PHP-side rendering).
+async function checkDubbotEnrollment(accounts) {
+    const emails = new Set();
+
+    for (const acc of accounts) {
+        let page = 1;
+        for (;;) {
+            const data = await dbGql(`{
+                users(accountId:"${acc.id}", page:${page}, perPage:200, sortBy: name, sortOrder: asc) {
+                    currentPage
+                    totalPages
+                    nodes { email }
+                }
+            }`);
+            const res = data?.users;
+            dbExtractList(res?.nodes).forEach(u => {
+                if (u?.email) emails.add(u.email.toLowerCase());
+            });
+            if (!res || !res.totalPages || res.currentPage >= res.totalPages) break;
+            page++;
+        }
+    }
+
+    // One entry per employee (a person can be Content/Tech Lead on many
+    // sites — only need to check/save their enrollment status once).
+    const byEmpId = new Map();
+    document.querySelectorAll('td.col-content_lead .badge[data-emp-id], td.col-tech_lead .badge[data-emp-id]')
+        .forEach(badge => {
+            const empId = parseInt(badge.dataset.empId, 10);
+            if (!empId) return;
+            const email    = badge.dataset.email || '';
+            const enrolled = email ? emails.has(email) : false;
+            badge.classList.toggle('db-missing', !enrolled);
+            byEmpId.set(empId, enrolled);
+        });
+
+    if (!byEmpId.size) return;
+    const updates = [...byEmpId.entries()].map(([emp_id, enrolled]) => ({ emp_id, enrolled }));
+    await api({ action: 'save_dubbot_enrollment', updates });
 }
 
 // ── Persist DubBot stats for changed rows ──────────────────────────────────

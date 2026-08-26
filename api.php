@@ -312,6 +312,25 @@ try { switch ($action) {
         echo json_encode(['success' => true, 'saved' => $saved]);
         break;
 
+    // ── Save DubBot enrollment status for Content/Tech Lead employees ─────
+    case 'save_dubbot_enrollment':
+        $rows = $input['updates'] ?? [];
+        if (empty($rows)) { echo json_encode(['success' => true, 'saved' => 0]); break; }
+        $stmt = $pdo->prepare("
+            UPDATE employees
+            SET dubbot_enrolled = ?, dubbot_checked_at = SYSUTCDATETIME()
+            WHERE id = ?
+        ");
+        $saved = 0;
+        foreach ($rows as $r) {
+            $empId = (int)($r['emp_id'] ?? 0);
+            if (!$empId) continue;
+            $stmt->execute([(int)(bool)($r['enrolled'] ?? false), $empId]);
+            $saved++;
+        }
+        echo json_encode(['success' => true, 'saved' => $saved]);
+        break;
+
     // ── Add a new site row ────────────────────────────────────────────────
     case 'add_site':
         $url = trim($input['url'] ?? '');
