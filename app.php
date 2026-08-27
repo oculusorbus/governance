@@ -322,8 +322,14 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
          * UTSA Orange    #F15A22   Talavera Blue #265BF7
          * Access. Orange #D3430D   Mission Clay  #DBB485
          * Brass          #A06620   Limestone     #F8F4F1
-         * Concrete       #EBE6E2   Smoke         #7A6A5A
+         * Concrete       #EBE6E2   Smoke         #6B5A4A*
          * Brand Black    #332F21
+         *
+         * * Smoke is darkened from the original brand value (#7A6A5A) — at
+         *   #7A6A5A it failed 4.5:1 (WCAG 1.4.3) against the zebra-striped
+         *   sticky-column background (#F2EDE9, 4.47:1) and against the
+         *   link-cell "+" chip background (#EBE6E2, 4.20:1). #6B5A4A clears
+         *   both with margin (5.3–6.6:1) and still reads as the same color.
          */
 
         *, *::before, *::after { box-sizing: border-box; }
@@ -440,7 +446,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                           flex-direction:column; }
         #filter-popover.open { display:flex; }
         #filter-pop-search, #filter-pop-text {
-            width:100%; padding:5px 8px; border:1px solid #7A6A5A; border-radius:6px;
+            width:100%; padding:5px 8px; border:1px solid #6B5A4A; border-radius:6px;
             font-size:12px; outline:none; margin-bottom:6px; box-sizing:border-box; }
         #filter-pop-search:focus, #filter-pop-text:focus { border-color:#265BF7; }
         .filter-pop-list { overflow-y:auto; max-height:200px; margin-bottom:6px; }
@@ -570,7 +576,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         /* Editable cells */
         td.editable { cursor:pointer; position:relative; }
         td.editable:hover { background:rgba(200,220,255,.2) !important; }
-        td.editable:not(.editing):hover::after { content:'✎'; font-size:12px; color:#7A6A5A;
+        td.editable:not(.editing):hover::after { content:'✎'; font-size:12px; color:#6B5A4A;
                                                 position:absolute; right:4px; top:50%;
                                                 transform:translateY(-50%); pointer-events:none; }
 
@@ -580,21 +586,28 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .site-inner a, .site-inner > span { flex:1; min-width:0; overflow:hidden;
             text-overflow:ellipsis; white-space:nowrap; text-decoration:none; }
         .site-inner a { color:#265BF7; }
-        .site-inner > span.empty-cell { color:#7A6A5A; }
-        /* Always rendered at a passing contrast (5.2:1 on white) rather than
-           hidden at opacity:0 until hover — an opacity:0 element still has
-           a specified foreground color, and automated contrast checkers
-           (WAVE) evaluate that color against the background regardless of
-           whether it's currently painted, so "invisible until hover" read
-           as a contrast failure on every single row. This is also a real
-           accessibility fix, not just a checker workaround: a keyboard or
-           touch user could previously Tab to this button but never see it,
-           since nothing revealed it outside of a mouse :hover. */
+        .site-inner > span.empty-cell { color:#6B5A4A; }
+        /* Hidden until hover/focus, on purpose — showing it on every row
+           was redundant clutter and clipped long site names/URLs. This is
+           back to opacity:0 by default, but now also reveals on the
+           button's own :focus (it never did before — only the ancestor
+           td's :hover showed it, so a keyboard user could Tab to a button
+           that stayed invisible the whole time, an actual WCAG 2.4.7
+           Focus Visible failure). Hidden-until-hover/focus is a
+           WCAG-recognized pattern (the same category as a skip link), but
+           automated scanners like WAVE can't simulate the reveal state and
+           will likely keep flagging this element's resting color as a
+           contrast error — that's a known tool limitation, not a real
+           failure, since the content genuinely isn't visible/perceivable
+           in its default state. */
         .site-edit-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
-                         background:none; border:none;
-                         cursor:pointer; color:#7A6A5A; font-size:12px;
+                         opacity:0; background:none; border:none;
+                         cursor:pointer; color:#6B5A4A; font-size:12px;
                          padding:2px 3px; border-radius:3px; line-height:1;
-                         transition:color .1s, background-color .1s; }
+                         transition:opacity .1s, color .1s; }
+        td.col-site:hover .site-edit-btn,
+        td.col-url:hover  .site-edit-btn,
+        .site-edit-btn:focus { opacity:1; }
         .site-edit-btn:hover { color:#265BF7 !important; background:#EBE6E2; }
 
         /* Editing state */
@@ -619,7 +632,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
             background:#fff; border:1.5px solid #B91C1C; padding:1.5px;
             box-shadow:0 1px 2px rgba(0,0,0,.35);
         }
-        .empty-cell { color:#7A6A5A; }
+        .empty-cell { color:#6B5A4A; }
 
         /* Link cells */
         .link-cell { cursor:pointer; text-align:center; }
@@ -629,7 +642,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                           font-size:14px; pointer-events:none; }
         .link-cell-add  { display:inline-flex; align-items:center; justify-content:center;
                           width:22px; height:22px; border-radius:6px; background:#EBE6E2;
-                          color:#7A6A5A; font-size:16px; font-weight:300; pointer-events:none; }
+                          color:#6B5A4A; font-size:16px; font-weight:300; pointer-events:none; }
 
         /* ── Tom Select overrides ─────────────────────────────────────── */
         .ts-wrapper { min-width:100%; }
@@ -648,13 +661,13 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                      max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(3,32,68,.3); }
         #modal-box h2 { font-family:'Arsenal', system-ui, sans-serif;
                         margin:0 0 4px; font-size:17px; font-weight:700; color:#032044; }
-        #modal-box .subtitle { color:#7A6A5A; font-size:12px; margin-bottom:16px; }
+        #modal-box .subtitle { color:#6B5A4A; font-size:12px; margin-bottom:16px; }
         .modal-person { display:flex; align-items:center; gap:8px; padding:6px 0;
                         border-bottom:1px solid #EBE6E2; }
         .modal-person:last-child { border:none; }
         .modal-person-info { flex:1; }
         .modal-person-info .name { font-weight:600; font-size:13px; }
-        .modal-person-info .email { font-size:12px; color:#7A6A5A; }
+        .modal-person-info .email { font-size:12px; color:#6B5A4A; }
         .btn-remove { background:none; border:none; color:#ef4444; font-size:18px;
                       cursor:pointer; padding:0 4px; line-height:1; }
         .btn-remove:hover { color:#b91c1c; }
@@ -670,12 +683,12 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .emp-editable { cursor:pointer; padding:1px 3px; border-radius:3px;
                         transition:background .1s; display:inline; }
         .emp-editable:hover { background:#C8DCFF; }
-        .emp-editable.emp-email { color:#7A6A5A; font-size:12px; }
-        .emp-editable.emp-no-email { color:#7A6A5A; font-size:12px; }
+        .emp-editable.emp-email { color:#6B5A4A; font-size:12px; }
+        .emp-editable.emp-no-email { color:#6B5A4A; font-size:12px; }
         .emp-editable.emp-no-email::after { content:'+ email'; }
         .emp-field-input { font-size:13px; border:1px solid #265BF7; border-radius:3px;
                            padding:1px 5px; outline:none; min-width:80px; max-width:160px; }
-        .emp-field-input[data-field="email"] { font-size:12px; color:#7A6A5A; max-width:200px; }
+        .emp-field-input[data-field="email"] { font-size:12px; color:#6B5A4A; max-width:200px; }
 
         /* New person form */
         .modal-new-toggle { margin-top:10px; text-align:center; }
@@ -686,7 +699,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                            padding:12px; margin-top:8px; }
         .new-person-fields { display:grid; grid-template-columns:1fr 1fr; gap:6px;
                              margin-bottom:10px; }
-        .new-person-fields input { padding:5px 8px; border:1px solid #7A6A5A; border-radius:6px;
+        .new-person-fields input { padding:5px 8px; border:1px solid #6B5A4A; border-radius:6px;
                                    font-size:12px; outline:none; }
         .new-person-fields input:focus { border-color:#265BF7; }
         .new-person-fields input.full-width { grid-column:1/-1; }
@@ -1154,9 +1167,9 @@ $defaultHidden = ['site', 'description'];
      style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center">
     <div role="dialog" aria-modal="true" aria-labelledby="link-modal-title" style="background:#fff;border-radius:12px;padding:24px;width:500px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
         <h2 id="link-modal-title" style="margin:0 0 4px;font-size:15px;font-weight:700;color:#032044"></h2>
-        <p id="link-modal-site" style="margin:0 0 14px;font-size:12px;color:#7A6A5A"></p>
+        <p id="link-modal-site" style="margin:0 0 14px;font-size:12px;color:#6B5A4A"></p>
         <div id="link-current-wrap" style="display:none;margin-bottom:14px;padding:10px 12px;background:#F8F4F1;border-radius:8px;border:1px solid #EBE6E2">
-            <div style="font-size:12px;font-weight:600;color:#7A6A5A;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Current URL</div>
+            <div style="font-size:12px;font-weight:600;color:#6B5A4A;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Current URL</div>
             <a id="link-current-url" href="#" target="_blank"
                style="font-size:12px;color:#265BF7;word-break:break-all;text-decoration:none;">
             </a>
@@ -1191,7 +1204,7 @@ $defaultHidden = ['site', 'description'];
      style="display:none;position:fixed;inset:0;background:rgba(3,32,68,.5);z-index:200;align-items:center;justify-content:center">
     <div role="dialog" aria-modal="true" aria-labelledby="add-site-title" style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(3,32,68,.3)">
         <h2 id="add-site-title" style="font-family:'Arsenal',system-ui,sans-serif;margin:0 0 4px;font-size:17px;font-weight:700;color:#032044">Add New Site</h2>
-        <p style="margin:0 0 16px;font-size:12px;color:#7A6A5A">Enter the domain without https:// (e.g. newsite.utsa.edu)</p>
+        <p style="margin:0 0 16px;font-size:12px;color:#6B5A4A">Enter the domain without https:// (e.g. newsite.utsa.edu)</p>
         <input id="add-site-input" type="text" placeholder="newsite.utsa.edu" aria-label="Site domain, without https://"
                style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
         <p id="add-site-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
@@ -1215,9 +1228,9 @@ $defaultHidden = ['site', 'description'];
             <label for="site-edit-name" style="display:block;font-size:12px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Site Name</label>
             <input id="site-edit-name" type="text" placeholder="My Site Name"
                    style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
-            <label for="site-edit-url" style="display:block;font-size:12px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#7A6A5A">(without https://)</span></label>
+            <label for="site-edit-url" style="display:block;font-size:12px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#6B5A4A">(without https://)</span></label>
             <input id="site-edit-url" type="text" placeholder="site.utsa.edu"
-                   style="width:100%;font-size:13px;border:1px solid #7A6A5A;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
+                   style="width:100%;font-size:13px;border:1px solid #6B5A4A;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
             <p id="site-edit-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
             <div style="display:flex;gap:8px">
                 <button id="site-edit-save" onclick="saveSiteEditModal()"
@@ -1747,7 +1760,7 @@ function buildFilterPopover(col, def) {
     const content = document.getElementById('filter-pop-content');
     if (def.type === 'text') {
         const placeholder = col === 'site' ? 'Filter by site name or URL…' : 'Filter…';
-        const hint        = col === 'site' ? '<div style="font-size:12px;color:#7A6A5A;margin-bottom:2px">Searches both site name and URL</div>' : '';
+        const hint        = col === 'site' ? '<div style="font-size:12px;color:#6B5A4A;margin-bottom:2px">Searches both site name and URL</div>' : '';
         content.innerHTML =
             `${hint}<input type="text" id="filter-pop-text" placeholder="${placeholder}" aria-label="${escHtml(placeholder)}"
                     value="${escHtml(filterPopPending.value)}">`;
