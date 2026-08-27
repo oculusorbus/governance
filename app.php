@@ -760,14 +760,14 @@ $defaultHidden = ['site', 'description'];
         <th class="col-audience">Audience <?= sortBtn('audience') ?><?= filterBtn('audience') ?></th>
         <th class="col-category">Category <?= sortBtn('category') ?><?= filterBtn('category') ?></th>
         <th class="col-second_category">2nd Category <?= sortBtn('second_category') ?><?= filterBtn('second_category') ?></th>
-        <th class="col-db-score">Score</th>
-        <th class="col-db-accessibility">Accessibility</th>
-        <th class="col-db-badlinks">Bad Links</th>
-        <th class="col-db-seo">SEO</th>
-        <th class="col-db-spelling">Spelling</th>
-        <th class="col-db-bestpractices">Best Prac.</th>
-        <th class="col-db-webgovernance">Web Gov.</th>
-        <th class="col-db-pages">Pages</th>
+        <th class="col-db-score">Score <?= sortBtn('db-score') ?></th>
+        <th class="col-db-accessibility">Accessibility <?= sortBtn('db-accessibility') ?></th>
+        <th class="col-db-badlinks">Bad Links <?= sortBtn('db-badlinks') ?></th>
+        <th class="col-db-seo">SEO <?= sortBtn('db-seo') ?></th>
+        <th class="col-db-spelling">Spelling <?= sortBtn('db-spelling') ?></th>
+        <th class="col-db-bestpractices">Best Prac. <?= sortBtn('db-bestpractices') ?></th>
+        <th class="col-db-webgovernance">Web Gov. <?= sortBtn('db-webgovernance') ?></th>
+        <th class="col-db-pages">Pages <?= sortBtn('db-pages') ?></th>
     </tr>
 </thead>
 <tbody>
@@ -1470,6 +1470,16 @@ function clearAllFilters() {
 let sortCol = null;
 let sortDir = null; // 'asc' | 'desc'
 
+// DubBot score/pages columns: sort col name -> the data-db-col value used on
+// the <td> (see dbFillRow()/PHP row markup). Numeric, so they need their own
+// comparator below rather than the generic localeCompare path — string-
+// sorting "100.0" vs "9.5" would put 100 before 9, which is wrong.
+const DB_SCORE_COLS = {
+    'db-score': 'score', 'db-accessibility': 'accessibility', 'db-badlinks': 'badLinks',
+    'db-seo': 'seo', 'db-spelling': 'spelling', 'db-bestpractices': 'bestPractices',
+    'db-webgovernance': 'webGovernance', 'db-pages': 'pages',
+};
+
 function getSortValue(row, col) {
     if (col === 'site') return row.dataset.site_name || row.dataset.url || '';
     if (PEOPLE_COLS.has(col)) {
@@ -1477,6 +1487,11 @@ function getSortValue(row, col) {
         if (!td) return '';
         const first = td.querySelector('.badge[data-tip]');
         return first ? first.dataset.tip.split('·')[0].trim().toLowerCase() : '';
+    }
+    if (DB_SCORE_COLS[col]) {
+        const td  = row.querySelector(`td[data-db-col="${DB_SCORE_COLS[col]}"]`);
+        const raw = td ? (DB_SCORE_COLS[col] === 'pages' ? td.dataset.value : td.dataset.dbSaved) : undefined;
+        return (raw !== undefined && raw !== '') ? parseFloat(raw) : null;
     }
     return (row.dataset[col] || '').toLowerCase();
 }
@@ -1498,6 +1513,18 @@ function applySort() {
     const rows  = [...tbody.querySelectorAll('tr[data-id]')];
     if (!sortCol) {
         rows.sort((a, b) => +a.dataset.origIndex - +b.dataset.origIndex);
+    } else if (DB_SCORE_COLS[sortCol]) {
+        rows.sort((a, b) => {
+            const av = getSortValue(a, sortCol);
+            const bv = getSortValue(b, sortCol);
+            // Distinguish "no data yet" (null) from a genuine 0 — a falsy
+            // check here would wrongly bury a real zero score/page-count.
+            const aMissing = av === null, bMissing = bv === null;
+            if (aMissing && !bMissing) return 1;
+            if (!aMissing && bMissing) return -1;
+            if (aMissing && bMissing)  return 0;
+            return sortDir === 'asc' ? av - bv : bv - av;
+        });
     } else {
         rows.sort((a, b) => {
             const av = getSortValue(a, sortCol);
