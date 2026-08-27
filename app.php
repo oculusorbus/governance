@@ -1374,8 +1374,7 @@ document.addEventListener('click', e => {
 
 window.addEventListener('DOMContentLoaded', () => {
     applyColVisibility();
-    initStatusFilter();
-    updateRowCount();
+    initStatusFilter(); // now applies the filter too, and updates the row count itself
     document.querySelectorAll('#main-table tbody tr[data-id]').forEach((r, i) => r.dataset.origIndex = i);
     document.getElementById('global-search').addEventListener('input', e => {
         searchQuery = e.target.value.toLowerCase().trim();
@@ -1434,6 +1433,11 @@ function initStatusFilter() {
     document.querySelectorAll('.status-filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.status === activeStatusFilter);
     });
+    // Unlike setStatusFilter(), this used to only update the button's look —
+    // it never actually hid inactive rows, so "Active" appeared selected on
+    // load while inactive sites stayed visible until some other filter action
+    // happened to trigger applyFilters() (e.g. clicking All then Active).
+    applyFilters();
 }
 
 function applyFilters() {
