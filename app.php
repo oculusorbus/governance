@@ -141,8 +141,13 @@ function initials(string $first, string $last): string {
 }
 
 function badgeColor(string $name): string {
-    $palette = ['#3B82F6','#10B981','#8B5CF6','#EF4444','#F59E0B',
-                '#EC4899','#6366F1','#14B8A6','#F97316','#06B6D4'];
+    // Every color here is checked at >=4.5:1 contrast against the white
+    // badge-initials text (WCAG 1.4.3) — the original bright palette read
+    // well visually but failed contrast on all 10 colors once measured.
+    // Keep this in sync with the JS badgeColor() mirror below so a person
+    // gets the same badge color whether rendered server- or client-side.
+    $palette = ['#1D4ED8','#047857','#6D28D9','#B91C1C','#B45309',
+                '#BE185D','#4338CA','#0F766E','#C2410C','#0E7490'];
     $h = 0;
     for ($i = 0; $i < strlen($name); $i++) {
         $h = ($h * 31 + ord($name[$i])) & 0x7fffffff;
@@ -363,7 +368,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .col-group { display:flex; flex-direction:column; gap:3px; min-width:130px; padding:6px 8px;
                      border:1px solid rgba(255,255,255,.12); border-radius:6px;
                      background:rgba(255,255,255,.07); }
-        .col-group-header { display:flex; align-items:center; gap:5px; font-size:11px;
+        .col-group-header { display:flex; align-items:center; gap:5px; font-size:12px;
                             font-weight:700; color:#C8DCFF; text-transform:uppercase;
                             letter-spacing:.05em; cursor:pointer; user-select:none; }
         .col-group-header input[type=checkbox] { accent-color:#D3430D; }
@@ -474,7 +479,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         /* ── Inactive row styling ─────────────────────────────────────── */
         tr.site-inactive td { opacity:.55; }
         tr.site-inactive td a { color:#6B9FD4; }
-        .inactive-badge { display:inline-block; margin-left:6px; padding:1px 6px; font-size:10px;
+        .inactive-badge { display:inline-block; margin-left:6px; padding:1px 6px; font-size:12px;
                           font-weight:700; background:#FEF3C7; color:#92400E; border-radius:4px;
                           text-transform:uppercase; letter-spacing:.04em; vertical-align:middle; }
 
@@ -490,7 +495,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* Group header row */
         thead tr.groups th { font-family:'Arsenal', system-ui, sans-serif;
-                              font-size:11px; font-weight:700; text-transform:uppercase;
+                              font-size:12px; font-weight:700; text-transform:uppercase;
                               letter-spacing:.06em; color:#fff; padding:5px 8px;
                               line-height:18px;
                               border-right:2px solid rgba(255,255,255,.25);
@@ -503,7 +508,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .grp-classification { background:#A06620; } /* Brass */
 
         /* Column header row */
-        thead tr.headers th { font-size:11px; font-weight:600; color:#6B6355;
+        thead tr.headers th { font-size:12px; font-weight:600; color:#6B6355;
                               background:#F8F4F1; padding:6px 36px 6px 8px; white-space:nowrap;
                               border-bottom:2px solid #EBE6E2; border-right:1px solid #EBE6E2;
                               position:sticky; top:28px; z-index:10; overflow:hidden; }
@@ -555,7 +560,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         /* Editable cells */
         td.editable { cursor:pointer; position:relative; }
         td.editable:hover { background:rgba(200,220,255,.2) !important; }
-        td.editable:not(.editing):hover::after { content:'✎'; font-size:10px; color:#7A6A5A;
+        td.editable:not(.editing):hover::after { content:'✎'; font-size:12px; color:#7A6A5A;
                                                 position:absolute; right:4px; top:50%;
                                                 transform:translateY(-50%); pointer-events:none; }
 
@@ -568,7 +573,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .site-inner > span.empty-cell { color:#7A6A5A; }
         .site-edit-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
                          opacity:0; background:none; border:none;
-                         cursor:pointer; color:#7A6A5A; font-size:11px;
+                         cursor:pointer; color:#7A6A5A; font-size:12px;
                          padding:2px 3px; border-radius:3px; line-height:1;
                          transition:opacity .1s, color .1s; }
         td.col-site:hover .site-edit-btn,
@@ -583,8 +588,8 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 
         /* Badges */
         .badge { position:relative; display:inline-flex; align-items:center; justify-content:center;
-                 width:26px; height:26px; border-radius:50%; color:#fff;
-                 font-size:10px; font-weight:700; cursor:pointer;
+                 width:28px; height:28px; border-radius:50%; color:#fff;
+                 font-size:12px; font-weight:700; cursor:pointer;
                  margin:1px; transition:transform .1s; }
         .badge:hover { transform:scale(1.15); }
         /* Not-enrolled-in-DubBot marker: a "!" glyph, not color alone (WCAG 1.4.1) —
@@ -632,7 +637,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .modal-person:last-child { border:none; }
         .modal-person-info { flex:1; }
         .modal-person-info .name { font-weight:600; font-size:13px; }
-        .modal-person-info .email { font-size:11px; color:#7A6A5A; }
+        .modal-person-info .email { font-size:12px; color:#7A6A5A; }
         .btn-remove { background:none; border:none; color:#ef4444; font-size:18px;
                       cursor:pointer; padding:0 4px; line-height:1; }
         .btn-remove:hover { color:#b91c1c; }
@@ -648,12 +653,12 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .emp-editable { cursor:pointer; padding:1px 3px; border-radius:3px;
                         transition:background .1s; display:inline; }
         .emp-editable:hover { background:#C8DCFF; }
-        .emp-editable.emp-email { color:#7A6A5A; font-size:11px; }
-        .emp-editable.emp-no-email { color:#7A6A5A; font-size:10px; }
+        .emp-editable.emp-email { color:#7A6A5A; font-size:12px; }
+        .emp-editable.emp-no-email { color:#7A6A5A; font-size:12px; }
         .emp-editable.emp-no-email::after { content:'+ email'; }
         .emp-field-input { font-size:13px; border:1px solid #265BF7; border-radius:3px;
                            padding:1px 5px; outline:none; min-width:80px; max-width:160px; }
-        .emp-field-input[data-field="email"] { font-size:11px; color:#7A6A5A; max-width:200px; }
+        .emp-field-input[data-field="email"] { font-size:12px; color:#7A6A5A; max-width:200px; }
 
         /* New person form */
         .modal-new-toggle { margin-top:10px; text-align:center; }
@@ -698,9 +703,9 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                        border:2px solid rgba(255,255,255,.3); border-top-color:#fff;
                        border-radius:50%; animation:spin .7s linear infinite;
                        vertical-align:middle; margin:0 3px; }
-        .db-hdr-status { font-size:10px; font-weight:400; letter-spacing:0; opacity:.85; }
-        .db-hdr-error  { font-size:10px; font-weight:400; letter-spacing:0; color:#fca5a5; }
-        .db-refresh-btn { margin-left:6px; padding:1px 7px; font-size:10px; font-weight:600;
+        .db-hdr-status { font-size:12px; font-weight:400; letter-spacing:0; opacity:.85; }
+        .db-hdr-error  { font-size:12px; font-weight:400; letter-spacing:0; color:#fca5a5; }
+        .db-refresh-btn { margin-left:6px; padding:1px 7px; font-size:12px; font-weight:600;
                           background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.4);
                           border-radius:4px; cursor:pointer; vertical-align:middle; }
         .db-refresh-btn:hover:not(:disabled) { background:rgba(255,255,255,.3); }
@@ -737,7 +742,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 <div id="cell-tooltip"></div>
 
 <!-- ── Top bar ──────────────────────────────────────────────────────────── -->
-<div id="topbar">
+<div id="topbar" role="banner">
     <img src="utsa-logo.svg" alt="UT San Antonio" height="20" style="flex-shrink:0">
     <h1>Website Governance Directory</h1>
     <input id="global-search" type="search" placeholder="Search all columns…" autocomplete="off" aria-label="Search all columns">
@@ -805,7 +810,7 @@ $defaultHidden = ['site', 'description'];
 
 
 <!-- ── Table ────────────────────────────────────────────────────────────── -->
-<div id="table-wrap" tabindex="-1">
+<div id="table-wrap" tabindex="-1" role="main">
 <table id="main-table">
 <thead>
     <!-- Group headers -->
@@ -905,7 +910,6 @@ $defaultHidden = ['site', 'description'];
         <!-- Site (combined URL + Site Name, sticky) -->
         <?php
         $display   = $site['site_name'] ?: $site['url'];
-        $href      = $site['url'] ? 'https://' . h($site['url']) : '';
         $flags     = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT;
         $siteNameJ = json_encode((string)($site['site_name'] ?? ''), $flags);
         $urlJ      = json_encode((string)($site['url']       ?? ''), $flags);
@@ -926,14 +930,15 @@ $defaultHidden = ['site', 'description'];
                     onclick="event.stopPropagation();openSiteEditModal(<?= $sid ?>,<?= h($siteNameJ) ?>,<?= h($urlJ) ?>,<?= $isActive ?>)">✎</button>
         </td>
 
-        <!-- Site (name + edit button) -->
+        <!-- Site (name + edit button). Intentionally text, not a second <a> —
+             the URL column just to the left already links to this exact
+             destination, and a second identical link right next to it is a
+             redundant stop for keyboard/screen-reader users (and a WAVE
+             "redundant link" flag) with no added value. -->
         <td class="col-site" data-site-id="<?= $sid ?>" data-value="<?= h($display) ?>"
             title="<?= h($tooltip) ?>">
             <div class="site-inner">
-                <?php if ($href): ?>
-                    <a href="<?= $href ?>" target="_blank"
-                       onclick="event.stopPropagation()"><?= h($display) ?></a>
-                <?php elseif ($display): ?>
+                <?php if ($display): ?>
                     <span><?= h($display) ?></span>
                 <?php else: ?>
                     <span class="empty-cell">—</span>
@@ -966,7 +971,8 @@ $defaultHidden = ['site', 'description'];
             data-vp-area-id="<?= (int)$site['vp_area_id'] ?>"
             data-names="<?= h(fullNames($vpLeads)) ?>"
             tabindex="0" role="button" aria-label="<?= roleCellAriaLabel('VP Lead', $vpLeads) ?>"
-            onclick="openVpLeadModal(<?= $sid ?>, <?= (int)$site['vp_area_id'] ?>, this)">
+            onclick="openVpLeadModal(<?= $sid ?>, <?= (int)$site['vp_area_id'] ?>, this)"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openVpLeadModal(<?= $sid ?>, <?= (int)$site['vp_area_id'] ?>, this)}">
             <?= renderBadges($vpLeads) ?>
         </td>
 
@@ -985,7 +991,8 @@ $defaultHidden = ['site', 'description'];
             data-site-id="<?= $sid ?>" data-role="<?= $role ?>"
             data-names="<?= h(fullNames($siteRoles[$role] ?? [])) ?>"
             tabindex="0" role="button" aria-label="<?= roleCellAriaLabel(columnLabel($role), $siteRoles[$role] ?? [], in_array($role, ['content_lead', 'tech_lead'], true)) ?>"
-            onclick="openPeopleModal(<?= $sid ?>, '<?= $role ?>', this)">
+            onclick="openPeopleModal(<?= $sid ?>, '<?= $role ?>', this)"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPeopleModal(<?= $sid ?>, '<?= $role ?>', this)}">
             <?= renderBadges($siteRoles[$role] ?? [], in_array($role, ['content_lead', 'tech_lead'], true)) ?>
         </td>
         <?php endforeach; ?>
@@ -1003,6 +1010,7 @@ $defaultHidden = ['site', 'description'];
             tabindex="0" role="button"
             aria-label="<?= $intakeUrl ? h('Support intake URL: ' . $intakeUrl . ($spName ? ' · ' . $spName : '') . ' — activate to edit') : 'Set support intake URL' ?>"
             onclick="editLink(<?= $sid ?>, 'intake', <?= h($intakeJ) ?>, <?= h($spJ) ?>)"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();editLink(<?= $sid ?>, 'intake', <?= h($intakeJ) ?>, <?= h($spJ) ?>)}"
             title="<?= $intakeUrl ? h($intakeUrl) . ($spName ? ' · ' . h($spName) : '') : 'Set intake URL' ?>">
             <?php if ($intakeUrl): ?>
                 <span class="link-cell-icon"><?= str_contains($intakeUrl, '/') ? '🔗' : '✉' ?></span>
@@ -1018,6 +1026,7 @@ $defaultHidden = ['site', 'description'];
             tabindex="0" role="button"
             aria-label="<?= $dsUrl ? h('Datastudio URL: ' . $dsUrl . ' — activate to edit') : 'Set Datastudio URL' ?>"
             onclick="editLink(<?= $sid ?>, 'datastudio', <?= h($dsJ) ?>)"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();editLink(<?= $sid ?>, 'datastudio', <?= h($dsJ) ?>)}"
             title="<?= $dsUrl ? h($dsUrl) : 'Set Datastudio URL' ?>">
             <?php if ($dsUrl): ?>
                 <span class="link-cell-icon">📊</span>
@@ -1130,7 +1139,7 @@ $defaultHidden = ['site', 'description'];
         <h2 id="link-modal-title" style="margin:0 0 4px;font-size:15px;font-weight:700;color:#032044"></h2>
         <p id="link-modal-site" style="margin:0 0 14px;font-size:12px;color:#7A6A5A"></p>
         <div id="link-current-wrap" style="display:none;margin-bottom:14px;padding:10px 12px;background:#F8F4F1;border-radius:8px;border:1px solid #EBE6E2">
-            <div style="font-size:11px;font-weight:600;color:#7A6A5A;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Current URL</div>
+            <div style="font-size:12px;font-weight:600;color:#7A6A5A;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Current URL</div>
             <a id="link-current-url" href="#" target="_blank"
                style="font-size:12px;color:#265BF7;word-break:break-all;text-decoration:none;">
             </a>
@@ -1186,10 +1195,10 @@ $defaultHidden = ['site', 'description'];
 
         <!-- Edit fields -->
         <div id="site-edit-fields">
-            <label for="site-edit-name" style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Site Name</label>
+            <label for="site-edit-name" style="display:block;font-size:12px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Site Name</label>
             <input id="site-edit-name" type="text" placeholder="My Site Name"
                    style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
-            <label for="site-edit-url" style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#7A6A5A">(without https://)</span></label>
+            <label for="site-edit-url" style="display:block;font-size:12px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#7A6A5A">(without https://)</span></label>
             <input id="site-edit-url" type="text" placeholder="site.utsa.edu"
                    style="width:100%;font-size:13px;border:1px solid #7A6A5A;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
             <p id="site-edit-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
@@ -1721,7 +1730,7 @@ function buildFilterPopover(col, def) {
     const content = document.getElementById('filter-pop-content');
     if (def.type === 'text') {
         const placeholder = col === 'site' ? 'Filter by site name or URL…' : 'Filter…';
-        const hint        = col === 'site' ? '<div style="font-size:10px;color:#7A6A5A;margin-bottom:2px">Searches both site name and URL</div>' : '';
+        const hint        = col === 'site' ? '<div style="font-size:12px;color:#7A6A5A;margin-bottom:2px">Searches both site name and URL</div>' : '';
         content.innerHTML =
             `${hint}<input type="text" id="filter-pop-text" placeholder="${placeholder}" aria-label="${escHtml(placeholder)}"
                     value="${escHtml(filterPopPending.value)}">`;
@@ -2263,14 +2272,13 @@ document.addEventListener('keydown', e => {
 
 // role-cells and link-cells are plain <td>s made keyboard-operable via
 // tabindex="0" role="button" — unlike a real <button>, a <td> doesn't
-// natively respond to Enter/Space, so this re-fires the same onclick.
-document.addEventListener('keydown', e => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const target = e.target.closest('[role="button"]');
-    if (!target || target.tagName === 'BUTTON' || target.tagName === 'A') return;
-    e.preventDefault();
-    target.click();
-});
+// natively respond to Enter/Space. That used to be handled here with a
+// single delegated listener that called target.click(), but automated
+// checkers (WAVE) only look for an onkeydown/onkeypress *attribute* on the
+// same element as onclick — a delegated document-level listener is
+// invisible to that check even though it works at runtime. Each cell now
+// carries its own onkeydown="" mirroring its onclick="" directly, so this
+// delegated listener was removed to avoid double-firing.
 
 async function openPeopleModal(siteId, role, cell) {
     rememberFocus();
@@ -2316,6 +2324,11 @@ async function openPeopleModal(siteId, role, cell) {
             empTs.clear(true);
         },
     });
+    // TomSelect hides the original <select id="employee-ts"> and builds its
+    // own visible text input, which the <label for="employee-ts"> in the
+    // markup no longer reaches (WAVE: "orphaned form label" / "select
+    // missing label") — carry the same accessible name over explicitly.
+    if (empTs.control_input) empTs.control_input.setAttribute('aria-label', 'Add person by name or email');
 
     document.getElementById('modal-overlay').classList.add('open');
     document.getElementById('modal-box').focus();
@@ -2607,6 +2620,9 @@ async function openVpLeadModal(siteId, vpAreaId, cell) {
             empTs.clear(true);
         },
     });
+    // See the identical fix in openPeopleModal() — TomSelect's generated
+    // input has no accessible name of its own once it hides the source <select>.
+    if (empTs.control_input) empTs.control_input.setAttribute('aria-label', 'Add person by name or email');
     document.getElementById('modal-overlay').classList.add('open');
 
     // Load existing leads after the modal is visible
@@ -3337,9 +3353,11 @@ function initials(first, last) {
 }
 
 function badgeColor(name) {
-    // Palette anchored to UTSA brand colors, filled out with accessible complements
-    const palette = ['#032044','#265BF7','#D3430D','#A06620','#F15A22',
-                     '#8B5CF6','#10B981','#EC4899','#6366F1','#0891B2'];
+    // Must match the PHP badgeColor() palette exactly (server- and
+    // client-rendered badges need to agree on a person's color), and every
+    // entry is checked at >=4.5:1 against the white initials text (WCAG 1.4.3).
+    const palette = ['#1D4ED8','#047857','#6D28D9','#B91C1C','#B45309',
+                     '#BE185D','#4338CA','#0F766E','#C2410C','#0E7490'];
     let h = 0;
     for (const c of String(name||'')) h = (h * 31 + c.charCodeAt(0)) & 0x7fffffff;
     return palette[h % palette.length];
