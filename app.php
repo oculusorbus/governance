@@ -381,6 +381,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                                background:#F8F4F1; color:#332F21; transition:background .15s, color .15s; }
         #filter-pop-copy-btn:hover, #filter-pop-copy-btn2:hover { background:#EBE6E2; }
         #filter-pop-copy-btn.copied, #filter-pop-copy-btn2.copied { background:#15803d !important; color:#fff; }
+        #filter-pop-copy-btn.copy-failed, #filter-pop-copy-btn2.copy-failed { background:#B91C1C !important; color:#fff; }
         #btn-clear-filters { background:#D3430D; color:#fff; }
 
         /* ── Active / inactive status filter ─────────────────────────── */
@@ -1735,14 +1736,47 @@ function copyColumnData(col, variant) {
         return text === '—' ? '' : text;
     });
 
-    navigator.clipboard.writeText(lines.join('\n')).then(() => {
-        const btn = variant === 'url'
-            ? document.getElementById('filter-pop-copy-btn2')
-            : document.getElementById('filter-pop-copy-btn');
-        const orig = btn.textContent;
+    const btn = variant === 'url'
+        ? document.getElementById('filter-pop-copy-btn2')
+        : document.getElementById('filter-pop-copy-btn');
+    const orig = btn.textContent;
+
+    copyToClipboard(lines.join('\n')).then(() => {
         btn.classList.add('copied');
         btn.textContent = '✓ Copied!';
         setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+    }).catch(err => {
+        // navigator.clipboard.writeText() silently rejects on an insecure
+        // (plain HTTP) origin — copyToClipboard() falls back to execCommand
+        // for that case, so a rejection here means both paths failed.
+        console.error('Copy failed:', err);
+        btn.classList.add('copy-failed');
+        btn.textContent = '✗ Copy failed';
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copy-failed'); }, 2000);
+    });
+}
+
+// navigator.clipboard requires a secure context (HTTPS or localhost) and
+// fails silently (rejected promise, no visible error) otherwise — WEBGOV is
+// still HTTP-only pending its TLS cert, so this falls back to the older
+// execCommand approach, which has no such restriction.
+function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); }
+        catch (e) { document.body.removeChild(ta); reject(e); return; }
+        document.body.removeChild(ta);
+        ok ? resolve() : reject(new Error('execCommand("copy") returned false'));
     });
 }
 
