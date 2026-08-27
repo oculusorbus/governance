@@ -477,8 +477,18 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .status-filter-btn:hover:not(.active) { background:rgba(255,255,255,.08); color:#fff; }
 
         /* ── Inactive row styling ─────────────────────────────────────── */
-        tr.site-inactive td { opacity:.55; }
-        tr.site-inactive td a { color:#6B9FD4; }
+        /* Inactive rows are already unambiguously marked by the explicit
+           "Inactive" text badge in the URL cell — this styling is a visual
+           bonus for sighted users scanning the table, not the thing doing
+           the communicating, so it doesn't need to (and shouldn't) touch
+           foreground contrast. opacity:.55 on the whole <td> used to fade
+           every cell's text/link/badge color toward the white background,
+           which silently dropped normal 12+:1 text to ~3.3:1 and the link
+           color below 3:1 (WCAG 1.4.3) — on every column, of every inactive
+           row. A background tint gives the same "grayed out" read without
+           weakening any text color at all. */
+        tr.site-inactive td { background:#F3F0EC; }
+        tr.site-inactive td a { color:#4A6FA8; }
         .inactive-badge { display:inline-block; margin-left:6px; padding:1px 6px; font-size:12px;
                           font-weight:700; background:#FEF3C7; color:#92400E; border-radius:4px;
                           text-transform:uppercase; letter-spacing:.04em; vertical-align:middle; }
@@ -571,13 +581,20 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
             text-overflow:ellipsis; white-space:nowrap; text-decoration:none; }
         .site-inner a { color:#265BF7; }
         .site-inner > span.empty-cell { color:#7A6A5A; }
+        /* Always rendered at a passing contrast (5.2:1 on white) rather than
+           hidden at opacity:0 until hover — an opacity:0 element still has
+           a specified foreground color, and automated contrast checkers
+           (WAVE) evaluate that color against the background regardless of
+           whether it's currently painted, so "invisible until hover" read
+           as a contrast failure on every single row. This is also a real
+           accessibility fix, not just a checker workaround: a keyboard or
+           touch user could previously Tab to this button but never see it,
+           since nothing revealed it outside of a mouse :hover. */
         .site-edit-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
-                         opacity:0; background:none; border:none;
+                         background:none; border:none;
                          cursor:pointer; color:#7A6A5A; font-size:12px;
                          padding:2px 3px; border-radius:3px; line-height:1;
-                         transition:opacity .1s, color .1s; }
-        td.col-site:hover .site-edit-btn,
-        td.col-url:hover  .site-edit-btn { opacity:1; }
+                         transition:color .1s, background-color .1s; }
         .site-edit-btn:hover { color:#265BF7 !important; background:#EBE6E2; }
 
         /* Editing state */
