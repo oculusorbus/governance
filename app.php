@@ -150,15 +150,49 @@ function badgeColor(string $name): string {
     return $palette[$h % count($palette)];
 }
 
-function filterBtn(string $col): string {
-    return '<button class="filter-btn" data-col="' . $col . '" onclick="openFilter(event,\'' . $col . '\')" title="Filter">'
+// Human-readable fallback label derived from the raw column key, so the
+// icon-only filter/sort buttons get a real accessible name instead of a
+// bare, identical-everywhere "Filter"/"Sort" (WCAG 4.1.2 Name, Role, Value —
+// a screen reader landing on 20 buttons all named "Filter" can't tell them
+// apart without opening each one).
+function columnLabel(string $col): string {
+    $label = ucwords(str_replace(['_', '-'], ' ', $col));
+    $label = preg_replace('/^Db /', 'DubBot ', $label);
+    return preg_replace('/^Vp /', 'VP ', $label);
+}
+
+// Accessible name for a role/VP-lead cell — these are keyboard-activatable
+// (role="button") but have no visible text label of their own beyond the
+// person badges (which are themselves aria-hidden, see renderBadges() —
+// this cell-level label is what actually carries the information now), so
+// this needs to include not just who's assigned but, for the two roles that
+// get the DubBot-enrollment check, the same "not enrolled" flag the visual
+// marker conveys — otherwise that information exists for sighted users only.
+function roleCellAriaLabel(string $roleLabel, array $people, bool $checkDubbot = false): string {
+    if (!$people) return h($roleLabel . ': none assigned — activate to edit');
+    $parts = [];
+    foreach ($people as $p) {
+        $name    = trim($p['first_name'] . ' ' . $p['last_name']);
+        $missing = $checkDubbot && array_key_exists('dubbot_enrolled', $p)
+                   && $p['dubbot_enrolled'] !== null && (int)$p['dubbot_enrolled'] === 0;
+        $parts[] = $name . ($missing ? ' (not enrolled in DubBot)' : '');
+    }
+    return h($roleLabel . ': ' . implode(', ', $parts) . ' — activate to edit');
+}
+
+function filterBtn(string $col, ?string $label = null): string {
+    $label = h($label ?? columnLabel($col));
+    return '<button class="filter-btn" data-col="' . $col . '" aria-pressed="false"'
+         . ' aria-label="Filter ' . $label . '" onclick="openFilter(event,\'' . $col . '\')" title="Filter">'
          . '<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
          . '<path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>'
          . '</svg></button>';
 }
 
-function sortBtn(string $col): string {
-    return '<button class="sort-btn" data-col="' . $col . '" onclick="toggleSort(event,\'' . $col . '\')" title="Sort">'
+function sortBtn(string $col, ?string $label = null): string {
+    $label = h($label ?? columnLabel($col));
+    return '<button class="sort-btn" data-col="' . $col . '" aria-label="Sort by ' . $label . '"'
+         . ' onclick="toggleSort(event,\'' . $col . '\')" title="Sort">'
          . '<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
          . '<path class="sort-up" d="M12 2L20 13H4Z"/>'
          . '<path class="sort-dn" d="M12 22L4 11H20Z"/>'
@@ -201,7 +235,12 @@ function renderBadges(array $people, bool $checkDubbot = false): string {
         $email   = h(strtolower((string)($p['email'] ?? '')));
         $empId   = (int)($p['emp_id'] ?? 0);
         $marker  = $missing ? dubbotMissingMarkerSvg() : '';
-        $out    .= "<span class=\"$cls\" style=\"background:$color\" data-tip=\"$tip\""
+        // aria-hidden: the parent role-cell's own aria-label (see
+        // roleCellAriaLabel()) already carries full names + enrollment
+        // status — without this, a screen reader would additionally read
+        // each badge's bare initials, which is redundant noise at best and
+        // actively confusing (2-letter fragments) at worst.
+        $out    .= "<span class=\"$cls\" style=\"background:$color\" data-tip=\"$tip\" aria-hidden=\"true\""
                  . " data-email=\"$email\" data-emp-id=\"$empId\">$ini$marker</span>";
     }
     return $out;
@@ -278,7 +317,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
          * UTSA Orange    #F15A22   Talavera Blue #265BF7
          * Access. Orange #D3430D   Mission Clay  #DBB485
          * Brass          #A06620   Limestone     #F8F4F1
-         * Concrete       #EBE6E2   Smoke         #D5CFC8
+         * Concrete       #EBE6E2   Smoke         #7A6A5A
          * Brand Black    #332F21
          */
 
@@ -335,6 +374,27 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                                     color:#E8E4FF; cursor:pointer; user-select:none; padding:1px 0; }
         .col-group-children input[type=checkbox] { accent-color:#D3430D; }
 
+        /* ── Accessibility: skip link + focus visibility ─────────────── */
+        .skip-link {
+            position:absolute; left:8px; top:-40px; z-index:1000;
+            background:#032044; color:#fff; padding:8px 14px; border-radius:0 0 6px 6px;
+            font-size:13px; font-weight:600; text-decoration:none; transition:top .15s;
+        }
+        .skip-link:focus { top:0; }
+
+        /* Many controls below remove the native outline for visual reasons
+           (some via inline style="", which needs !important to override from
+           here) — this restores a clearly visible replacement for keyboard
+           users on every focusable element in the app, native or custom. */
+        :focus-visible {
+            outline:2px solid #265BF7 !important;
+            outline-offset:2px;
+        }
+        /* Tight-fitting controls (inline filter/sort icon buttons, small
+           inputs) get a smaller offset so the ring doesn't get clipped by a
+           parent's overflow:hidden. */
+        .filter-btn:focus-visible, .sort-btn:focus-visible { outline-offset:1px; }
+
         /* ── Column filter / sort buttons ────────────────────────────── */
         .filter-btn, .sort-btn { position:absolute; top:50%; transform:translateY(-50%);
                       display:inline-flex; align-items:center; background:none; border:none;
@@ -375,7 +435,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                           flex-direction:column; }
         #filter-popover.open { display:flex; }
         #filter-pop-search, #filter-pop-text {
-            width:100%; padding:5px 8px; border:1px solid #D5CFC8; border-radius:6px;
+            width:100%; padding:5px 8px; border:1px solid #7A6A5A; border-radius:6px;
             font-size:12px; outline:none; margin-bottom:6px; box-sizing:border-box; }
         #filter-pop-search:focus, #filter-pop-text:focus { border-color:#265BF7; }
         .filter-pop-list { overflow-y:auto; max-height:200px; margin-bottom:6px; }
@@ -495,7 +555,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         /* Editable cells */
         td.editable { cursor:pointer; position:relative; }
         td.editable:hover { background:rgba(200,220,255,.2) !important; }
-        td.editable:not(.editing):hover::after { content:'✎'; font-size:10px; color:#D5CFC8;
+        td.editable:not(.editing):hover::after { content:'✎'; font-size:10px; color:#7A6A5A;
                                                 position:absolute; right:4px; top:50%;
                                                 transform:translateY(-50%); pointer-events:none; }
 
@@ -505,10 +565,10 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .site-inner a, .site-inner > span { flex:1; min-width:0; overflow:hidden;
             text-overflow:ellipsis; white-space:nowrap; text-decoration:none; }
         .site-inner a { color:#265BF7; }
-        .site-inner > span.empty-cell { color:#D5CFC8; }
+        .site-inner > span.empty-cell { color:#7A6A5A; }
         .site-edit-btn { position:absolute; right:4px; top:50%; transform:translateY(-50%);
                          opacity:0; background:none; border:none;
-                         cursor:pointer; color:#A09080; font-size:11px;
+                         cursor:pointer; color:#7A6A5A; font-size:11px;
                          padding:2px 3px; border-radius:3px; line-height:1;
                          transition:opacity .1s, color .1s; }
         td.col-site:hover .site-edit-btn,
@@ -537,7 +597,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
             background:#fff; border:1.5px solid #B91C1C; padding:1.5px;
             box-shadow:0 1px 2px rgba(0,0,0,.35);
         }
-        .empty-cell { color:#D5CFC8; }
+        .empty-cell { color:#7A6A5A; }
 
         /* Link cells */
         .link-cell { cursor:pointer; text-align:center; }
@@ -547,7 +607,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                           font-size:14px; pointer-events:none; }
         .link-cell-add  { display:inline-flex; align-items:center; justify-content:center;
                           width:22px; height:22px; border-radius:6px; background:#EBE6E2;
-                          color:#A09080; font-size:16px; font-weight:300; pointer-events:none; }
+                          color:#7A6A5A; font-size:16px; font-weight:300; pointer-events:none; }
 
         /* ── Tom Select overrides ─────────────────────────────────────── */
         .ts-wrapper { min-width:100%; }
@@ -566,13 +626,13 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                      max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(3,32,68,.3); }
         #modal-box h2 { font-family:'Arsenal', system-ui, sans-serif;
                         margin:0 0 4px; font-size:17px; font-weight:700; color:#032044; }
-        #modal-box .subtitle { color:#A09080; font-size:12px; margin-bottom:16px; }
+        #modal-box .subtitle { color:#7A6A5A; font-size:12px; margin-bottom:16px; }
         .modal-person { display:flex; align-items:center; gap:8px; padding:6px 0;
                         border-bottom:1px solid #EBE6E2; }
         .modal-person:last-child { border:none; }
         .modal-person-info { flex:1; }
         .modal-person-info .name { font-weight:600; font-size:13px; }
-        .modal-person-info .email { font-size:11px; color:#A09080; }
+        .modal-person-info .email { font-size:11px; color:#7A6A5A; }
         .btn-remove { background:none; border:none; color:#ef4444; font-size:18px;
                       cursor:pointer; padding:0 4px; line-height:1; }
         .btn-remove:hover { color:#b91c1c; }
@@ -588,12 +648,12 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .emp-editable { cursor:pointer; padding:1px 3px; border-radius:3px;
                         transition:background .1s; display:inline; }
         .emp-editable:hover { background:#C8DCFF; }
-        .emp-editable.emp-email { color:#A09080; font-size:11px; }
-        .emp-editable.emp-no-email { color:#D5CFC8; font-size:10px; }
+        .emp-editable.emp-email { color:#7A6A5A; font-size:11px; }
+        .emp-editable.emp-no-email { color:#7A6A5A; font-size:10px; }
         .emp-editable.emp-no-email::after { content:'+ email'; }
         .emp-field-input { font-size:13px; border:1px solid #265BF7; border-radius:3px;
                            padding:1px 5px; outline:none; min-width:80px; max-width:160px; }
-        .emp-field-input[data-field="email"] { font-size:11px; color:#A09080; max-width:200px; }
+        .emp-field-input[data-field="email"] { font-size:11px; color:#7A6A5A; max-width:200px; }
 
         /* New person form */
         .modal-new-toggle { margin-top:10px; text-align:center; }
@@ -604,7 +664,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
                            padding:12px; margin-top:8px; }
         .new-person-fields { display:grid; grid-template-columns:1fr 1fr; gap:6px;
                              margin-bottom:10px; }
-        .new-person-fields input { padding:5px 8px; border:1px solid #D5CFC8; border-radius:6px;
+        .new-person-fields input { padding:5px 8px; border:1px solid #7A6A5A; border-radius:6px;
                                    font-size:12px; outline:none; }
         .new-person-fields input:focus { border-color:#265BF7; }
         .new-person-fields input.full-width { grid-column:1/-1; }
@@ -671,6 +731,8 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 </head>
 <body>
 
+<a href="#table-wrap" class="skip-link">Skip to site table</a>
+
 <!-- ── Cell tooltip ─────────────────────────────────────────────────────── -->
 <div id="cell-tooltip"></div>
 
@@ -678,12 +740,12 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 <div id="topbar">
     <img src="utsa-logo.svg" alt="UT San Antonio" height="20" style="flex-shrink:0">
     <h1>Website Governance Directory</h1>
-    <input id="global-search" type="search" placeholder="Search all columns…" autocomplete="off">
-    <span id="row-count"></span>
-    <div id="status-filter">
-        <button class="status-filter-btn" data-status="active"   onclick="setStatusFilter('active')">Active</button>
-        <button class="status-filter-btn" data-status="inactive" onclick="setStatusFilter('inactive')">Inactive</button>
-        <button class="status-filter-btn" data-status="all"      onclick="setStatusFilter('all')">All</button>
+    <input id="global-search" type="search" placeholder="Search all columns…" autocomplete="off" aria-label="Search all columns">
+    <span id="row-count" role="status" aria-live="polite"></span>
+    <div id="status-filter" role="group" aria-label="Filter sites by status">
+        <button class="status-filter-btn" data-status="active"   aria-pressed="false" onclick="setStatusFilter('active')">Active</button>
+        <button class="status-filter-btn" data-status="inactive" aria-pressed="false" onclick="setStatusFilter('inactive')">Inactive</button>
+        <button class="status-filter-btn" data-status="all"      aria-pressed="false" onclick="setStatusFilter('all')">All</button>
     </div>
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
@@ -743,49 +805,52 @@ $defaultHidden = ['site', 'description'];
 
 
 <!-- ── Table ────────────────────────────────────────────────────────────── -->
-<div id="table-wrap">
+<div id="table-wrap" tabindex="-1">
 <table id="main-table">
 <thead>
     <!-- Group headers -->
     <tr class="groups">
-        <th colspan="1" class="grp-identity sticky-1 col-url">Website</th>
-        <th colspan="1" class="grp-identity col-site">&#8203;</th>
-        <th colspan="1" class="grp-identity col-description">&#8203;</th>
-        <th colspan="3" class="grp-governance">Governance</th>
-        <th colspan="5" class="grp-people">People</th>
-        <th colspan="1" class="grp-support">Support</th>
-        <th colspan="3" class="grp-technical">Technical</th>
-        <th colspan="3" class="grp-classification">Classification</th>
-        <th colspan="8" class="grp-dubbot" id="grp-dubbot">DubBot <?php if ($dbLastUpdated): ?><span class="db-hdr-status">Updated <?= h(date('M j, Y', strtotime($dbLastUpdated))) ?></span><?php endif; ?> <button class="db-refresh-btn" id="db-refresh-btn" onclick="loadDubBotData()" title="Refresh DubBot data from API">↻ Refresh</button></th>
+        <th scope="colgroup" colspan="1" class="grp-identity sticky-1 col-url">Website</th>
+        <th scope="colgroup" colspan="1" class="grp-identity col-site">&#8203;</th>
+        <th scope="colgroup" colspan="1" class="grp-identity col-description">&#8203;</th>
+        <th scope="colgroup" colspan="3" class="grp-governance">Governance</th>
+        <th scope="colgroup" colspan="5" class="grp-people">People</th>
+        <th scope="colgroup" colspan="1" class="grp-support">Support</th>
+        <th scope="colgroup" colspan="3" class="grp-technical">Technical</th>
+        <th scope="colgroup" colspan="3" class="grp-classification">Classification</th>
+        <th scope="colgroup" colspan="8" class="grp-dubbot" id="grp-dubbot">DubBot
+            <span id="db-status-live" role="status" aria-live="polite"><?php if ($dbLastUpdated): ?><span class="db-hdr-status">Updated <?= h(date('M j, Y', strtotime($dbLastUpdated))) ?></span><?php endif; ?></span>
+            <button class="db-refresh-btn" id="db-refresh-btn" onclick="loadDubBotData()" title="Refresh DubBot data from API">↻ Refresh</button>
+        </th>
     </tr>
     <!-- Column headers -->
     <tr class="headers">
-        <th class="sticky-1 col-url">URL <?= sortBtn('url') ?><?= filterBtn('url') ?></th>
-        <th class="col-site">Site Name <?= sortBtn('site') ?><?= filterBtn('site') ?></th>
-        <th class="col-description">Description <?= sortBtn('description') ?><?= filterBtn('description') ?></th>
-        <th class="col-vp_area">VP Area <?= sortBtn('vp_area') ?><?= filterBtn('vp_area') ?></th>
-        <th class="col-vp_lead">VP Lead <?= sortBtn('vp_lead') ?><?= filterBtn('vp_lead') ?></th>
-        <th class="col-college_dept">College/Dept <?= sortBtn('college_dept') ?><?= filterBtn('college_dept') ?></th>
-        <th class="col-college_communicator">Communicator <?= sortBtn('college_communicator') ?><?= filterBtn('college_communicator') ?></th>
-        <th class="col-site_owner">Owner <?= sortBtn('site_owner') ?><?= filterBtn('site_owner') ?></th>
-        <th class="col-content_lead">Content Lead <?= sortBtn('content_lead') ?><?= filterBtn('content_lead') ?></th>
-        <th class="col-tech_lead">Tech Lead <?= sortBtn('tech_lead') ?><?= filterBtn('tech_lead') ?></th>
-        <th class="col-admin_contact">Admin Contact <?= sortBtn('admin_contact') ?><?= filterBtn('admin_contact') ?></th>
-        <th class="col-support_intake_url">Intake</th>
-        <th class="col-datastudio_url">Studio</th>
-        <th class="col-server">Server <?= sortBtn('server') ?><?= filterBtn('server') ?></th>
-        <th class="col-platform">Platform <?= sortBtn('platform') ?><?= filterBtn('platform') ?></th>
-        <th class="col-audience">Audience <?= sortBtn('audience') ?><?= filterBtn('audience') ?></th>
-        <th class="col-category">Category <?= sortBtn('category') ?><?= filterBtn('category') ?></th>
-        <th class="col-second_category">2nd Category <?= sortBtn('second_category') ?><?= filterBtn('second_category') ?></th>
-        <th class="col-db-score">Score <?= sortBtn('db-score') ?></th>
-        <th class="col-db-accessibility">Accessibility <?= sortBtn('db-accessibility') ?></th>
-        <th class="col-db-badlinks">Bad Links <?= sortBtn('db-badlinks') ?></th>
-        <th class="col-db-seo">SEO <?= sortBtn('db-seo') ?></th>
-        <th class="col-db-spelling">Spelling <?= sortBtn('db-spelling') ?></th>
-        <th class="col-db-bestpractices">Best Prac. <?= sortBtn('db-bestpractices') ?></th>
-        <th class="col-db-webgovernance">Web Gov. <?= sortBtn('db-webgovernance') ?></th>
-        <th class="col-db-pages">Pages <?= sortBtn('db-pages') ?></th>
+        <th scope="col" class="sticky-1 col-url">URL <?= sortBtn('url') ?><?= filterBtn('url') ?></th>
+        <th scope="col" class="col-site">Site Name <?= sortBtn('site') ?><?= filterBtn('site') ?></th>
+        <th scope="col" class="col-description">Description <?= sortBtn('description') ?><?= filterBtn('description') ?></th>
+        <th scope="col" class="col-vp_area">VP Area <?= sortBtn('vp_area') ?><?= filterBtn('vp_area') ?></th>
+        <th scope="col" class="col-vp_lead">VP Lead <?= sortBtn('vp_lead') ?><?= filterBtn('vp_lead') ?></th>
+        <th scope="col" class="col-college_dept">College/Dept <?= sortBtn('college_dept') ?><?= filterBtn('college_dept') ?></th>
+        <th scope="col" class="col-college_communicator">Communicator <?= sortBtn('college_communicator') ?><?= filterBtn('college_communicator') ?></th>
+        <th scope="col" class="col-site_owner">Owner <?= sortBtn('site_owner') ?><?= filterBtn('site_owner') ?></th>
+        <th scope="col" class="col-content_lead">Content Lead <?= sortBtn('content_lead') ?><?= filterBtn('content_lead') ?></th>
+        <th scope="col" class="col-tech_lead">Tech Lead <?= sortBtn('tech_lead') ?><?= filterBtn('tech_lead') ?></th>
+        <th scope="col" class="col-admin_contact">Admin Contact <?= sortBtn('admin_contact') ?><?= filterBtn('admin_contact') ?></th>
+        <th scope="col" class="col-support_intake_url">Intake</th>
+        <th scope="col" class="col-datastudio_url">Studio</th>
+        <th scope="col" class="col-server">Server <?= sortBtn('server') ?><?= filterBtn('server') ?></th>
+        <th scope="col" class="col-platform">Platform <?= sortBtn('platform') ?><?= filterBtn('platform') ?></th>
+        <th scope="col" class="col-audience">Audience <?= sortBtn('audience') ?><?= filterBtn('audience') ?></th>
+        <th scope="col" class="col-category">Category <?= sortBtn('category') ?><?= filterBtn('category') ?></th>
+        <th scope="col" class="col-second_category">2nd Category <?= sortBtn('second_category') ?><?= filterBtn('second_category') ?></th>
+        <th scope="col" class="col-db-score">Score <?= sortBtn('db-score') ?></th>
+        <th scope="col" class="col-db-accessibility">Accessibility <?= sortBtn('db-accessibility') ?></th>
+        <th scope="col" class="col-db-badlinks">Bad Links <?= sortBtn('db-badlinks') ?></th>
+        <th scope="col" class="col-db-seo">SEO <?= sortBtn('db-seo') ?></th>
+        <th scope="col" class="col-db-spelling">Spelling <?= sortBtn('db-spelling') ?></th>
+        <th scope="col" class="col-db-bestpractices">Best Prac. <?= sortBtn('db-bestpractices') ?></th>
+        <th scope="col" class="col-db-webgovernance">Web Gov. <?= sortBtn('db-webgovernance') ?></th>
+        <th scope="col" class="col-db-pages">Pages <?= sortBtn('db-pages') ?></th>
     </tr>
 </thead>
 <tbody>
@@ -900,6 +965,7 @@ $defaultHidden = ['site', 'description'];
             data-site-id="<?= $sid ?>"
             data-vp-area-id="<?= (int)$site['vp_area_id'] ?>"
             data-names="<?= h(fullNames($vpLeads)) ?>"
+            tabindex="0" role="button" aria-label="<?= roleCellAriaLabel('VP Lead', $vpLeads) ?>"
             onclick="openVpLeadModal(<?= $sid ?>, <?= (int)$site['vp_area_id'] ?>, this)">
             <?= renderBadges($vpLeads) ?>
         </td>
@@ -918,6 +984,7 @@ $defaultHidden = ['site', 'description'];
         <td class="col-<?= $role ?> role-cell"
             data-site-id="<?= $sid ?>" data-role="<?= $role ?>"
             data-names="<?= h(fullNames($siteRoles[$role] ?? [])) ?>"
+            tabindex="0" role="button" aria-label="<?= roleCellAriaLabel(columnLabel($role), $siteRoles[$role] ?? [], in_array($role, ['content_lead', 'tech_lead'], true)) ?>"
             onclick="openPeopleModal(<?= $sid ?>, '<?= $role ?>', this)">
             <?= renderBadges($siteRoles[$role] ?? [], in_array($role, ['content_lead', 'tech_lead'], true)) ?>
         </td>
@@ -933,6 +1000,8 @@ $defaultHidden = ['site', 'description'];
         ?>
         <td class="col-support_intake_url link-cell" data-link-type="intake" data-site-id="<?= $sid ?>"
             data-url="<?= h($intakeUrl) ?>" data-sp-id="<?= $spId ?>"
+            tabindex="0" role="button"
+            aria-label="<?= $intakeUrl ? h('Support intake URL: ' . $intakeUrl . ($spName ? ' · ' . $spName : '') . ' — activate to edit') : 'Set support intake URL' ?>"
             onclick="editLink(<?= $sid ?>, 'intake', <?= h($intakeJ) ?>, <?= h($spJ) ?>)"
             title="<?= $intakeUrl ? h($intakeUrl) . ($spName ? ' · ' . h($spName) : '') : 'Set intake URL' ?>">
             <?php if ($intakeUrl): ?>
@@ -945,7 +1014,10 @@ $defaultHidden = ['site', 'description'];
         <!-- Datastudio URL -->
         <?php $dsUrl = $site['datastudio_url'] ?? ''; $dsJ = json_encode($dsUrl, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
         <td class="col-datastudio_url link-cell" data-link-type="datastudio" data-site-id="<?= $sid ?>"
-            data-url="<?= h($dsUrl) ?>" onclick="editLink(<?= $sid ?>, 'datastudio', <?= h($dsJ) ?>)"
+            data-url="<?= h($dsUrl) ?>"
+            tabindex="0" role="button"
+            aria-label="<?= $dsUrl ? h('Datastudio URL: ' . $dsUrl . ' — activate to edit') : 'Set Datastudio URL' ?>"
+            onclick="editLink(<?= $sid ?>, 'datastudio', <?= h($dsJ) ?>)"
             title="<?= $dsUrl ? h($dsUrl) : 'Set Datastudio URL' ?>">
             <?php if ($dsUrl): ?>
                 <span class="link-cell-icon">📊</span>
@@ -1028,22 +1100,22 @@ $defaultHidden = ['site', 'description'];
 
 <!-- ── People Modal ──────────────────────────────────────────────────────── -->
 <div id="modal-overlay" onclick="if(event.target===this) closePeopleModal()">
-    <div id="modal-box">
+    <div id="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
         <h2 id="modal-title"></h2>
         <div class="subtitle" id="modal-subtitle"></div>
         <div id="modal-people-list"></div>
         <div class="modal-add">
-            <label>Add Person</label>
-            <select id="employee-ts" placeholder="Search by name or email…"></select>
+            <label for="employee-ts">Add Person</label>
+            <select id="employee-ts" placeholder="Search by name or email…" aria-label="Add person by name or email"></select>
         </div>
         <div class="modal-new-toggle">
             <button id="btn-new-person-toggle" onclick="toggleNewPersonForm()">+ Not in system?</button>
         </div>
         <div id="new-person-form" style="display:none">
             <div class="new-person-fields">
-                <input type="text" id="np-first" placeholder="First name">
-                <input type="text" id="np-last"  placeholder="Last name">
-                <input type="text" id="np-email" placeholder="Email" class="full-width">
+                <input type="text" id="np-first" placeholder="First name" aria-label="First name">
+                <input type="text" id="np-last"  placeholder="Last name" aria-label="Last name">
+                <input type="text" id="np-email" placeholder="Email" class="full-width" aria-label="Email">
             </div>
             <button id="btn-create-emp" onclick="createAndAddEmployee()">Add to Role</button>
         </div>
@@ -1054,17 +1126,17 @@ $defaultHidden = ['site', 'description'];
 <!-- ── Link Edit Modal ───────────────────────────────────────────────────── -->
 <div id="link-overlay" onclick="if(event.target===this)closeLinkModal()"
      style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:500px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div role="dialog" aria-modal="true" aria-labelledby="link-modal-title" style="background:#fff;border-radius:12px;padding:24px;width:500px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
         <h2 id="link-modal-title" style="margin:0 0 4px;font-size:15px;font-weight:700;color:#032044"></h2>
-        <p id="link-modal-site" style="margin:0 0 14px;font-size:12px;color:#A09080"></p>
+        <p id="link-modal-site" style="margin:0 0 14px;font-size:12px;color:#7A6A5A"></p>
         <div id="link-current-wrap" style="display:none;margin-bottom:14px;padding:10px 12px;background:#F8F4F1;border-radius:8px;border:1px solid #EBE6E2">
-            <div style="font-size:11px;font-weight:600;color:#A09080;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Current URL</div>
+            <div style="font-size:11px;font-weight:600;color:#7A6A5A;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Current URL</div>
             <a id="link-current-url" href="#" target="_blank"
                style="font-size:12px;color:#265BF7;word-break:break-all;text-decoration:none;">
             </a>
         </div>
         <div id="link-platform-wrap" style="display:none;margin-bottom:14px">
-            <label style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px">Support Platform</label>
+            <label for="link-platform-select" style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px">Support Platform</label>
             <select id="link-platform-select" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;outline:none;background:#fff;margin-bottom:5px">
                 <option value="">— none —</option>
                 <?php foreach ($lookups['support_platforms'] as $sp): ?>
@@ -1072,12 +1144,12 @@ $defaultHidden = ['site', 'description'];
                 <?php endforeach; ?>
             </select>
             <div id="link-platform-add-row" style="display:flex;gap:6px;align-items:center">
-                <input id="link-platform-new" type="text" placeholder="Add new platform…"
+                <input id="link-platform-new" type="text" placeholder="Add new platform…" aria-label="Add new support platform"
                        style="flex:1;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;outline:none">
                 <button onclick="addLinkPlatform()" style="padding:4px 10px;font-size:12px;font-weight:600;background:#265BF7;color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">+ Add</button>
             </div>
         </div>
-        <label style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px" id="link-input-label">New URL</label>
+        <label for="link-input" style="font-size:12px;font-weight:600;color:#332F21;display:block;margin-bottom:4px" id="link-input-label">New URL</label>
         <input id="link-input" type="text" style="width:100%;font-size:13px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;margin-bottom:12px;outline:none;box-sizing:border-box"
                placeholder="https://…">
         <div style="display:flex;gap:8px">
@@ -1091,10 +1163,10 @@ $defaultHidden = ['site', 'description'];
 <!-- ── Add Site Modal ───────────────────────────────────────────────────── -->
 <div id="add-site-overlay" onclick="if(event.target===this)closeAddSiteModal()"
      style="display:none;position:fixed;inset:0;background:rgba(3,32,68,.5);z-index:200;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(3,32,68,.3)">
-        <h2 style="font-family:'Arsenal',system-ui,sans-serif;margin:0 0 4px;font-size:17px;font-weight:700;color:#032044">Add New Site</h2>
-        <p style="margin:0 0 16px;font-size:12px;color:#A09080">Enter the domain without https:// (e.g. newsite.utsa.edu)</p>
-        <input id="add-site-input" type="text" placeholder="newsite.utsa.edu"
+    <div role="dialog" aria-modal="true" aria-labelledby="add-site-title" style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(3,32,68,.3)">
+        <h2 id="add-site-title" style="font-family:'Arsenal',system-ui,sans-serif;margin:0 0 4px;font-size:17px;font-weight:700;color:#032044">Add New Site</h2>
+        <p style="margin:0 0 16px;font-size:12px;color:#7A6A5A">Enter the domain without https:// (e.g. newsite.utsa.edu)</p>
+        <input id="add-site-input" type="text" placeholder="newsite.utsa.edu" aria-label="Site domain, without https://"
                style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
         <p id="add-site-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
         <div style="display:flex;gap:8px">
@@ -1109,17 +1181,17 @@ $defaultHidden = ['site', 'description'];
 <!-- ── Site Edit Modal ──────────────────────────────────────────────────── -->
 <div id="site-edit-overlay" onclick="if(event.target===this)closeSiteEditModal()"
      style="display:none;position:fixed;inset:0;background:rgba(3,32,68,.5);z-index:200;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(3,32,68,.3)">
-        <h2 style="font-family:'Arsenal',system-ui,sans-serif;margin:0 0 16px;font-size:17px;font-weight:700;color:#032044">Edit Site</h2>
+    <div role="dialog" aria-modal="true" aria-labelledby="site-edit-title" style="background:#fff;border-radius:12px;padding:24px;width:480px;box-shadow:0 20px 60px rgba(3,32,68,.3)">
+        <h2 id="site-edit-title" style="font-family:'Arsenal',system-ui,sans-serif;margin:0 0 16px;font-size:17px;font-weight:700;color:#032044">Edit Site</h2>
 
         <!-- Edit fields -->
         <div id="site-edit-fields">
-            <label style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Site Name</label>
+            <label for="site-edit-name" style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Site Name</label>
             <input id="site-edit-name" type="text" placeholder="My Site Name"
                    style="width:100%;font-size:13px;border:2px solid #265BF7;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
-            <label style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#A09080">(without https://)</span></label>
+            <label for="site-edit-url" style="display:block;font-size:11px;font-weight:600;color:#6B6355;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">URL <span style="font-weight:400;text-transform:none;color:#7A6A5A">(without https://)</span></label>
             <input id="site-edit-url" type="text" placeholder="site.utsa.edu"
-                   style="width:100%;font-size:13px;border:1px solid #D5CFC8;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
+                   style="width:100%;font-size:13px;border:1px solid #7A6A5A;border-radius:6px;padding:7px 10px;margin-bottom:14px;outline:none;box-sizing:border-box">
             <p id="site-edit-error" style="display:none;margin:0 0 10px;font-size:12px;color:#dc2626;font-weight:600"></p>
             <div style="display:flex;gap:8px">
                 <button id="site-edit-save" onclick="saveSiteEditModal()"
@@ -1196,7 +1268,7 @@ $defaultHidden = ['site', 'description'];
 </div>
 
 <!-- ── Column filter popover ────────────────────────────────────────────── -->
-<div id="filter-popover">
+<div id="filter-popover" role="dialog" aria-label="Column filter options">
     <div id="filter-pop-content"></div>
     <div class="filter-pop-actions">
         <button class="btn-clear" onclick="clearFilterFromPop()">Clear</button>
@@ -1204,8 +1276,8 @@ $defaultHidden = ['site', 'description'];
     </div>
     <div class="filter-pop-sep"></div>
     <div id="filter-pop-copy-row">
-        <button id="filter-pop-copy-btn"  onclick="copyColumnData(filterPopCol, 'name')">Copy column</button>
-        <button id="filter-pop-copy-btn2" onclick="copyColumnData(filterPopCol, 'url')" style="display:none">Copy URLs</button>
+        <button id="filter-pop-copy-btn"  aria-live="polite" onclick="copyColumnData(filterPopCol, 'name')">Copy column</button>
+        <button id="filter-pop-copy-btn2" aria-live="polite" onclick="copyColumnData(filterPopCol, 'url')" style="display:none">Copy URLs</button>
     </div>
 </div>
 
@@ -1423,7 +1495,9 @@ function setStatusFilter(val) {
     activeStatusFilter = val;
     localStorage.setItem('statusFilter', val);
     document.querySelectorAll('.status-filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.status === val);
+        const on = btn.dataset.status === val;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     applyFilters();
 }
@@ -1431,7 +1505,9 @@ function setStatusFilter(val) {
 // Initialise button state on load (called after DOMContentLoaded)
 function initStatusFilter() {
     document.querySelectorAll('.status-filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.status === activeStatusFilter);
+        const on = btn.dataset.status === activeStatusFilter;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     // Unlike setStatusFilter(), this used to only update the button's look —
     // it never actually hid inactive rows, so "Active" appeared selected on
@@ -1563,8 +1639,15 @@ function applySort() {
 
 function updateSortBtns() {
     document.querySelectorAll('.sort-btn').forEach(btn => {
-        btn.classList.toggle('sort-asc',  btn.dataset.col === sortCol && sortDir === 'asc');
-        btn.classList.toggle('sort-desc', btn.dataset.col === sortCol && sortDir === 'desc');
+        const isAsc  = btn.dataset.col === sortCol && sortDir === 'asc';
+        const isDesc = btn.dataset.col === sortCol && sortDir === 'desc';
+        btn.classList.toggle('sort-asc',  isAsc);
+        btn.classList.toggle('sort-desc', isDesc);
+        // aria-sort belongs on the <th> itself, not the button inside it —
+        // that's the standard way a screen reader is told a column's sort
+        // state (WCAG 4.1.2 / WAI-ARIA sortable-table pattern).
+        const th = btn.closest('th');
+        if (th) th.setAttribute('aria-sort', isAsc ? 'ascending' : isDesc ? 'descending' : 'none');
     });
 }
 
@@ -1638,9 +1721,9 @@ function buildFilterPopover(col, def) {
     const content = document.getElementById('filter-pop-content');
     if (def.type === 'text') {
         const placeholder = col === 'site' ? 'Filter by site name or URL…' : 'Filter…';
-        const hint        = col === 'site' ? '<div style="font-size:10px;color:#A09080;margin-bottom:2px">Searches both site name and URL</div>' : '';
+        const hint        = col === 'site' ? '<div style="font-size:10px;color:#7A6A5A;margin-bottom:2px">Searches both site name and URL</div>' : '';
         content.innerHTML =
-            `${hint}<input type="text" id="filter-pop-text" placeholder="${placeholder}"
+            `${hint}<input type="text" id="filter-pop-text" placeholder="${placeholder}" aria-label="${escHtml(placeholder)}"
                     value="${escHtml(filterPopPending.value)}">`;
         const inp = document.getElementById('filter-pop-text');
         inp.focus(); inp.select();
@@ -1667,7 +1750,7 @@ function buildFilterPopover(col, def) {
             </label>`;
         }).join('');
         content.innerHTML =
-            `<input type="text" id="filter-pop-search" placeholder="Search options…"
+            `<input type="text" id="filter-pop-search" placeholder="Search options…" aria-label="Search filter options"
                     oninput="filterPopSearch(this.value)">
              <label class="filter-pop-item filter-pop-all">
                  <input type="checkbox" id="filter-pop-selall"
@@ -1832,6 +1915,7 @@ function copyToClipboard(text) {
 function markFilterBtn(col, active) {
     document.querySelectorAll(`.filter-btn[data-col="${col}"]`).forEach(btn => {
         btn.classList.toggle('filter-active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
 }
 
@@ -2008,6 +2092,7 @@ async function saveFkEdit(td, val, lookupKey, fkField) {
 let linkState = {};
 
 function editLink(siteId, linkType, currentUrl, platform) {
+    rememberFocus();
     linkState = { siteId, linkType, currentUrl: currentUrl || '', platform: platform || null };
     const label = linkType === 'intake' ? 'Support Intake URL' : 'Datastudio URL';
     document.getElementById('link-modal-title').textContent = label;
@@ -2054,7 +2139,14 @@ function editLink(siteId, linkType, currentUrl, platform) {
 function closeLinkModal() {
     document.getElementById('link-overlay').style.display = 'none';
     linkState = {};
+    restoreFocus();
 }
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('link-overlay').style.display !== 'none') {
+        closeLinkModal();
+    }
+});
 
 async function clearLinkModal() {
     const { siteId, linkType } = linkState;
@@ -2130,7 +2222,58 @@ const ROLE_LABELS = {
     admin_contact:        'Admin Contact',
 };
 
+// ── Modal accessibility: focus management + keyboard trap ──────────────────
+// Shared across all four overlay-based dialogs (people, link, add-site,
+// site-edit) so a keyboard user's focus never gets lost in/behind them.
+let modalReturnFocusEl = null;
+
+function rememberFocus() {
+    modalReturnFocusEl = document.activeElement;
+}
+
+function restoreFocus() {
+    if (modalReturnFocusEl && document.body.contains(modalReturnFocusEl)) modalReturnFocusEl.focus();
+    modalReturnFocusEl = null;
+}
+
+function focusableIn(container) {
+    return [...container.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )].filter(el => el.offsetParent !== null);
+}
+
+// One shared Tab handler for whichever dialog is currently visible, so Tab
+// cycles within it instead of escaping into the (still-present, just
+// visually covered) page behind it.
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const openDialog = document.querySelector(
+        '#modal-overlay.open [role="dialog"], ' +
+        '#link-overlay[style*="flex"] [role="dialog"], ' +
+        '#add-site-overlay[style*="flex"] [role="dialog"], ' +
+        '#site-edit-overlay[style*="flex"] [role="dialog"]'
+    );
+    if (!openDialog) return;
+    const list = focusableIn(openDialog);
+    if (!list.length) return;
+    const first = list[0], last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
+
+// role-cells and link-cells are plain <td>s made keyboard-operable via
+// tabindex="0" role="button" — unlike a real <button>, a <td> doesn't
+// natively respond to Enter/Space, so this re-fires the same onclick.
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const target = e.target.closest('[role="button"]');
+    if (!target || target.tagName === 'BUTTON' || target.tagName === 'A') return;
+    e.preventDefault();
+    target.click();
+});
+
 async function openPeopleModal(siteId, role, cell) {
+    rememberFocus();
     modalState = { siteId, role, cell };
 
     const row       = cell.closest('tr');
@@ -2175,6 +2318,7 @@ async function openPeopleModal(siteId, role, cell) {
     });
 
     document.getElementById('modal-overlay').classList.add('open');
+    document.getElementById('modal-box').focus();
 }
 
 function renderModalPeople(role) {
@@ -2243,7 +2387,14 @@ function closePeopleModal() {
     document.getElementById('np-last').value  = '';
     document.getElementById('np-email').value = '';
     modalState = {};
+    restoreFocus();
 }
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('modal-overlay').classList.contains('open')) {
+        closePeopleModal();
+    }
+});
 
 // ── Inline employee name / email editing ───────────────────────────────────
 function editEmpField(span) {
@@ -2399,11 +2550,18 @@ function refreshRoleCell(siteId, role) {
     const people = (modalState.roles || []).filter(r => r.role === role);
     cell.innerHTML = people.length
         ? people.map(p =>
-            `<span class="badge" style="background:${badgeColor(p.last_name+p.first_name)}"
+            `<span class="badge" aria-hidden="true" style="background:${badgeColor(p.last_name+p.first_name)}"
                    title="${escHtml(p.last_name+', '+p.first_name+(p.email?' · '+p.email:''))}">
                 ${initials(p.first_name, p.last_name)}
             </span>`).join('')
         : '<span class="empty-cell">—</span>';
+    // Keep the cell's own accessible name (its real label now that badges
+    // are aria-hidden — see renderBadges()) in sync after a live edit.
+    // Note: doesn't re-check DubBot enrollment status here (that data isn't
+    // part of modalState.roles) — a full page reload re-derives it from the
+    // DB correctly; this only covers names going stale mid-session.
+    const names = people.map(p => `${p.first_name} ${p.last_name}`.trim()).join(', ');
+    cell.setAttribute('aria-label', `${COLUMN_LABELS[role] || role}: ${names || 'none assigned'} — activate to edit`);
 }
 
 // ── VP Lead modal (reuses people modal UI, different API actions) ──────────
@@ -2498,11 +2656,13 @@ function refreshVpLeadCell(siteId) {
     const people = modalState.roles || [];
     cell.innerHTML = people.length
         ? people.map(p =>
-            `<span class="badge" style="background:${badgeColor(p.last_name+p.first_name)}"
+            `<span class="badge" aria-hidden="true" style="background:${badgeColor(p.last_name+p.first_name)}"
                    title="${escHtml(p.last_name+', '+p.first_name+(p.email?' · '+p.email:''))}">
                 ${initials(p.first_name, p.last_name)}
             </span>`).join('')
         : '<span class="empty-cell">—</span>';
+    const names = people.map(p => `${p.first_name} ${p.last_name}`.trim()).join(', ');
+    cell.setAttribute('aria-label', `VP Lead: ${names || 'none assigned'} — activate to edit`);
 }
 
 // ── Site edit modal (URL + Site Name) ──────────────────────────────────────
@@ -2510,6 +2670,7 @@ let siteEditId       = null;
 let siteEditIsActive = true;
 
 function openSiteEditModal(siteId, siteName, url, isActive) {
+    rememberFocus();
     siteEditId       = siteId;
     siteEditIsActive = isActive !== 0 && isActive !== false;
     document.getElementById('site-edit-name').value  = siteName || '';
@@ -2533,6 +2694,7 @@ function closeSiteEditModal() {
     hideDeleteConfirm();
     hideDeactivateConfirm();
     siteEditId = null;
+    restoreFocus();
 }
 
 function showDeactivateConfirm() {
@@ -2734,6 +2896,7 @@ async function saveSiteEditModal() {
 
 // ── Add new site ───────────────────────────────────────────────────────────
 function addSite() {
+    rememberFocus();
     const overlay = document.getElementById('add-site-overlay');
     const input   = document.getElementById('add-site-input');
     const err     = document.getElementById('add-site-error');
@@ -2745,6 +2908,7 @@ function addSite() {
 
 function closeAddSiteModal() {
     document.getElementById('add-site-overlay').style.display = 'none';
+    restoreFocus();
 }
 
 async function saveAddSiteModal() {
@@ -2829,16 +2993,22 @@ function dbNorm(url) {
 }
 
 function dbSetStatus(type, msg) {
-    const el  = document.getElementById('grp-dubbot');
-    const btn = document.getElementById('db-refresh-btn');
-    if (!el) return;
-    const btnHtml = `<button class="db-refresh-btn" id="db-refresh-btn" onclick="loadDubBotData()" title="Refresh DubBot data from API">↻ Refresh</button>`;
+    // Updates a persistent aria-live span rather than replacing the whole
+    // header cell's innerHTML (which used to destroy/recreate the refresh
+    // button on every status change — bad for a live region, since some
+    // screen readers only reliably announce content changes on an element
+    // that already existed, not one that was just re-inserted, and it also
+    // silently dropped focus if the button had it when a status came in).
+    const live = document.getElementById('db-status-live');
+    const btn  = document.getElementById('db-refresh-btn');
+    if (!live || !btn) return;
+    btn.disabled = (type === 'loading');
     if (type === 'loading') {
-        el.innerHTML = `DubBot <span class="db-hdr-spin"></span><span class="db-hdr-status">${escHtml(msg)}</span> <button class="db-refresh-btn" id="db-refresh-btn" disabled>↻ Refresh</button>`;
+        live.innerHTML = `<span class="db-hdr-spin" aria-hidden="true"></span><span class="db-hdr-status">${escHtml(msg)}</span>`;
     } else if (type === 'error') {
-        el.innerHTML = `DubBot <span class="db-hdr-error">⚠ ${escHtml(msg)}</span> ${btnHtml}`;
+        live.innerHTML = `<span class="db-hdr-error">⚠ ${escHtml(msg)}</span>`;
     } else {
-        el.innerHTML = `DubBot <span class="db-hdr-status">${escHtml(msg)}</span> ${btnHtml}`;
+        live.innerHTML = `<span class="db-hdr-status">${escHtml(msg)}</span>`;
     }
 }
 
