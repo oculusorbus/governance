@@ -349,6 +349,24 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .sort-btn.sort-asc  .sort-dn  { opacity:.2; }
         .sort-btn.sort-desc .sort-up  { opacity:.2; }
 
+        /* DubBot score columns are sort-only (no filter button), so they
+           don't need the padding/offset reserved for a second icon — push
+           the sort icon to the true edge and reclaim the padding, since
+           these columns are narrow enough that the default spacing crowds
+           the header text. */
+        thead tr.headers th.col-db-score,         thead tr.headers th.col-db-accessibility,
+        thead tr.headers th.col-db-badlinks,      thead tr.headers th.col-db-seo,
+        thead tr.headers th.col-db-spelling,      thead tr.headers th.col-db-bestpractices,
+        thead tr.headers th.col-db-webgovernance, thead tr.headers th.col-db-pages {
+            padding-right:20px;
+        }
+        .col-db-score .sort-btn,         .col-db-accessibility .sort-btn,
+        .col-db-badlinks .sort-btn,      .col-db-seo .sort-btn,
+        .col-db-spelling .sort-btn,      .col-db-bestpractices .sort-btn,
+        .col-db-webgovernance .sort-btn, .col-db-pages .sort-btn {
+            right:4px;
+        }
+
         /* ── Filter popover ───────────────────────────────────────────── */
         #filter-popover { display:none; position:fixed; background:#fff;
                           border:1px solid #EBE6E2; border-radius:8px;
