@@ -35,6 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE eaer_requests SET status = 'exported', exported_at = SYSUTCDATETIME() WHERE id = ?")
                 ->execute([$row['id']]);
         }
+    } elseif (isset($_POST['reopen_token'])) {
+        $token = (string)$_POST['reopen_token'];
+        $stmt = $pdo->prepare("SELECT id FROM eaer_requests WHERE token = ?");
+        $stmt->execute([$token]);
+        if ($row = $stmt->fetch()) {
+            $pdo->prepare("UPDATE eaer_requests SET status = 'draft' WHERE id = ?")
+                ->execute([$row['id']]);
+        }
     }
 }
 
@@ -133,7 +141,11 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                     <a href="eaer.php?token=<?= h($r['token']) ?>" class="text-blue-600 hover:underline mr-3">Open</a>
                     <?php if ($r['status'] === 'exported'): ?>
-                        <a href="eaer_export.php?token=<?= h($r['token']) ?>" target="_blank" class="text-blue-600 hover:underline">View / Print</a>
+                        <a href="eaer_export.php?token=<?= h($r['token']) ?>" target="_blank" class="text-blue-600 hover:underline mr-3">View / Print</a>
+                        <form method="post" class="inline" onsubmit="return confirm('Reopen for editing? Contributors will be able to change fields again until it is re-exported.');">
+                            <input type="hidden" name="reopen_token" value="<?= h($r['token']) ?>">
+                            <button type="submit" class="text-amber-600 hover:underline">Reopen</button>
+                        </form>
                     <?php else: ?>
                         <form method="post" class="inline" onsubmit="return confirm('Export this record? It will become read-only.');">
                             <input type="hidden" name="export_token" value="<?= h($r['token']) ?>">

@@ -87,6 +87,19 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
+    // ── Admin: reopen an exported record for further editing ───────────────
+    // exported_at is left as-is (last export time), not cleared — it's
+    // reused as the "last exported" marker if re-exported later.
+    case 'reopen':
+        eaer_require_admin();
+        $token = (string)($input['token'] ?? '');
+        $rec   = eaer_find_by_token($pdo, $token);
+        if (!$rec) eaer_fail(404, 'Not found');
+        $pdo->prepare("UPDATE eaer_requests SET status = 'draft' WHERE id = ?")
+            ->execute([$rec['id']]);
+        echo json_encode(['success' => true]);
+        break;
+
     // ── Token or admin: fetch a record + its contributor attribution ───────
     case 'get':
         $token = (string)($input['token'] ?? ($_GET['token'] ?? ''));
