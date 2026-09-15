@@ -249,14 +249,15 @@ $isExported  = $record['status'] === 'exported';
 
         <?php endforeach; ?>
 
-        <?php if (!empty($contributions[$sectionKey])): ?>
-        <div class="text-xs text-[#6B6355] pt-2 border-t border-[#EBE6E2] md:col-span-2">
+        <div class="text-xs text-[#6B6355] pt-2 border-t border-[#EBE6E2] md:col-span-2 <?= empty($contributions[$sectionKey]) ? 'hidden' : '' ?>"
+             data-contrib-block="<?= h($sectionKey) ?>">
             Contributed by:
-            <?php foreach ($contributions[$sectionKey] as $c): ?>
-                <span class="inline-block mr-2"><?= h($c['contributor_name']) ?> (<?= h(date('M j, Y g:ia', strtotime($c['updated_at']))) ?>)</span>
+            <span data-contrib-list>
+            <?php foreach ($contributions[$sectionKey] ?? [] as $c): ?>
+                <span class="inline-block mr-2" data-contrib-name="<?= h($c['contributor_name']) ?>"><?= h($c['contributor_name']) ?> (<?= h(date('M j, Y g:ia', strtotime($c['updated_at']))) ?>)</span>
             <?php endforeach; ?>
+            </span>
         </div>
-        <?php endif; ?>
 
         <?php if (!$isExported): ?>
         <div class="md:col-span-2 pt-2 border-t border-[#EBE6E2] flex justify-end">
@@ -291,6 +292,7 @@ $isExported  = $record['status'] === 'exported';
 
 <script>
 const TOKEN = <?= json_encode($token) ?>;
+const CONTRIBUTOR_NAME = <?= json_encode($contributorName) ?>;
 
 function toggleHelp(btn) {
     const content = document.getElementById(btn.getAttribute('aria-controls'));
@@ -344,6 +346,31 @@ function collectSectionFields(sectionKey) {
     return fields;
 }
 
+// Updates the "Contributed by" line for a section immediately after a
+// successful save, so the contributor sees their own attribution without
+// needing to reload the page.
+function markContributed(sectionKey) {
+    const block = document.querySelector(`[data-contrib-block="${sectionKey}"]`);
+    if (!block) return;
+    const list = block.querySelector('[data-contrib-list]');
+    const now = new Date();
+    const stamp = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        + ' ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    let entry = null;
+    list.querySelectorAll('[data-contrib-name]').forEach(el => {
+        if (el.dataset.contribName === CONTRIBUTOR_NAME) entry = el;
+    });
+    if (!entry) {
+        entry = document.createElement('span');
+        entry.className = 'inline-block mr-2';
+        entry.dataset.contribName = CONTRIBUTOR_NAME;
+        list.appendChild(entry);
+    }
+    entry.textContent = `${CONTRIBUTOR_NAME} (${stamp})`;
+    block.classList.remove('hidden');
+}
+
 async function saveSection(sectionKey) {
     const fields = collectSectionFields(sectionKey);
     const status = document.getElementById('save-status');
@@ -355,7 +382,8 @@ async function saveSection(sectionKey) {
         });
         const data = await res.json();
         if (!res.ok || data.error) throw new Error(data.error || 'Save failed');
-        status.textContent = 'Saved. Reload to see the attribution update.';
+        markContributed(sectionKey);
+        status.textContent = 'Saved.';
         status.className = 'fixed bottom-6 right-6 z-50 text-sm rounded-lg px-4 py-2 shadow-lg bg-green-50 text-green-800 border border-green-700';
     } catch (e) {
         status.textContent = 'Error saving: ' + e.message;
