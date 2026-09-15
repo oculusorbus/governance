@@ -11,7 +11,10 @@ function eaer_pdo(): PDO {
     if ($pdo) return $pdo;
 
     $pdo = new PDO(
-        'sqlsrv:Server=' . DB_HOST . ';Database=' . DB_NAME,
+        // Deliberately separate database from governance's DB_NAME — EAER is
+        // an independent compliance/audit-trail system, not site-directory
+        // data. Shares the same login/instance (EAER_DB_NAME set in config.php).
+        'sqlsrv:Server=' . DB_HOST . ';Database=' . EAER_DB_NAME,
         DB_USER, DB_PASS,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
          PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
