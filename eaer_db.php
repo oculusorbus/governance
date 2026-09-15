@@ -156,14 +156,14 @@ function eaer_sections(): array {
                 'alternatives_considered' => [
                     'label' => 'Accessible alternatives considered, and why they were not selected',
                     'type'  => 'textarea',
-                    'note'  => 'Added per 1 TAC 213.37 documentation expectations — not in the original draft form.',
+                    'note'  => 'Added per 1 TAC 213.37 documentation expectations, not in the original draft form.',
                 ],
                 'est_cost'                    => ['label' => 'Estimated cost of bringing the EIR into compliance (development cost, time, etc.)', 'type' => 'textarea'],
                 'cost_not_estimated_explain'  => ['label' => 'If no cost estimate was completed, explain', 'type' => 'textarea'],
                 'resource_impact' => [
                     'label' => 'Impact on program/department resources if this exception is not granted',
                     'type'  => 'textarea',
-                    'note'  => 'Added — 1 TAC 213.37 asks institutions to weigh all resources available to the program, not only the isolated remediation cost.',
+                    'note'  => 'Added because 1 TAC 213.37 asks institutions to weigh all resources available to the program, not only the isolated remediation cost.',
                 ],
                 'remediation_timeline'         => ['label' => 'Remediation timeline', 'type' => 'textarea'],
                 'timeline_not_planned_explain' => ['label' => 'If no timeline is planned, explain', 'type' => 'textarea'],
@@ -179,7 +179,7 @@ function eaer_sections(): array {
                     'label' => 'Type of users',
                     'type'  => 'checkboxes',
                     'options' => ['Faculty', 'Staff', 'Students', 'Members of the Public'],
-                    'note'  => 'If "Students" is selected, route to Student Disability Services for input — see HOP 11.10 roles.',
+                    'note'  => 'If "Students" is selected, route to Student Disability Services for input (see HOP 11.10 roles).',
                 ],
                 'est_users_per_year' => ['label' => 'Estimated number of potential users over 1 year', 'type' => 'text'],
                 'course_info'        => ['label' => 'If for academic purposes, course name(s)/number(s)', 'type' => 'textarea'],
@@ -204,10 +204,10 @@ function eaer_sections(): array {
 function eaer_legislation(): array {
     return [
         'Section 504 of the Rehabilitation Act of 1973',
-        'Americans with Disabilities Act (ADA), Title II — 28 C.F.R. Part 35, Subpart H (Web and Mobile Accessibility; WCAG 2.1 Level AA); compliance date extended by interim final rule to April 26, 2027 for entities serving populations of 50,000+',
-        'UTSA Handbook of Operating Procedures (HOP) 11.10 — Web and Digital Accessibility Compliance',
-        'UT System Policy 150 — Access by Persons with Disabilities to Electronic and Information Resources',
-        'Texas Administrative Code (TAC), 1 TAC 213.37 — Compliance Exceptions and Exemptions',
+        'Americans with Disabilities Act (ADA), Title II: 28 C.F.R. Part 35, Subpart H (Web and Mobile Accessibility; WCAG 2.1 Level AA); compliance date extended by interim final rule to April 26, 2027 for entities serving populations of 50,000+',
+        'UTSA Handbook of Operating Procedures (HOP) 11.10: Web and Digital Accessibility Compliance',
+        'UT System Policy 150: Access by Persons with Disabilities to Electronic and Information Resources',
+        'Texas Administrative Code (TAC), 1 TAC 213.37: Compliance Exceptions and Exemptions',
         'Texas Government Code § 2054.460',
     ];
 }

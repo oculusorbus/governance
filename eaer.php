@@ -39,7 +39,7 @@ if ($contributorName === ''): ?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EAER — Identify Yourself</title>
+    <title>EAER: Identify Yourself</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <?php eaer_head_assets(); ?>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -87,7 +87,7 @@ $isExported  = $record['status'] === 'exported';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EAER — <?= h($record['eir_name'] ?: 'Untitled') ?></title>
+    <title>EAER: <?= h($record['eir_name'] ?: 'Untitled') ?></title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <?php eaer_head_assets(); ?>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -106,9 +106,9 @@ $isExported  = $record['status'] === 'exported';
             </div>
         </div>
         <?php if ($isExported): ?>
-            <span class="text-xs font-medium bg-white text-[#A06620] px-3 py-1 rounded-full whitespace-nowrap">Exported — read only</span>
+            <span class="text-xs font-medium bg-white text-[#A06620] px-3 py-1 rounded-full whitespace-nowrap">Exported (read only)</span>
         <?php else: ?>
-            <span class="text-xs font-medium bg-white text-[#1B3A6B] px-3 py-1 rounded-full whitespace-nowrap">Draft — in progress</span>
+            <span class="text-xs font-medium bg-white text-[#1B3A6B] px-3 py-1 rounded-full whitespace-nowrap">Draft (in progress)</span>
         <?php endif; ?>
     </div>
 </div>
@@ -119,22 +119,22 @@ $isExported  = $record['status'] === 'exported';
     <h2 class="font-brand font-bold text-[#032044] mb-2">What is this, and why does it matter?</h2>
     <p class="text-sm text-[#332F21] mb-3">
         UTSA is legally required to make the electronic and information resources it uses accessible
-        to people with disabilities — a category that, under Texas Administrative Code (TAC) 213.37,
-        covers far more than websites and software: it also includes IT hardware and office equipment
+        to people with disabilities. Under Texas Administrative Code (TAC) 213.37, that category
+        covers far more than websites and software: it also includes IT hardware and office equipment,
         like copiers, kiosks, and telephones. Under Title II of the Americans with Disabilities Act
         (ADA) and TAC 213.37, when a specific product can't fully meet that standard, the university
-        must document why — and how people with disabilities will still get an equitable experience —
+        must document why, and how people with disabilities will still get an equitable experience,
         before it can be used. This form <em>is</em> that documentation.
     </p>
     <p class="text-sm text-[#332F21] mb-3">
         Your input here becomes part of that official record. Each section below shows who entered it and
-        when, so your contribution is directly attributed to you — not anonymous, and not optional filler.
+        when, so your contribution is directly attributed to you, not anonymous, and not optional filler.
     </p>
     <p class="text-sm text-[#332F21]">
         Once every section is complete, this record is locked and attached as supporting evidence to the
         official exception-request memo, which is routed for signature to the
         <strong>Vice President for Information Management and Technology (VP IMT)</strong> and the
-        <strong>EIR Accessibility Coordinator (EIRAC)</strong> — the two university officials whose
+        <strong>EIR Accessibility Coordinator (EIRAC)</strong>, the two university officials whose
         approval makes this exception official. This record, alongside their signatures, is what UTSA
         would produce if this exception were ever audited or challenged.
     </p>
@@ -316,7 +316,7 @@ async function saveSection(sectionKey) {
         });
         const data = await res.json();
         if (!res.ok || data.error) throw new Error(data.error || 'Save failed');
-        status.textContent = 'Saved — reload to see attribution update.';
+        status.textContent = 'Saved. Reload to see the attribution update.';
         status.className = 'fixed bottom-6 right-6 z-50 text-sm rounded-lg px-4 py-2 shadow-lg bg-green-50 text-green-800 border border-green-700';
     } catch (e) {
         status.textContent = 'Error saving: ' + e.message;

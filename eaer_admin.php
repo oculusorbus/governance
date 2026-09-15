@@ -64,7 +64,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EIR Exceptions — Admin</title>
+    <title>EIR Exceptions: Admin</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <?php eaer_head_assets(); ?>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -92,7 +92,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
     <h2 class="font-brand font-bold text-[#032044] mb-3">Start a New Exception Request</h2>
     <form method="post" class="flex gap-3">
         <label for="create_eir_name" class="sr-only">Software, hardware, or resource name</label>
-        <input type="text" id="create_eir_name" name="create_eir_name" placeholder="Software, hardware, or resource name (optional — can be filled in later)"
+        <input type="text" id="create_eir_name" name="create_eir_name" placeholder="Software, hardware, or resource name (optional, can be filled in later)"
                class="flex-1 border border-[#EBE6E2] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#265BF7]">
         <button type="submit" class="bg-[#D3430D] hover:bg-[#B94700] text-white font-medium px-4 py-2 rounded-lg text-sm">
             Create

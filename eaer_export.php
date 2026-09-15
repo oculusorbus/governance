@@ -46,7 +46,7 @@ function eaer_display_value(array $field, $val): string {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>EAER Export — <?= h($record['eir_name'] ?: 'Untitled') ?></title>
+    <title>EAER Export: <?= h($record['eir_name'] ?: 'Untitled') ?></title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <?php eaer_head_assets(); ?>
     <script src="https://cdn.tailwindcss.com"></script>
