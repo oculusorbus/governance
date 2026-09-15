@@ -115,6 +115,29 @@ $isExported  = $record['status'] === 'exported';
 
 <main id="main-content" class="max-w-6xl mx-auto px-6 py-6">
 
+<div class="bg-white border-l-4 border-[#D3430D] rounded-xl shadow-sm mb-6 px-6 py-5">
+    <h2 class="font-brand font-bold text-[#032044] mb-2">What is this, and why does it matter?</h2>
+    <p class="text-sm text-[#332F21] mb-3">
+        UTSA is legally required to make the websites, software, and digital tools it uses accessible
+        to people with disabilities, under Title II of the Americans with Disabilities Act (ADA) and
+        Texas Administrative Code (TAC) 213.37. When a specific product can't fully meet that standard,
+        the university must document why — and how people with disabilities will still get an equitable
+        experience — before it can be used. This form <em>is</em> that documentation.
+    </p>
+    <p class="text-sm text-[#332F21] mb-3">
+        Your input here becomes part of that official record. Each section below shows who entered it and
+        when, so your contribution is directly attributed to you — not anonymous, and not optional filler.
+    </p>
+    <p class="text-sm text-[#332F21]">
+        Once every section is complete, this record is locked and attached as supporting evidence to the
+        official exception-request memo, which is routed for signature to the
+        <strong>Vice President for Information Management and Technology (VP IMT)</strong> and the
+        <strong>EIR Accessibility Coordinator (EIRAC)</strong> — the two university officials whose
+        approval makes this exception official. This record, alongside their signatures, is what UTSA
+        would produce if this exception were ever audited or challenged.
+    </p>
+</div>
+
 <?php if ($isExported): ?>
 <div class="bg-white border border-[#A06620] text-[#A06620] text-sm rounded-lg px-4 py-3 mb-6">
     This request has been exported and attached to its DocuSign exception memo. It is now read-only.
