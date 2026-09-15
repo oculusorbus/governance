@@ -50,7 +50,7 @@ if ($contributorName === ''): ?>
         <div class="flex items-center gap-2 mb-1">
             <img src="utsa-logo.svg" alt="UT San Antonio" height="18">
         </div>
-        <h1 class="font-brand text-xl font-bold text-[#032044] mb-1">EIR Accessibility Exception Request</h1>
+        <h1 class="font-brand text-xl font-bold text-[#032044] mb-1">Electronic and Information Resource (EIR) Accessibility Exception Request</h1>
         <p class="text-sm text-[#6B6355] mb-6"><?= h($record['eir_name'] ?: 'Untitled request') ?></p>
         <p class="text-xs text-[#6B6355] mb-4">
             Enter your name so your contributions to this form can be attributed.
@@ -101,8 +101,8 @@ $isExported  = $record['status'] === 'exported';
         <div class="flex items-center gap-3">
             <img src="utsa-logo.svg" alt="UT San Antonio" height="18" class="flex-shrink-0">
             <div>
-                <h1 class="font-brand text-base font-bold text-white leading-tight">EIR Accessibility Exception Request</h1>
-                <p class="text-xs text-[#C8DCFF]">Signed in as <strong><?= h($contributorName) ?></strong> · Per HOP 11.10 / 1 TAC 213.37</p>
+                <h1 class="font-brand text-base font-bold text-white leading-tight">Electronic and Information Resource (EIR) Accessibility Exception Request</h1>
+                <p class="text-xs text-[#C8DCFF]">Signed in as <strong><?= h($contributorName) ?></strong> · Per UTSA Handbook of Operating Procedures (HOP) 11.10 and Texas Administrative Code (TAC) 213.37</p>
             </div>
         </div>
         <?php if ($isExported): ?>

@@ -77,7 +77,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <img src="utsa-logo.svg" alt="UT San Antonio" height="20">
-            <h1 class="font-brand text-lg font-bold text-white">EIR Accessibility Exception Requests</h1>
+            <h1 class="font-brand text-lg font-bold text-white">Electronic and Information Resource (EIR) Accessibility Exception Requests</h1>
         </div>
         <div class="flex gap-3">
             <a href="app.php" class="text-sm text-[#C8DCFF] hover:underline self-center">← Website Governance</a>
@@ -91,8 +91,8 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
     <h2 class="font-brand font-bold text-[#032044] mb-3">Start a New Exception Request</h2>
     <form method="post" class="flex gap-3">
-        <label for="create_eir_name" class="sr-only">EIR / product name</label>
-        <input type="text" id="create_eir_name" name="create_eir_name" placeholder="EIR / product name (optional — can be filled in later)"
+        <label for="create_eir_name" class="sr-only">Software, hardware, or resource name</label>
+        <input type="text" id="create_eir_name" name="create_eir_name" placeholder="Software, hardware, or resource name (optional — can be filled in later)"
                class="flex-1 border border-[#EBE6E2] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#265BF7]">
         <button type="submit" class="bg-[#D3430D] hover:bg-[#B94700] text-white font-medium px-4 py-2 rounded-lg text-sm">
             Create
@@ -113,10 +113,10 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
 
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
     <table class="w-full text-sm">
-        <caption class="sr-only">All EIR accessibility exception requests, draft and exported</caption>
+        <caption class="sr-only">All accessibility exception requests, draft and exported</caption>
         <thead class="bg-[#F8F4F1] text-left text-xs text-[#6B6355] uppercase">
             <tr>
-                <th scope="col" class="px-4 py-3">EIR / Vendor</th>
+                <th scope="col" class="px-4 py-3">Product / Vendor</th>
                 <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Contributors</th>
                 <th scope="col" class="px-4 py-3">Last Activity</th>

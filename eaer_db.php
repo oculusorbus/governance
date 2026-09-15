@@ -110,9 +110,9 @@ function eaer_sections(): array {
             ],
         ],
         'description_eir' => [
-            'title'  => 'Description of EIR',
+            'title'  => 'Description of the EIR (Electronic and Information Resource)',
             'fields' => [
-                'eir_name'         => ['label' => 'Enter EIR Name', 'type' => 'text'],
+                'eir_name'         => ['label' => 'Enter the Name of the Software, Hardware, or Other Resource (EIR)', 'type' => 'text'],
                 'requisite_number' => ['label' => 'Requisition Number', 'type' => 'text'],
                 'description_use'  => ['label' => 'Description and Use of Tool', 'type' => 'textarea'],
                 'eir_type'         => [
@@ -205,9 +205,9 @@ function eaer_legislation(): array {
     return [
         'Section 504 of the Rehabilitation Act of 1973',
         'Americans with Disabilities Act (ADA), Title II — 28 C.F.R. Part 35, Subpart H (Web and Mobile Accessibility; WCAG 2.1 Level AA); compliance date extended by interim final rule to April 26, 2027 for entities serving populations of 50,000+',
-        'HOP 11.10 — Web and Digital Accessibility Compliance',
+        'UTSA Handbook of Operating Procedures (HOP) 11.10 — Web and Digital Accessibility Compliance',
         'UT System Policy 150 — Access by Persons with Disabilities to Electronic and Information Resources',
-        '1 TAC 213.37 — Compliance Exceptions and Exemptions',
+        'Texas Administrative Code (TAC), 1 TAC 213.37 — Compliance Exceptions and Exemptions',
         'Texas Government Code § 2054.460',
     ];
 }
