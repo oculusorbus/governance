@@ -142,7 +142,7 @@ $isExported  = $record['status'] === 'exported';
             <?php endif; ?>
 
             <?php if ($field['type'] === 'radio'): ?>
-                <div class="flex gap-4">
+                <div class="<?= ($field['layout'] ?? 'inline') === 'stacked' ? 'flex flex-col gap-1' : 'flex gap-4' ?>">
                     <?php foreach ($field['options'] as $i => $opt): ?>
                     <label class="text-sm flex items-center gap-1 text-[#332F21]">
                         <input type="radio" id="<?= h($domId . '-' . $i) ?>" name="<?= h($fieldKey) ?>" value="<?= h($opt) ?>" data-field="<?= h($fieldKey) ?>"
