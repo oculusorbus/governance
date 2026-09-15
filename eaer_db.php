@@ -121,7 +121,11 @@ function eaer_sections(): array {
                     'layout'  => 'stacked',
                     'options' => ['Software Application', 'IT Hardware or Office Equipment', 'Other'],
                 ],
-                'eir_type_other'   => ['label' => 'If "Other," describe', 'type' => 'textarea'],
+                'eir_type_other'   => [
+                    'label'    => 'If "Other," describe',
+                    'type'     => 'textarea',
+                    'showWhen' => ['field' => 'eir_type', 'equals' => 'Other'],
+                ],
                 'vendor_name'      => ['label' => 'Name of Vendor, Agency, or Third Party', 'type' => 'text'],
                 'is_renewal'       => ['label' => 'Is this EIR a contract or subscription renewal?', 'type' => 'radio', 'options' => ['Yes', 'No']],
             ],
@@ -143,7 +147,11 @@ function eaer_sections(): array {
                         'Other',
                     ],
                 ],
-                'justification_other' => ['label' => 'If "Other," describe', 'type' => 'textarea'],
+                'justification_other' => [
+                    'label'    => 'If "Other," describe',
+                    'type'     => 'textarea',
+                    'showWhen' => ['field' => 'justification_reasons', 'equals' => 'Other'],
+                ],
                 'supporting_info'     => ['label' => 'Supporting information to justify the exception', 'type' => 'textarea'],
                 'alternatives_considered' => [
                     'label' => 'Accessible alternatives considered, and why they were not selected',

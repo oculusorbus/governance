@@ -168,7 +168,10 @@ $isExported  = $record['status'] === 'exported';
         </fieldset>
 
         <?php else: ?>
-        <div class="<?= $field['type'] === 'textarea' ? 'md:col-span-2' : '' ?>">
+        <div class="<?= $field['type'] === 'textarea' ? 'md:col-span-2' : '' ?>"
+             <?php if (!empty($field['showWhen'])): ?>
+             data-show-when-field="<?= h($field['showWhen']['field']) ?>" data-show-when-equals="<?= h($field['showWhen']['equals']) ?>"
+             <?php endif; ?>>
             <label for="<?= h($domId) ?>" class="block text-sm font-medium text-[#332F21] mb-1"><?= h($field['label']) ?></label>
             <?php if (!empty($field['note'])): ?>
                 <p class="text-xs text-[#6B6355] mb-1"><?= h($field['note']) ?></p>
@@ -239,6 +242,26 @@ function autoGrow(el) {
 // Size every textarea to its existing content on load (not just on typing),
 // so a saved long narrative starts expanded instead of scrolled/clipped.
 document.querySelectorAll('textarea[data-field]').forEach(autoGrow);
+
+// "Other, describe" fields only show when their controlling radio/checkbox
+// is set to "Other" — driven by data-show-when-* attributes from the
+// field's 'showWhen' definition in eaer_sections(), not hardcoded per field.
+function updateConditionalFields() {
+    document.querySelectorAll('[data-show-when-field]').forEach(el => {
+        const controlling = el.dataset.showWhenField;
+        const expected = el.dataset.showWhenEquals;
+        const radios = document.querySelectorAll(`input[type="radio"][data-field="${controlling}"]`);
+        const checkboxes = document.querySelectorAll(`input[type="checkbox"][data-field-group="${controlling}"]`);
+        let matched = false;
+        radios.forEach(r => { if (r.checked && r.value === expected) matched = true; });
+        checkboxes.forEach(c => { if (c.checked && c.value === expected) matched = true; });
+        el.classList.toggle('hidden', !matched);
+    });
+}
+updateConditionalFields();
+document.addEventListener('change', e => {
+    if (e.target.matches('input[type="radio"], input[type="checkbox"]')) updateConditionalFields();
+});
 
 function collectSectionFields(sectionKey) {
     const block = document.querySelector(`[data-section-block="${sectionKey}"]`);
