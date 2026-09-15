@@ -12,6 +12,30 @@ function h(mixed $v): string {
     return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Click-to-reveal help button + hidden content, for a field's label/legend.
+ * Not a hover-only tooltip: works via click or keyboard (Enter/Space on a
+ * real <button>), and the help text is always in the DOM for screen readers
+ * once expanded, rather than relying on a title="" attribute.
+ */
+function eaer_help_button(array $field, string $domId): string {
+    if (empty($field['help'])) return '';
+    $helpId = 'help-' . $domId;
+    return '
+        <button type="button"
+                class="help-toggle inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#EBE6E2] text-[#6B6355] text-[11px] font-bold leading-none hover:bg-[#265BF7] hover:text-white flex-shrink-0"
+                aria-expanded="false" aria-controls="' . h($helpId) . '" onclick="toggleHelp(this)">
+            <span aria-hidden="true">?</span>
+            <span class="sr-only">Help for ' . h($field['label']) . '</span>
+        </button>';
+}
+
+function eaer_help_text(array $field, string $domId): string {
+    if (empty($field['help'])) return '';
+    $helpId = 'help-' . $domId;
+    return '<p id="' . h($helpId) . '" class="hidden text-xs text-[#6B6355] bg-[#F8F4F1] border border-[#EBE6E2] rounded-lg px-3 py-2 mb-1">' . h($field['help']) . '</p>';
+}
+
 $token = (string)($_GET['token'] ?? '');
 if ($token === '') { http_response_code(400); die('Missing token.'); }
 
@@ -161,7 +185,11 @@ $isExported  = $record['status'] === 'exported';
 
         <?php if ($field['type'] === 'radio' || $field['type'] === 'checkboxes'): ?>
         <fieldset class="border-0 p-0 m-0 md:col-span-2">
-            <legend class="text-sm font-medium text-[#332F21] mb-1"><?= h($field['label']) ?></legend>
+            <legend class="flex items-center gap-1.5 text-sm font-medium text-[#332F21] mb-1">
+                <?= h($field['label']) ?>
+                <?= eaer_help_button($field, $domId) ?>
+            </legend>
+            <?= eaer_help_text($field, $domId) ?>
             <?php if (!empty($field['note'])): ?>
                 <p class="text-xs text-[#6B6355] mb-1"><?= h($field['note']) ?></p>
             <?php endif; ?>
@@ -197,7 +225,11 @@ $isExported  = $record['status'] === 'exported';
              <?php if (!empty($field['showWhen'])): ?>
              data-show-when-field="<?= h($field['showWhen']['field']) ?>" data-show-when-equals="<?= h($field['showWhen']['equals']) ?>"
              <?php endif; ?>>
-            <label for="<?= h($domId) ?>" class="block text-sm font-medium text-[#332F21] mb-1"><?= h($field['label']) ?></label>
+            <div class="flex items-center gap-1.5 mb-1">
+                <label for="<?= h($domId) ?>" class="text-sm font-medium text-[#332F21]"><?= h($field['label']) ?></label>
+                <?= eaer_help_button($field, $domId) ?>
+            </div>
+            <?= eaer_help_text($field, $domId) ?>
             <?php if (!empty($field['note'])): ?>
                 <p class="text-xs text-[#6B6355] mb-1"><?= h($field['note']) ?></p>
             <?php endif; ?>
@@ -259,6 +291,13 @@ $isExported  = $record['status'] === 'exported';
 
 <script>
 const TOKEN = <?= json_encode($token) ?>;
+
+function toggleHelp(btn) {
+    const content = document.getElementById(btn.getAttribute('aria-controls'));
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded));
+    content.classList.toggle('hidden', expanded);
+}
 
 function autoGrow(el) {
     el.style.height = 'auto';
