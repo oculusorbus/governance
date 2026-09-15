@@ -126,7 +126,7 @@ $isExported  = $record['status'] === 'exported';
             <img src="utsa-logo.svg" alt="UT San Antonio" height="18" class="flex-shrink-0">
             <div>
                 <h1 class="font-brand text-base font-bold text-white leading-tight">Electronic and Information Resource (EIR) Accessibility Exception Request</h1>
-                <p class="text-xs text-[#C8DCFF]">Signed in as <strong><?= h($contributorName) ?></strong> · Per UTSA Handbook of Operating Procedures (HOP) 11.10 and Texas Administrative Code (TAC) 213.37</p>
+                <p class="text-xs text-[#C8DCFF]">Signed in as <strong><?= h($contributorName) ?></strong></p>
             </div>
         </div>
         <?php if ($isExported): ?>
