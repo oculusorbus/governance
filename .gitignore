@@ -1,5 +1,6 @@
 *.sql
 *.xlsx
+*.docx
 *.md
 *.txt
 .DS_Store

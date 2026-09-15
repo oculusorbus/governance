@@ -785,6 +785,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
     <button id="btn-add"          onclick="addSite()">+ Add Site</button>
+    <a href="eaer_admin.php"><button id="btn-eaer" type="button">EIR Exceptions</button></a>
     <div id="export-wrap">
         <button id="btn-export" onclick="toggleExportMenu(event)">Export ▾</button>
         <div id="export-menu">
