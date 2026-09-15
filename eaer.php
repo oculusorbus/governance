@@ -121,7 +121,7 @@ $isExported  = $record['status'] === 'exported';
 </div>
 <?php endif; ?>
 
-<div id="save-status" role="status" aria-live="polite" class="hidden text-sm rounded-lg px-4 py-2 mb-4"></div>
+<div id="save-status" role="status" aria-live="polite" class="hidden fixed bottom-6 right-6 z-50 text-sm rounded-lg px-4 py-2 shadow-lg"></div>
 
 <?php foreach ($sections as $sectionKey => $section): ?>
 <section class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden" data-section-block="<?= h($sectionKey) ?>" aria-labelledby="h-<?= h($sectionKey) ?>">
@@ -203,6 +203,15 @@ $isExported  = $record['status'] === 'exported';
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
+
+        <?php if (!$isExported): ?>
+        <div class="md:col-span-2 pt-2 border-t border-[#EBE6E2] flex justify-end">
+            <button type="button" onclick="saveSection('<?= h($sectionKey) ?>')"
+                    class="text-xs bg-[#1B3A6B] hover:bg-[#254e8f] text-white font-medium px-3 py-1.5 rounded-lg">
+                Save Section
+            </button>
+        </div>
+        <?php endif; ?>
     </div>
 </section>
 <?php endforeach; ?>
@@ -266,12 +275,14 @@ async function saveSection(sectionKey) {
         const data = await res.json();
         if (!res.ok || data.error) throw new Error(data.error || 'Save failed');
         status.textContent = 'Saved — reload to see attribution update.';
-        status.className = 'text-sm rounded-lg px-4 py-2 mb-4 bg-green-50 text-green-800 border border-green-700';
+        status.className = 'fixed bottom-6 right-6 z-50 text-sm rounded-lg px-4 py-2 shadow-lg bg-green-50 text-green-800 border border-green-700';
     } catch (e) {
         status.textContent = 'Error saving: ' + e.message;
-        status.className = 'text-sm rounded-lg px-4 py-2 mb-4 bg-red-50 text-red-800 border border-red-700';
+        status.className = 'fixed bottom-6 right-6 z-50 text-sm rounded-lg px-4 py-2 shadow-lg bg-red-50 text-red-800 border border-red-700';
     }
     status.classList.remove('hidden');
+    clearTimeout(window.eaerStatusTimeout);
+    window.eaerStatusTimeout = setTimeout(() => status.classList.add('hidden'), 4000);
 }
 </script>
 
