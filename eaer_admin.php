@@ -66,41 +66,46 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EIR Exceptions — Admin</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <?php eaer_head_assets(); ?>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-[#F8F4F1] min-h-screen">
 
-<div class="bg-white border-b shadow-sm">
+<a href="#main-content" class="skip-link">Skip to exception requests</a>
+
+<div id="topbar" role="banner" class="bg-[#032044] shadow-sm">
     <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <img src="utsa-logo.svg" alt="UT San Antonio" height="20">
-            <h1 class="text-lg font-bold text-gray-800">EIR Accessibility Exception Requests</h1>
+            <h1 class="font-brand text-lg font-bold text-white">EIR Accessibility Exception Requests</h1>
         </div>
         <div class="flex gap-3">
-            <a href="app.php" class="text-sm text-blue-600 hover:underline self-center">← Website Governance</a>
-            <a href="logout.php"><button class="text-sm bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg">Sign Out</button></a>
+            <a href="app.php" class="text-sm text-[#C8DCFF] hover:underline self-center">← Website Governance</a>
+            <a href="logout.php"><button type="button" class="text-sm bg-[#dc2626] hover:bg-[#b91c1c] text-white px-3 py-1.5 rounded-lg">Sign Out</button></a>
         </div>
     </div>
 </div>
 
-<div class="max-w-5xl mx-auto px-6 py-6">
+<main id="main-content" class="max-w-5xl mx-auto px-6 py-6">
 
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-    <h2 class="font-semibold text-gray-800 mb-3">Start a New Exception Request</h2>
+    <h2 class="font-brand font-bold text-[#032044] mb-3">Start a New Exception Request</h2>
     <form method="post" class="flex gap-3">
-        <input type="text" name="create_eir_name" placeholder="EIR / product name (optional — can be filled in later)"
-               class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm">
+        <label for="create_eir_name" class="sr-only">EIR / product name</label>
+        <input type="text" id="create_eir_name" name="create_eir_name" placeholder="EIR / product name (optional — can be filled in later)"
+               class="flex-1 border border-[#EBE6E2] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#265BF7]">
+        <button type="submit" class="bg-[#D3430D] hover:bg-[#B94700] text-white font-medium px-4 py-2 rounded-lg text-sm">
             Create
         </button>
     </form>
     <?php if ($newLink): ?>
-    <div class="mt-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-        <p class="text-sm text-green-800 mb-1">Created. Share this link with contributors:</p>
+    <div class="mt-4 bg-white border border-[#15803d] rounded-lg px-4 py-3">
+        <p class="text-sm text-[#15803d] mb-1">Created. Share this link with contributors:</p>
         <div class="flex gap-2 items-center">
-            <input type="text" readonly value="<?= h($baseUrl . '/' . $newLink) ?>" onclick="this.select()"
-                   class="flex-1 border border-green-300 rounded-lg px-3 py-1.5 text-sm bg-white font-mono">
-            <a href="<?= h($newLink) ?>" target="_blank" class="text-sm text-blue-600 hover:underline whitespace-nowrap">Open →</a>
+            <label for="new-link-field" class="sr-only">Shareable link</label>
+            <input type="text" id="new-link-field" readonly value="<?= h($baseUrl . '/' . $newLink) ?>" onclick="this.select()"
+                   class="flex-1 border border-[#EBE6E2] rounded-lg px-3 py-1.5 text-sm bg-white font-mono">
+            <a href="<?= h($newLink) ?>" target="_blank" class="text-sm text-[#265BF7] hover:underline whitespace-nowrap">Open →</a>
         </div>
     </div>
     <?php endif; ?>
@@ -108,48 +113,49 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
 
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
     <table class="w-full text-sm">
-        <thead class="bg-gray-50 text-left text-xs text-gray-500 uppercase">
+        <caption class="sr-only">All EIR accessibility exception requests, draft and exported</caption>
+        <thead class="bg-[#F8F4F1] text-left text-xs text-[#6B6355] uppercase">
             <tr>
-                <th class="px-4 py-3">EIR / Vendor</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3">Contributors</th>
-                <th class="px-4 py-3">Last Activity</th>
-                <th class="px-4 py-3">Created</th>
-                <th class="px-4 py-3"></th>
+                <th scope="col" class="px-4 py-3">EIR / Vendor</th>
+                <th scope="col" class="px-4 py-3">Status</th>
+                <th scope="col" class="px-4 py-3">Contributors</th>
+                <th scope="col" class="px-4 py-3">Last Activity</th>
+                <th scope="col" class="px-4 py-3">Created</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
             </tr>
         </thead>
-        <tbody class="divide-y">
+        <tbody class="divide-y divide-[#EBE6E2]">
             <?php if (!$records): ?>
-            <tr><td colspan="6" class="px-4 py-6 text-center text-gray-400">No exception requests yet.</td></tr>
+            <tr><td colspan="6" class="px-4 py-6 text-center text-[#6B6355]">No exception requests yet.</td></tr>
             <?php endif; ?>
             <?php foreach ($records as $r): ?>
             <tr>
                 <td class="px-4 py-3">
-                    <div class="font-medium text-gray-800"><?= h($r['eir_name'] ?: 'Untitled') ?></div>
-                    <?php if ($r['vendor_name']): ?><div class="text-xs text-gray-400"><?= h($r['vendor_name']) ?></div><?php endif; ?>
+                    <div class="font-medium text-[#332F21]"><?= h($r['eir_name'] ?: 'Untitled') ?></div>
+                    <?php if ($r['vendor_name']): ?><div class="text-xs text-[#6B6355]"><?= h($r['vendor_name']) ?></div><?php endif; ?>
                 </td>
                 <td class="px-4 py-3">
                     <?php if ($r['status'] === 'exported'): ?>
-                        <span class="text-xs font-medium bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Exported</span>
+                        <span class="text-xs font-medium bg-[#A06620]/10 text-[#A06620] px-2 py-1 rounded-full">Exported</span>
                     <?php else: ?>
-                        <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Draft</span>
+                        <span class="text-xs font-medium bg-[#265BF7]/10 text-[#1B3A6B] px-2 py-1 rounded-full">Draft</span>
                     <?php endif; ?>
                 </td>
-                <td class="px-4 py-3 text-gray-600"><?= (int)$r['contributor_count'] ?></td>
-                <td class="px-4 py-3 text-gray-600"><?= $r['last_activity'] ? h(date('M j, Y g:ia', strtotime($r['last_activity']))) : '—' ?></td>
-                <td class="px-4 py-3 text-gray-600"><?= h(date('M j, Y', strtotime($r['created_at']))) ?></td>
+                <td class="px-4 py-3 text-[#6B6355]"><?= (int)$r['contributor_count'] ?></td>
+                <td class="px-4 py-3 text-[#6B6355]"><?= $r['last_activity'] ? h(date('M j, Y g:ia', strtotime($r['last_activity']))) : '—' ?></td>
+                <td class="px-4 py-3 text-[#6B6355]"><?= h(date('M j, Y', strtotime($r['created_at']))) ?></td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                    <a href="eaer.php?token=<?= h($r['token']) ?>" class="text-blue-600 hover:underline mr-3">Open</a>
+                    <a href="eaer.php?token=<?= h($r['token']) ?>" class="text-[#265BF7] hover:underline mr-3">Open</a>
                     <?php if ($r['status'] === 'exported'): ?>
-                        <a href="eaer_export.php?token=<?= h($r['token']) ?>" target="_blank" class="text-blue-600 hover:underline mr-3">View / Print</a>
+                        <a href="eaer_export.php?token=<?= h($r['token']) ?>" target="_blank" class="text-[#265BF7] hover:underline mr-3">View / Print</a>
                         <form method="post" class="inline" onsubmit="return confirm('Reopen for editing? Contributors will be able to change fields again until it is re-exported.');">
                             <input type="hidden" name="reopen_token" value="<?= h($r['token']) ?>">
-                            <button type="submit" class="text-amber-600 hover:underline">Reopen</button>
+                            <button type="submit" class="text-[#A06620] hover:underline">Reopen</button>
                         </form>
                     <?php else: ?>
                         <form method="post" class="inline" onsubmit="return confirm('Export this record? It will become read-only.');">
                             <input type="hidden" name="export_token" value="<?= h($r['token']) ?>">
-                            <button type="submit" class="text-blue-600 hover:underline">Export</button>
+                            <button type="submit" class="text-[#265BF7] hover:underline">Export</button>
                         </form>
                     <?php endif; ?>
                 </td>
@@ -159,6 +165,6 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
     </table>
 </div>
 
-</div>
+</main>
 </body>
 </html>

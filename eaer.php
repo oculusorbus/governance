@@ -41,27 +41,32 @@ if ($contributorName === ''): ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EAER — Identify Yourself</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <?php eaer_head_assets(); ?>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-gray-100 flex items-center justify-center">
-    <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
-        <h1 class="text-xl font-bold text-gray-800 mb-1">EIR Accessibility Exception Request</h1>
-        <p class="text-sm text-gray-500 mb-6"><?= h($record['eir_name'] ?: 'Untitled request') ?></p>
-        <p class="text-xs text-gray-500 mb-4">
+<body class="min-h-screen bg-[#F8F4F1] flex items-center justify-center">
+    <a href="#main-content" class="skip-link">Skip to form</a>
+    <main id="main-content" class="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
+        <div class="flex items-center gap-2 mb-1">
+            <img src="utsa-logo.svg" alt="UT San Antonio" height="18">
+        </div>
+        <h1 class="font-brand text-xl font-bold text-[#032044] mb-1">EIR Accessibility Exception Request</h1>
+        <p class="text-sm text-[#6B6355] mb-6"><?= h($record['eir_name'] ?: 'Untitled request') ?></p>
+        <p class="text-xs text-[#6B6355] mb-4">
             Enter your name so your contributions to this form can be attributed.
             SSO is not yet available for this tool, so this is a self-reported name,
             not an authenticated login.
         </p>
         <form method="post">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-            <input type="text" name="contributor_name" autofocus required
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+            <label for="contributor_name" class="block text-sm font-medium text-[#332F21] mb-1">Your Name</label>
+            <input type="text" id="contributor_name" name="contributor_name" autofocus required
+                   class="w-full border border-[#EBE6E2] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#265BF7] mb-4">
             <button type="submit"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm">
+                    class="w-full bg-[#D3430D] hover:bg-[#B94700] text-white font-medium py-2 rounded-lg text-sm">
                 Continue
             </button>
         </form>
-    </div>
+    </main>
 </body>
 </html>
 <?php exit; endif;
@@ -84,91 +89,113 @@ $isExported  = $record['status'] === 'exported';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EAER — <?= h($record['eir_name'] ?: 'Untitled') ?></title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <?php eaer_head_assets(); ?>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen pb-20">
+<body class="bg-[#F8F4F1] min-h-screen pb-20">
 
-<div class="bg-white border-b sticky top-0 z-10 shadow-sm">
-    <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div>
-            <h1 class="text-lg font-bold text-gray-800">EIR Accessibility Exception Request</h1>
-            <p class="text-xs text-gray-500">Signed in as <strong><?= h($contributorName) ?></strong> · Per HOP 11.10 / 1 TAC 213.37</p>
+<a href="#main-content" class="skip-link">Skip to form</a>
+
+<div id="topbar" role="banner" class="bg-[#032044] sticky top-0 z-10 shadow-sm">
+    <div class="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <img src="utsa-logo.svg" alt="UT San Antonio" height="18" class="flex-shrink-0">
+            <div>
+                <h1 class="font-brand text-base font-bold text-white leading-tight">EIR Accessibility Exception Request</h1>
+                <p class="text-xs text-[#C8DCFF]">Signed in as <strong><?= h($contributorName) ?></strong> · Per HOP 11.10 / 1 TAC 213.37</p>
+            </div>
         </div>
         <?php if ($isExported): ?>
-            <span class="text-xs font-medium bg-amber-100 text-amber-800 px-3 py-1 rounded-full">Exported — read only</span>
+            <span class="text-xs font-medium bg-white text-[#A06620] px-3 py-1 rounded-full whitespace-nowrap">Exported — read only</span>
         <?php else: ?>
-            <span class="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Draft — in progress</span>
+            <span class="text-xs font-medium bg-white text-[#1B3A6B] px-3 py-1 rounded-full whitespace-nowrap">Draft — in progress</span>
         <?php endif; ?>
     </div>
 </div>
 
-<div class="max-w-3xl mx-auto px-6 py-6">
+<main id="main-content" class="max-w-3xl mx-auto px-6 py-6">
 
 <?php if ($isExported): ?>
-<div class="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg px-4 py-3 mb-6">
+<div class="bg-white border border-[#A06620] text-[#A06620] text-sm rounded-lg px-4 py-3 mb-6">
     This request has been exported and attached to its DocuSign exception memo. It is now read-only.
 </div>
 <?php endif; ?>
 
-<div id="save-status" class="hidden text-sm rounded-lg px-4 py-2 mb-4"></div>
+<div id="save-status" role="status" aria-live="polite" class="hidden text-sm rounded-lg px-4 py-2 mb-4"></div>
 
 <?php foreach ($sections as $sectionKey => $section): ?>
-<div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden" data-section-block="<?= h($sectionKey) ?>">
-    <div class="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
-        <h2 class="font-semibold text-gray-800"><?= h($section['title']) ?></h2>
+<section class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden" data-section-block="<?= h($sectionKey) ?>" aria-labelledby="h-<?= h($sectionKey) ?>">
+    <div class="px-6 py-4 border-b border-[#EBE6E2] bg-[#F8F4F1] flex items-center justify-between">
+        <h2 id="h-<?= h($sectionKey) ?>" class="font-brand font-bold text-[#032044]"><?= h($section['title']) ?></h2>
         <?php if (!$isExported): ?>
         <button type="button" onclick="saveSection('<?= h($sectionKey) ?>')"
-                class="text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-lg">
+                class="text-xs bg-[#1B3A6B] hover:bg-[#254e8f] text-white font-medium px-3 py-1.5 rounded-lg">
             Save Section
         </button>
         <?php endif; ?>
     </div>
     <div class="px-6 py-4 space-y-4">
-        <?php foreach ($section['fields'] as $fieldKey => $field): $val = $record[$fieldKey] ?? ''; ?>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"><?= h($field['label']) ?></label>
+        <?php foreach ($section['fields'] as $fieldKey => $field):
+            $val   = $record[$fieldKey] ?? '';
+            $domId = 'f-' . $fieldKey;
+        ?>
+
+        <?php if ($field['type'] === 'radio' || $field['type'] === 'checkboxes'): ?>
+        <fieldset class="border-0 p-0 m-0">
+            <legend class="text-sm font-medium text-[#332F21] mb-1"><?= h($field['label']) ?></legend>
             <?php if (!empty($field['note'])): ?>
-                <p class="text-xs text-gray-400 mb-1"><?= h($field['note']) ?></p>
+                <p class="text-xs text-[#6B6355] mb-1"><?= h($field['note']) ?></p>
             <?php endif; ?>
 
-            <?php if ($field['type'] === 'textarea'): ?>
-                <textarea name="<?= h($fieldKey) ?>" rows="3" <?= $isExported ? 'disabled' : '' ?>
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                    data-field="<?= h($fieldKey) ?>"><?= h($val) ?></textarea>
-
-            <?php elseif ($field['type'] === 'radio'): ?>
+            <?php if ($field['type'] === 'radio'): ?>
                 <div class="flex gap-4">
-                    <?php foreach ($field['options'] as $opt): ?>
-                    <label class="text-sm flex items-center gap-1">
-                        <input type="radio" name="<?= h($fieldKey) ?>" value="<?= h($opt) ?>" data-field="<?= h($fieldKey) ?>"
+                    <?php foreach ($field['options'] as $i => $opt): ?>
+                    <label class="text-sm flex items-center gap-1 text-[#332F21]">
+                        <input type="radio" id="<?= h($domId . '-' . $i) ?>" name="<?= h($fieldKey) ?>" value="<?= h($opt) ?>" data-field="<?= h($fieldKey) ?>"
+                               class="accent-[#1B3A6B]"
                                <?= $val === $opt ? 'checked' : '' ?> <?= $isExported ? 'disabled' : '' ?>>
                         <?= h($opt) ?>
                     </label>
                     <?php endforeach; ?>
                 </div>
-
-            <?php elseif ($field['type'] === 'checkboxes'):
+            <?php else:
                 $selected = array_map('trim', explode(',', (string)$val)); ?>
                 <div class="flex flex-col gap-1">
-                    <?php foreach ($field['options'] as $opt): ?>
-                    <label class="text-sm flex items-center gap-2">
-                        <input type="checkbox" name="<?= h($fieldKey) ?>[]" value="<?= h($opt) ?>" data-field-group="<?= h($fieldKey) ?>"
+                    <?php foreach ($field['options'] as $i => $opt): ?>
+                    <label class="text-sm flex items-center gap-2 text-[#332F21]">
+                        <input type="checkbox" id="<?= h($domId . '-' . $i) ?>" name="<?= h($fieldKey) ?>[]" value="<?= h($opt) ?>" data-field-group="<?= h($fieldKey) ?>"
+                               class="accent-[#1B3A6B]"
                                <?= in_array($opt, $selected, true) ? 'checked' : '' ?> <?= $isExported ? 'disabled' : '' ?>>
                         <?= h($opt) ?>
                     </label>
                     <?php endforeach; ?>
                 </div>
+            <?php endif; ?>
+        </fieldset>
 
+        <?php else: ?>
+        <div>
+            <label for="<?= h($domId) ?>" class="block text-sm font-medium text-[#332F21] mb-1"><?= h($field['label']) ?></label>
+            <?php if (!empty($field['note'])): ?>
+                <p class="text-xs text-[#6B6355] mb-1"><?= h($field['note']) ?></p>
+            <?php endif; ?>
+
+            <?php if ($field['type'] === 'textarea'): ?>
+                <textarea id="<?= h($domId) ?>" name="<?= h($fieldKey) ?>" rows="3" <?= $isExported ? 'readonly' : '' ?>
+                    class="w-full border border-[#EBE6E2] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#265BF7] read-only:bg-[#F8F4F1]"
+                    data-field="<?= h($fieldKey) ?>"><?= h($val) ?></textarea>
             <?php else: ?>
-                <input type="text" name="<?= h($fieldKey) ?>" value="<?= h($val) ?>" data-field="<?= h($fieldKey) ?>"
-                       <?= $isExported ? 'disabled' : '' ?>
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100">
+                <input type="text" id="<?= h($domId) ?>" name="<?= h($fieldKey) ?>" value="<?= h($val) ?>" data-field="<?= h($fieldKey) ?>"
+                       <?= $isExported ? 'readonly' : '' ?>
+                       class="w-full border border-[#EBE6E2] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#265BF7] read-only:bg-[#F8F4F1]">
             <?php endif; ?>
         </div>
+        <?php endif; ?>
+
         <?php endforeach; ?>
 
         <?php if (!empty($contributions[$sectionKey])): ?>
-        <div class="text-xs text-gray-400 pt-2 border-t">
+        <div class="text-xs text-[#6B6355] pt-2 border-t border-[#EBE6E2]">
             Contributed by:
             <?php foreach ($contributions[$sectionKey] as $c): ?>
                 <span class="inline-block mr-2"><?= h($c['contributor_name']) ?> (<?= h(date('M j, Y g:ia', strtotime($c['updated_at']))) ?>)</span>
@@ -176,27 +203,27 @@ $isExported  = $record['status'] === 'exported';
         </div>
         <?php endif; ?>
     </div>
-</div>
+</section>
 <?php endforeach; ?>
 
-<div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-    <div class="px-6 py-4 border-b bg-gray-50">
-        <h2 class="font-semibold text-gray-800">Applicable Disability Policy and Legislation</h2>
+<section class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden" aria-labelledby="h-legislation">
+    <div class="px-6 py-4 border-b border-[#EBE6E2] bg-[#F8F4F1]">
+        <h2 id="h-legislation" class="font-brand font-bold text-[#032044]">Applicable Disability Policy and Legislation</h2>
     </div>
-    <ul class="px-6 py-4 text-sm text-gray-600 list-disc list-inside space-y-1">
+    <ul class="px-6 py-4 text-sm text-[#332F21] list-disc list-inside space-y-1">
         <?php foreach ($legislation as $item): ?>
             <li><?= h($item) ?></li>
         <?php endforeach; ?>
     </ul>
-</div>
+</section>
 
-<p class="text-xs text-gray-400 text-center">
+<p class="text-xs text-[#6B6355] text-center">
     Formal approval of this exception is captured separately via the DocuSign exception-request memo
     (VP IMT and EIRAC signatures). Contributor names on this form are self-reported; SSO-based
     authentication is not yet available for this tool.
 </p>
 
-</div>
+</main>
 
 <script>
 const TOKEN = <?= json_encode($token) ?>;
@@ -230,10 +257,10 @@ async function saveSection(sectionKey) {
         const data = await res.json();
         if (!res.ok || data.error) throw new Error(data.error || 'Save failed');
         status.textContent = 'Saved — reload to see attribution update.';
-        status.className = 'text-sm rounded-lg px-4 py-2 mb-4 bg-green-50 text-green-700 border border-green-200';
+        status.className = 'text-sm rounded-lg px-4 py-2 mb-4 bg-green-50 text-green-800 border border-green-700';
     } catch (e) {
         status.textContent = 'Error saving: ' + e.message;
-        status.className = 'text-sm rounded-lg px-4 py-2 mb-4 bg-red-50 text-red-700 border border-red-200';
+        status.className = 'text-sm rounded-lg px-4 py-2 mb-4 bg-red-50 text-red-800 border border-red-700';
     }
     status.classList.remove('hidden');
 }

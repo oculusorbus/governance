@@ -48,6 +48,7 @@ function eaer_display_value(array $field, $val): string {
     <meta charset="UTF-8">
     <title>EAER Export — <?= h($record['eir_name'] ?: 'Untitled') ?></title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <?php eaer_head_assets(); ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media print {
@@ -56,39 +57,44 @@ function eaer_display_value(array $field, $val): string {
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-[#F8F4F1]">
 
-<div class="no-print bg-white border-b shadow-sm sticky top-0">
+<a href="#main-content" class="skip-link">Skip to exception request</a>
+
+<div class="no-print bg-[#032044] shadow-sm sticky top-0" role="banner">
     <div class="max-w-3xl mx-auto px-6 py-3 flex justify-between items-center">
-        <a href="eaer_admin.php" class="text-sm text-blue-600 hover:underline">← Back to admin</a>
-        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+        <a href="eaer_admin.php" class="text-sm text-[#C8DCFF] hover:underline">← Back to admin</a>
+        <button onclick="window.print()" class="bg-[#D3430D] hover:bg-[#B94700] text-white text-sm font-medium px-4 py-2 rounded-lg">
             Print / Save as PDF
         </button>
     </div>
 </div>
 
-<div class="max-w-3xl mx-auto bg-white shadow-sm my-6 p-8 print:shadow-none print:my-0">
+<main id="main-content" class="max-w-3xl mx-auto bg-white shadow-sm my-6 p-8 print:shadow-none print:my-0">
 
-    <h1 class="text-xl font-bold text-gray-800 mb-1">Electronic and Information Resources (EIR) Accessibility Exception Request</h1>
-    <p class="text-sm text-gray-500 mb-1">Per UTSA HOP 11.10 and 1 TAC 213.37</p>
-    <p class="text-xs text-gray-400 mb-6">
+    <div class="flex items-center gap-2 mb-2">
+        <img src="utsa-logo.svg" alt="UT San Antonio" height="18">
+    </div>
+    <h1 class="font-brand text-xl font-bold text-[#032044] mb-1">Electronic and Information Resources (EIR) Accessibility Exception Request</h1>
+    <p class="text-sm text-[#6B6355] mb-1">Per UTSA HOP 11.10 and 1 TAC 213.37</p>
+    <p class="text-xs text-[#6B6355] mb-6">
         Status: <?= $record['status'] === 'exported' ? 'Exported' : 'Draft' ?>
         <?php if ($record['exported_at']): ?> · Exported <?= h(date('M j, Y g:ia', strtotime($record['exported_at']))) ?><?php endif; ?>
     </p>
 
     <?php foreach ($sections as $sectionKey => $section): ?>
     <div class="mb-6">
-        <h2 class="font-semibold text-gray-800 border-b pb-1 mb-2"><?= h($section['title']) ?></h2>
+        <h2 class="font-brand font-bold text-[#032044] border-b border-[#EBE6E2] pb-1 mb-2"><?= h($section['title']) ?></h2>
         <dl class="space-y-2">
             <?php foreach ($section['fields'] as $fieldKey => $field): ?>
             <div>
-                <dt class="text-xs font-medium text-gray-500"><?= h($field['label']) ?></dt>
-                <dd class="text-sm text-gray-800 whitespace-pre-wrap"><?= h(eaer_display_value($field, $record[$fieldKey] ?? null)) ?></dd>
+                <dt class="text-xs font-medium text-[#6B6355]"><?= h($field['label']) ?></dt>
+                <dd class="text-sm text-[#332F21] whitespace-pre-wrap"><?= h(eaer_display_value($field, $record[$fieldKey] ?? null)) ?></dd>
             </div>
             <?php endforeach; ?>
         </dl>
         <?php if (!empty($contributions[$sectionKey])): ?>
-        <p class="text-xs text-gray-400 mt-2">
+        <p class="text-xs text-[#6B6355] mt-2">
             Contributed by:
             <?= h(implode('; ', array_map(
                 fn($c) => $c['contributor_name'] . ' (' . date('M j, Y g:ia', strtotime($c['updated_at'])) . ')',
@@ -100,13 +106,13 @@ function eaer_display_value(array $field, $val): string {
     <?php endforeach; ?>
 
     <div class="mb-6">
-        <h2 class="font-semibold text-gray-800 border-b pb-1 mb-2">Applicable Disability Policy and Legislation</h2>
-        <ul class="text-sm text-gray-700 list-disc list-inside space-y-1">
+        <h2 class="font-brand font-bold text-[#032044] border-b border-[#EBE6E2] pb-1 mb-2">Applicable Disability Policy and Legislation</h2>
+        <ul class="text-sm text-[#332F21] list-disc list-inside space-y-1">
             <?php foreach ($legislation as $item): ?><li><?= h($item) ?></li><?php endforeach; ?>
         </ul>
     </div>
 
-    <div class="text-xs text-gray-400 border-t pt-4">
+    <div class="text-xs text-[#6B6355] border-t border-[#EBE6E2] pt-4">
         <p class="mb-1">
             Contributor names above are self-reported; SSO-based authentication was not yet available
             for this tool at the time of submission.
@@ -119,7 +125,7 @@ function eaer_display_value(array $field, $val): string {
         </p>
     </div>
 
-</div>
+</main>
 
 </body>
 </html>

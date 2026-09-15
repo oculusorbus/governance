@@ -187,3 +187,33 @@ function eaer_legislation(): array {
 function eaer_gen_token(): string {
     return bin2hex(random_bytes(24));
 }
+
+/**
+ * Shared <head> assets: UTSA brand fonts + the skip-link/focus-visible
+ * accessibility pattern, copied verbatim from app.php's proven WCAG 2.1 AA
+ * pass so the EAER pages inherit the same contrast-checked palette rather
+ * than re-deriving it.
+ */
+function eaer_head_assets(): void {
+    ?>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Arsenal:wght@400;700&family=Libre+Franklin:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Libre Franklin', system-ui, sans-serif; }
+        .font-brand { font-family: 'Arsenal', system-ui, sans-serif; }
+
+        /* ── Accessibility: skip link + focus visibility (from app.php) ── */
+        .skip-link {
+            position:absolute; left:8px; top:-40px; z-index:1000;
+            background:#032044; color:#fff; padding:8px 14px; border-radius:0 0 6px 6px;
+            font-size:13px; font-weight:600; text-decoration:none; transition:top .15s;
+        }
+        .skip-link:focus { top:0; }
+        :focus-visible {
+            outline:2px solid #265BF7 !important;
+            outline-offset:2px;
+        }
+    </style>
+    <?php
+}
