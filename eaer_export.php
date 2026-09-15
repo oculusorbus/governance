@@ -62,7 +62,7 @@ function eaer_display_value(array $field, $val): string {
 <a href="#main-content" class="skip-link">Skip to exception request</a>
 
 <div class="no-print bg-[#032044] shadow-sm sticky top-0" role="banner">
-    <div class="max-w-3xl mx-auto px-6 py-3 flex justify-between items-center">
+    <div class="max-w-4xl mx-auto px-6 py-3 flex justify-between items-center">
         <a href="eaer_admin.php" class="text-sm text-[#C8DCFF] hover:underline">← Back to admin</a>
         <button onclick="window.print()" class="bg-[#D3430D] hover:bg-[#B94700] text-white text-sm font-medium px-4 py-2 rounded-lg">
             Print / Save as PDF
@@ -70,7 +70,7 @@ function eaer_display_value(array $field, $val): string {
     </div>
 </div>
 
-<main id="main-content" class="max-w-3xl mx-auto bg-white shadow-sm my-6 p-8 print:shadow-none print:my-0">
+<main id="main-content" class="max-w-4xl mx-auto bg-white shadow-sm my-6 p-8 print:shadow-none print:my-0">
 
     <div class="flex items-center gap-2 mb-2">
         <img src="utsa-logo.svg" alt="UT San Antonio" height="18">

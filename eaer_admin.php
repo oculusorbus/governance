@@ -74,7 +74,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
 <a href="#main-content" class="skip-link">Skip to exception requests</a>
 
 <div id="topbar" role="banner" class="bg-[#032044] shadow-sm">
-    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <img src="utsa-logo.svg" alt="UT San Antonio" height="20">
             <h1 class="font-brand text-lg font-bold text-white">EIR Accessibility Exception Requests</h1>
@@ -86,7 +86,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
     </div>
 </div>
 
-<main id="main-content" class="max-w-5xl mx-auto px-6 py-6">
+<main id="main-content" class="max-w-6xl mx-auto px-6 py-6">
 
 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
     <h2 class="font-brand font-bold text-[#032044] mb-3">Start a New Exception Request</h2>

@@ -46,7 +46,7 @@ if ($contributorName === ''): ?>
 </head>
 <body class="min-h-screen bg-[#F8F4F1] flex items-center justify-center">
     <a href="#main-content" class="skip-link">Skip to form</a>
-    <main id="main-content" class="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
+    <main id="main-content" class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
         <div class="flex items-center gap-2 mb-1">
             <img src="utsa-logo.svg" alt="UT San Antonio" height="18">
         </div>
@@ -97,7 +97,7 @@ $isExported  = $record['status'] === 'exported';
 <a href="#main-content" class="skip-link">Skip to form</a>
 
 <div id="topbar" role="banner" class="bg-[#032044] sticky top-0 z-10 shadow-sm">
-    <div class="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+    <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
             <img src="utsa-logo.svg" alt="UT San Antonio" height="18" class="flex-shrink-0">
             <div>
@@ -113,7 +113,7 @@ $isExported  = $record['status'] === 'exported';
     </div>
 </div>
 
-<main id="main-content" class="max-w-3xl mx-auto px-6 py-6">
+<main id="main-content" class="max-w-6xl mx-auto px-6 py-6">
 
 <?php if ($isExported): ?>
 <div class="bg-white border border-[#A06620] text-[#A06620] text-sm rounded-lg px-4 py-3 mb-6">
@@ -134,14 +134,14 @@ $isExported  = $record['status'] === 'exported';
         </button>
         <?php endif; ?>
     </div>
-    <div class="px-6 py-4 space-y-4">
+    <div class="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <?php foreach ($section['fields'] as $fieldKey => $field):
             $val   = $record[$fieldKey] ?? '';
             $domId = 'f-' . $fieldKey;
         ?>
 
         <?php if ($field['type'] === 'radio' || $field['type'] === 'checkboxes'): ?>
-        <fieldset class="border-0 p-0 m-0">
+        <fieldset class="border-0 p-0 m-0 md:col-span-2">
             <legend class="text-sm font-medium text-[#332F21] mb-1"><?= h($field['label']) ?></legend>
             <?php if (!empty($field['note'])): ?>
                 <p class="text-xs text-[#6B6355] mb-1"><?= h($field['note']) ?></p>
@@ -174,7 +174,7 @@ $isExported  = $record['status'] === 'exported';
         </fieldset>
 
         <?php else: ?>
-        <div>
+        <div class="<?= $field['type'] === 'textarea' ? 'md:col-span-2' : '' ?>">
             <label for="<?= h($domId) ?>" class="block text-sm font-medium text-[#332F21] mb-1"><?= h($field['label']) ?></label>
             <?php if (!empty($field['note'])): ?>
                 <p class="text-xs text-[#6B6355] mb-1"><?= h($field['note']) ?></p>
@@ -196,7 +196,7 @@ $isExported  = $record['status'] === 'exported';
         <?php endforeach; ?>
 
         <?php if (!empty($contributions[$sectionKey])): ?>
-        <div class="text-xs text-[#6B6355] pt-2 border-t border-[#EBE6E2]">
+        <div class="text-xs text-[#6B6355] pt-2 border-t border-[#EBE6E2] md:col-span-2">
             Contributed by:
             <?php foreach ($contributions[$sectionKey] as $c): ?>
                 <span class="inline-block mr-2"><?= h($c['contributor_name']) ?> (<?= h(date('M j, Y g:ia', strtotime($c['updated_at']))) ?>)</span>
