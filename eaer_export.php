@@ -107,7 +107,7 @@ function eaer_display_value(array $field, $val): string {
 
     <div class="mb-6">
         <h2 class="font-brand font-bold text-[#032044] border-b border-[#EBE6E2] pb-1 mb-2">Applicable Disability Policy and Legislation</h2>
-        <ul class="text-sm text-[#332F21] list-disc list-inside space-y-1">
+        <ul class="text-sm text-[#332F21] list-disc list-outside pl-5 space-y-1">
             <?php foreach ($legislation as $item): ?><li><?= h($item) ?></li><?php endforeach; ?>
         </ul>
     </div>

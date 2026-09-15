@@ -274,7 +274,7 @@ $isExported  = $record['status'] === 'exported';
     <div class="px-6 py-4 border-b border-[#EBE6E2] bg-[#F8F4F1]">
         <h2 id="h-legislation" class="font-brand font-bold text-[#032044]">Applicable Disability Policy and Legislation</h2>
     </div>
-    <ul class="px-6 py-4 text-sm text-[#332F21] list-disc list-inside space-y-1">
+    <ul class="px-6 py-4 text-sm text-[#332F21] list-disc list-outside pl-5 space-y-1">
         <?php foreach ($legislation as $item): ?>
             <li><?= h($item) ?></li>
         <?php endforeach; ?>
