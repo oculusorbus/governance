@@ -100,6 +100,17 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
+    // ── Admin: permanently delete a record (test data / false starts) ──────
+    case 'delete':
+        eaer_require_admin();
+        $token = (string)($input['token'] ?? '');
+        $rec   = eaer_find_by_token($pdo, $token);
+        if (!$rec) eaer_fail(404, 'Not found');
+        $pdo->prepare("DELETE FROM eaer_contributions WHERE eaer_id = ?")->execute([$rec['id']]);
+        $pdo->prepare("DELETE FROM eaer_requests WHERE id = ?")->execute([$rec['id']]);
+        echo json_encode(['success' => true]);
+        break;
+
     // ── Token or admin: fetch a record + its contributor attribution ───────
     case 'get':
         $token = (string)($input['token'] ?? ($_GET['token'] ?? ''));

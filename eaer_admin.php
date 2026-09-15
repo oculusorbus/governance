@@ -43,6 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE eaer_requests SET status = 'draft' WHERE id = ?")
                 ->execute([$row['id']]);
         }
+    } elseif (isset($_POST['delete_token'])) {
+        $token = (string)$_POST['delete_token'];
+        $stmt = $pdo->prepare("SELECT id FROM eaer_requests WHERE token = ?");
+        $stmt->execute([$token]);
+        if ($row = $stmt->fetch()) {
+            $pdo->prepare("DELETE FROM eaer_contributions WHERE eaer_id = ?")->execute([$row['id']]);
+            $pdo->prepare("DELETE FROM eaer_requests WHERE id = ?")->execute([$row['id']]);
+        }
     }
 }
 
@@ -158,6 +166,11 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
                             <button type="submit" class="text-[#265BF7] hover:underline">Export</button>
                         </form>
                     <?php endif; ?>
+                    <form method="post" class="inline"
+                          onsubmit="return confirm('Permanently delete this exception request<?= $r['eir_name'] ? h(' (' . $r['eir_name'] . ')') : '' ?>? This cannot be undone.');">
+                        <input type="hidden" name="delete_token" value="<?= h($r['token']) ?>">
+                        <button type="submit" class="text-[#dc2626] hover:underline ml-3">Delete</button>
+                    </form>
                 </td>
             </tr>
             <?php endforeach; ?>
