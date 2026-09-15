@@ -118,11 +118,13 @@ $isExported  = $record['status'] === 'exported';
 <div class="bg-white border-l-4 border-[#D3430D] rounded-xl shadow-sm mb-6 px-6 py-5">
     <h2 class="font-brand font-bold text-[#032044] mb-2">What is this, and why does it matter?</h2>
     <p class="text-sm text-[#332F21] mb-3">
-        UTSA is legally required to make the websites, software, and digital tools it uses accessible
-        to people with disabilities, under Title II of the Americans with Disabilities Act (ADA) and
-        Texas Administrative Code (TAC) 213.37. When a specific product can't fully meet that standard,
-        the university must document why — and how people with disabilities will still get an equitable
-        experience — before it can be used. This form <em>is</em> that documentation.
+        UTSA is legally required to make the electronic and information resources it uses accessible
+        to people with disabilities — a category that, under Texas Administrative Code (TAC) 213.37,
+        covers far more than websites and software: it also includes IT hardware and office equipment
+        like copiers, kiosks, and telephones. Under Title II of the Americans with Disabilities Act
+        (ADA) and TAC 213.37, when a specific product can't fully meet that standard, the university
+        must document why — and how people with disabilities will still get an equitable experience —
+        before it can be used. This form <em>is</em> that documentation.
     </p>
     <p class="text-sm text-[#332F21] mb-3">
         Your input here becomes part of that official record. Each section below shows who entered it and
