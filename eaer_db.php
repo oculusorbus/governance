@@ -99,7 +99,7 @@ function eaer_sections(): array {
             'title'  => 'Description of EIR',
             'fields' => [
                 'eir_name'         => ['label' => 'Enter EIR Name', 'type' => 'text'],
-                'requisite_number' => ['label' => 'Requisite Number', 'type' => 'text'],
+                'requisite_number' => ['label' => 'Requisition Number', 'type' => 'text'],
                 'description_use'  => ['label' => 'Description and Use of Tool', 'type' => 'textarea'],
                 'eir_type'         => ['label' => 'Type (Software Application, IT Hardware or Office Equipment, or Other — describe)', 'type' => 'text'],
                 'vendor_name'      => ['label' => 'Name of Vendor, Agency, or Third Party', 'type' => 'text'],
