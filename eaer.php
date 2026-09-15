@@ -182,7 +182,8 @@ $isExported  = $record['status'] === 'exported';
 
             <?php if ($field['type'] === 'textarea'): ?>
                 <textarea id="<?= h($domId) ?>" name="<?= h($fieldKey) ?>" rows="3" <?= $isExported ? 'readonly' : '' ?>
-                    class="w-full border border-[#EBE6E2] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#265BF7] read-only:bg-[#F8F4F1]"
+                    oninput="autoGrow(this)"
+                    class="w-full border border-[#EBE6E2] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#265BF7] read-only:bg-[#F8F4F1] resize-none overflow-hidden"
                     data-field="<?= h($fieldKey) ?>"><?= h($val) ?></textarea>
             <?php else: ?>
                 <input type="text" id="<?= h($domId) ?>" name="<?= h($fieldKey) ?>" value="<?= h($val) ?>" data-field="<?= h($fieldKey) ?>"
@@ -227,6 +228,14 @@ $isExported  = $record['status'] === 'exported';
 
 <script>
 const TOKEN = <?= json_encode($token) ?>;
+
+function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+// Size every textarea to its existing content on load (not just on typing),
+// so a saved long narrative starts expanded instead of scrolled/clipped.
+document.querySelectorAll('textarea[data-field]').forEach(autoGrow);
 
 function collectSectionFields(sectionKey) {
     const block = document.querySelector(`[data-section-block="${sectionKey}"]`);
