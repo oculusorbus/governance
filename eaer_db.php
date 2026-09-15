@@ -30,6 +30,7 @@ function eaer_pdo(): PDO {
             requisite_number            NVARCHAR(100),
             description_use             NVARCHAR(MAX),
             eir_type                    NVARCHAR(100),
+            eir_type_other              NVARCHAR(255),
             vendor_name                 NVARCHAR(255),
             is_renewal                  NVARCHAR(10),
             requester_name              NVARCHAR(255),
@@ -76,6 +77,14 @@ function eaer_pdo(): PDO {
         )
     ");
 
+    // Schema evolution for already-deployed eaer_requests tables — the
+    // CREATE TABLE guard above only fires once, so later columns need an
+    // explicit ALTER guard (same pattern app.php uses for `employees`).
+    $pdo->exec("
+        IF COL_LENGTH('eaer_requests','eir_type_other') IS NULL
+            ALTER TABLE eaer_requests ADD eir_type_other NVARCHAR(255) NULL
+    ");
+
     return $pdo;
 }
 
@@ -101,7 +110,12 @@ function eaer_sections(): array {
                 'eir_name'         => ['label' => 'Enter EIR Name', 'type' => 'text'],
                 'requisite_number' => ['label' => 'Requisition Number', 'type' => 'text'],
                 'description_use'  => ['label' => 'Description and Use of Tool', 'type' => 'textarea'],
-                'eir_type'         => ['label' => 'Type (Software Application, IT Hardware or Office Equipment, or Other — describe)', 'type' => 'text'],
+                'eir_type'         => [
+                    'label'   => 'Type',
+                    'type'    => 'radio',
+                    'options' => ['Software Application', 'IT Hardware or Office Equipment', 'Other'],
+                ],
+                'eir_type_other'   => ['label' => 'If "Other," describe', 'type' => 'text'],
                 'vendor_name'      => ['label' => 'Name of Vendor, Agency, or Third Party', 'type' => 'text'],
                 'is_renewal'       => ['label' => 'Is this EIR a contract or subscription renewal?', 'type' => 'radio', 'options' => ['Yes', 'No']],
             ],
