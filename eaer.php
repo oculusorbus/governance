@@ -125,14 +125,8 @@ $isExported  = $record['status'] === 'exported';
 
 <?php foreach ($sections as $sectionKey => $section): ?>
 <section class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden" data-section-block="<?= h($sectionKey) ?>" aria-labelledby="h-<?= h($sectionKey) ?>">
-    <div class="px-6 py-4 border-b border-[#EBE6E2] bg-[#F8F4F1] flex items-center justify-between">
+    <div class="px-6 py-4 border-b border-[#EBE6E2] bg-[#F8F4F1]">
         <h2 id="h-<?= h($sectionKey) ?>" class="font-brand font-bold text-[#032044]"><?= h($section['title']) ?></h2>
-        <?php if (!$isExported): ?>
-        <button type="button" onclick="saveSection('<?= h($sectionKey) ?>')"
-                class="text-xs bg-[#1B3A6B] hover:bg-[#254e8f] text-white font-medium px-3 py-1.5 rounded-lg">
-            Save Section
-        </button>
-        <?php endif; ?>
     </div>
     <div class="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <?php foreach ($section['fields'] as $fieldKey => $field):
