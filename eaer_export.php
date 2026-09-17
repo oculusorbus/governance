@@ -35,6 +35,9 @@ $sections    = eaer_sections();
 $legislation = eaer_legislation();
 
 function eaer_display_value(array $field, $val): string {
+    if ($field['type'] === 'date' && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$val)) {
+        return date('F j, Y', strtotime((string)$val));
+    }
     if ($field['type'] === 'checkboxes') {
         $items = array_filter(array_map('trim', explode(',', (string)$val)));
         return $items ? implode(', ', $items) : '—';
@@ -111,7 +114,14 @@ function eaer_display_value(array $field, $val): string {
     <div class="mb-6">
         <h2 class="font-brand font-bold text-[var(--heading)] border-b border-[var(--border)] pb-1 mb-2">Applicable Disability Policy and Legislation</h2>
         <ul class="text-sm text-[var(--text)] list-disc list-outside pl-6 space-y-1">
-            <?php foreach ($legislation as $item): ?><li><?= h($item) ?></li><?php endforeach; ?>
+            <?php foreach ($legislation as $item): ?>
+            <li>
+                <?= h($item['text']) ?>
+                <?php if (!empty($item['url'])): ?>
+                    <span class="block text-xs text-[var(--muted)] break-all"><?= h($item['url']) ?></span>
+                <?php endif; ?>
+            </li>
+            <?php endforeach; ?>
         </ul>
     </div>
 

@@ -162,7 +162,7 @@ function eaer_sections(): array {
                     'help'  => 'The company or organization that produces or sells this resource. If it was built in-house at UTSA, note that instead.',
                 ],
                 'is_renewal'       => [
-                    'label'   => 'Is this EIR a contract or subscription renewal?',
+                    'label'   => 'Is this a renewal of an existing contract or subscription?',
                     'type'    => 'radio',
                     'options' => ['Yes', 'No'],
                     'help'    => 'Choose Yes if UTSA already uses this EIR and is renewing an existing contract or subscription. Choose No for a brand-new acquisition.',
@@ -232,7 +232,7 @@ function eaer_sections(): array {
                 ],
                 'planned_compliance_date'      => [
                     'label' => 'Planned accessibility compliance date',
-                    'type'  => 'text',
+                    'type'  => 'date',
                     'help'  => 'The date this EIR is expected to meet accessibility standards, if known.',
                 ],
                 'no_date_explain'              => [
@@ -274,7 +274,7 @@ function eaer_sections(): array {
             'fields' => [
                 'eval_date'      => [
                     'label' => 'Date of Accessibility Evaluation',
-                    'type'  => 'text',
+                    'type'  => 'date',
                     'help'  => 'The date an accessibility evaluation of this EIR was performed, if one was done.',
                 ],
                 'evaluator_name' => [
@@ -312,15 +312,40 @@ function eaer_sections(): array {
     ];
 }
 
-/** Static legislation list rendered on the form/export — not stored per-record. */
+/**
+ * Static legislation list rendered on the form/export — not stored per-record.
+ *
+ * Each entry may carry a 'url' to the authoritative text. The form links it;
+ * the export prints the URL alongside the citation, since a PDF attached to
+ * the DocuSign memo can't be clicked. An entry with no 'url' renders as plain
+ * text, so a citation without a stable public link degrades gracefully.
+ */
 function eaer_legislation(): array {
     return [
-        'Section 504 of the Rehabilitation Act of 1973',
-        'Americans with Disabilities Act (ADA), Title II: 28 C.F.R. Part 35, Subpart H (Web and Mobile Accessibility; WCAG 2.1 Level AA); compliance date extended by interim final rule to April 26, 2027 for entities serving populations of 50,000+',
-        'UTSA Handbook of Operating Procedures (HOP) 11.10: Web and Digital Accessibility Compliance',
-        'UT System Policy 150: Access by Persons with Disabilities to Electronic and Information Resources',
-        'Texas Administrative Code (TAC), 1 TAC 213.37: Compliance Exceptions and Exemptions',
-        'Texas Government Code § 2054.460',
+        [
+            'text' => 'Section 504 of the Rehabilitation Act of 1973',
+            'url'  => 'https://www.dol.gov/agencies/oasam/centers-offices/civil-rights-center/statutes/section-504-rehabilitation-act-of-1973',
+        ],
+        [
+            'text' => 'Americans with Disabilities Act (ADA), Title II: 28 C.F.R. Part 35, Subpart H (Web and Mobile Accessibility; WCAG 2.1 Level AA); compliance date extended by interim final rule to April 26, 2027 for entities serving populations of 50,000+',
+            'url'  => 'https://www.ada.gov/resources/2024-03-08-web-rule/',
+        ],
+        [
+            'text' => 'UTSA Handbook of Operating Procedures (HOP) 11.10: Web and Digital Accessibility Compliance',
+            'url'  => 'https://www.utsa.edu/hop/chapter11/11.10.html',
+        ],
+        [
+            'text' => 'UT System Policy UTS 150: Access by Persons with Disabilities to Electronic and Information Resources',
+            'url'  => 'https://www.utsystem.edu/sites/policy-library/policies/uts-150-access-persons-disabilities-electronic-and-information-resources-procured-or-developed-university-of-texas-system-administration-and-university-of-texas-system-institutions',
+        ],
+        [
+            'text' => 'Texas Administrative Code (TAC), 1 TAC 213.37: Compliance Exceptions and Exemptions',
+            'url'  => 'https://www.law.cornell.edu/regulations/texas/1-Tex-Admin-Code-SS-213-37',
+        ],
+        [
+            'text' => 'Texas Government Code § 2054.460: Exception for Significant Difficulty or Expense; Alternate Methods',
+            'url'  => 'https://statutes.capitol.texas.gov/Docs/GV/htm/GV.2054.htm#2054.460',
+        ],
     ];
 }
 
@@ -452,6 +477,9 @@ function eaer_head_assets(): void {
             --pill-draft-bg:     #1E2A43;
             --pill-draft-text:   #A8C5F5;
 
+            --help-bg:           #7A8290;
+            --help-text:         #10141A;
+
             --input-bg:          #171A1F;
             --status-ok-bg:      #14301F;
             --status-ok-text:    #86EFAC;
@@ -497,6 +525,9 @@ function eaer_head_assets(): void {
             --pill-draft-bg:     #E4ECFE;
             --pill-draft-text:   #1B3A6B;
 
+            --help-bg:           #6B6355;
+            --help-text:         #FFFFFF;
+
             --input-bg:          #FFFFFF;
             --status-ok-bg:      #F0FDF4;
             --status-ok-text:    #166534;
@@ -531,6 +562,8 @@ function eaer_head_assets(): void {
                 --pill-warn-bg:    #F5ECDD;
                 --pill-draft-bg:   #E4ECFE;
                 --pill-draft-text: #1B3A6B;
+                --help-bg:         #6B6355;
+                --help-text:       #FFFFFF;
                 --input-bg:        #FFFFFF;
             }
         }
@@ -546,6 +579,7 @@ function eaer_head_assets(): void {
            Set it explicitly rather than relying on color-scheme alone. The
            read-only:bg-* utility at the call site still wins on specificity. */
         input[type="text"],
+        input[type="date"],
         textarea {
             background-color: var(--input-bg);
             color: var(--text);

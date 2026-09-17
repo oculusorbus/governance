@@ -23,7 +23,7 @@ function eaer_help_button(array $field, string $domId): string {
     $helpId = 'help-' . $domId;
     return '
         <button type="button"
-                class="help-toggle inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--border)] text-[var(--muted)] text-[11px] font-bold leading-none hover:bg-[var(--accent)] hover:text-[var(--on-accent)] flex-shrink-0"
+                class="help-toggle inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--help-bg)] text-[var(--help-text)] text-[11px] font-bold leading-none hover:bg-[var(--accent)] hover:text-[var(--on-accent)] flex-shrink-0"
                 aria-expanded="false" aria-controls="' . h($helpId) . '" onclick="toggleHelp(this)">
             <span aria-hidden="true">?</span>
             <span class="sr-only">Help for ' . h($field['label']) . '</span>
@@ -146,7 +146,7 @@ $isExported  = $record['status'] === 'exported';
 <div class="bg-[var(--surface)] border-l-4 border-[var(--btn-primary)] rounded-xl shadow-sm mb-6 px-6 py-5">
     <h2 class="font-brand font-bold text-[var(--heading)] mb-2">What is this, and why does it matter?</h2>
     <p class="text-sm text-[var(--text)] mb-3">
-        UTSA is legally required to make the electronic and information resources it uses accessible
+        UT San Antonio is legally required to make the electronic and information resources it uses accessible
         to people with disabilities. Under Texas Administrative Code (TAC) 213.37, that category
         covers far more than websites and software: it also includes IT hardware and office equipment,
         like copiers, kiosks, and telephones. Under Title II of the Americans with Disabilities Act
@@ -163,8 +163,8 @@ $isExported  = $record['status'] === 'exported';
         official exception-request memo, which is routed for signature to the
         <strong>Vice President for Information Management and Technology (VP IMT)</strong> and the
         <strong>EIR Accessibility Coordinator (EIRAC)</strong>, the two university officials whose
-        approval makes this exception official. This record, alongside their signatures, is what UTSA
-        would produce if this exception were ever audited or challenged.
+        approval makes this exception official. This record, alongside their signatures, is what
+        UT San Antonio would produce if this exception were ever audited or challenged.
     </p>
 </div>
 
@@ -238,7 +238,15 @@ $isExported  = $record['status'] === 'exported';
                 <p class="text-xs text-[var(--muted)] mb-1"><?= h($field['note']) ?></p>
             <?php endif; ?>
 
-            <?php if ($field['type'] === 'textarea'): ?>
+            <?php if ($field['type'] === 'date'):
+                $isoDate = ($val === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$val)); ?>
+                <input type="<?= $isoDate ? 'date' : 'text' ?>" id="<?= h($domId) ?>" name="<?= h($fieldKey) ?>" value="<?= h($val) ?>" data-field="<?= h($fieldKey) ?>"
+                       <?= $isExported ? 'readonly' : '' ?>
+                       class="w-full border border-[var(--field-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] read-only:bg-[var(--surface-2)]">
+                <?php if (!$isoDate): ?>
+                    <p class="text-xs text-[var(--muted)] mt-1">Stored as free text. Clear this field to switch it to a date picker.</p>
+                <?php endif; ?>
+            <?php elseif ($field['type'] === 'textarea'): ?>
                 <textarea id="<?= h($domId) ?>" name="<?= h($fieldKey) ?>" rows="3" <?= $isExported ? 'readonly' : '' ?>
                     oninput="autoGrow(this)"
                     class="w-full border border-[var(--field-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] read-only:bg-[var(--surface-2)] resize-none overflow-hidden"
@@ -281,7 +289,17 @@ $isExported  = $record['status'] === 'exported';
     </div>
     <ul class="pl-11 pr-6 py-4 text-sm text-[var(--text)] list-disc list-outside space-y-1">
         <?php foreach ($legislation as $item): ?>
-            <li><?= h($item) ?></li>
+            <li>
+                <?php if (!empty($item['url'])): ?>
+                    <a href="<?= h($item['url']) ?>" target="_blank" rel="noopener noreferrer"
+                       class="text-[var(--accent)] underline hover:no-underline">
+                        <?= h($item['text']) ?>
+                        <span class="sr-only">(opens in a new tab)</span>
+                    </a>
+                <?php else: ?>
+                    <?= h($item['text']) ?>
+                <?php endif; ?>
+            </li>
         <?php endforeach; ?>
     </ul>
 </section>
