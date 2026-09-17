@@ -116,7 +116,7 @@ function eaer_sections(): array {
                 'requester_email' => [
                     'label' => 'Email',
                     'type'  => 'text',
-                    'help'  => 'A UTSA email address where Legal, the EIR Accessibility Coordinator (EIRAC), or an auditor can reach you with follow-up questions.',
+                    'help'  => 'A UT San Antonio email address where Legal, the EIR Accessibility Coordinator (EIRAC), or an auditor can reach you with follow-up questions.',
                 ],
                 'requester_phone' => [
                     'label' => 'Phone',
@@ -141,7 +141,7 @@ function eaer_sections(): array {
                 'description_use'  => [
                     'label' => 'Description and Use of Tool',
                     'type'  => 'textarea',
-                    'help'  => 'Explain in plain language what the tool does and how UTSA staff, faculty, or students will use it. Write for someone who has never heard of this product.',
+                    'help'  => 'Explain in plain language what the tool does and how UT San Antonio staff, faculty, or students will use it. Write for someone who has never heard of this product.',
                 ],
                 'eir_type'         => [
                     'label'   => 'Type',
@@ -159,13 +159,13 @@ function eaer_sections(): array {
                 'vendor_name'      => [
                     'label' => 'Name of Vendor, Agency, or Third Party',
                     'type'  => 'text',
-                    'help'  => 'The company or organization that produces or sells this resource. If it was built in-house at UTSA, note that instead.',
+                    'help'  => 'The company or organization that produces or sells this resource. If it was built in-house at UT San Antonio, note that instead.',
                 ],
                 'is_renewal'       => [
                     'label'   => 'Is this a renewal of an existing contract or subscription?',
                     'type'    => 'radio',
                     'options' => ['Yes', 'No'],
-                    'help'    => 'Choose Yes if UTSA already uses this EIR and is renewing an existing contract or subscription. Choose No for a brand-new acquisition.',
+                    'help'    => 'Choose Yes if UT San Antonio already uses this EIR and is renewing an existing contract or subscription. Choose No for a brand-new acquisition.',
                 ],
             ],
         ],
@@ -223,7 +223,7 @@ function eaer_sections(): array {
                 'remediation_timeline'         => [
                     'label' => 'Remediation timeline',
                     'type'  => 'textarea',
-                    'help'  => 'A realistic timeline for fixing the accessibility issues, even if it is the vendor\'s stated timeline rather than one UTSA controls.',
+                    'help'  => 'A realistic timeline for fixing the accessibility issues, even if it is the vendor\'s stated timeline rather than one UT San Antonio controls.',
                 ],
                 'timeline_not_planned_explain' => [
                     'label' => 'If no timeline is planned, explain',
@@ -238,7 +238,7 @@ function eaer_sections(): array {
                 'no_date_explain'              => [
                     'label' => 'If no date is planned, explain',
                     'type'  => 'textarea',
-                    'help'  => 'For example, remediation depends on a vendor roadmap outside UTSA\'s control.',
+                    'help'  => 'For example, remediation depends on a vendor roadmap outside UT San Antonio\'s control.',
                 ],
                 'other_relevant_info'          => [
                     'label' => 'Other relevant information',
@@ -280,7 +280,7 @@ function eaer_sections(): array {
                 'evaluator_name' => [
                     'label' => 'Name of Evaluator',
                     'type'  => 'text',
-                    'help'  => 'Who conducted the evaluation, for example a UTSA staff member, the vendor, or a third-party auditor.',
+                    'help'  => 'Who conducted the evaluation, for example a UT San Antonio staff member, the vendor, or a third-party auditor.',
                 ],
                 'eval_results'   => [
                     'label' => 'Accessibility Evaluation Results',
@@ -331,7 +331,7 @@ function eaer_legislation(): array {
             'url'  => 'https://www.ada.gov/resources/2024-03-08-web-rule/',
         ],
         [
-            'text' => 'UTSA Handbook of Operating Procedures (HOP) 11.10: Web and Digital Accessibility Compliance',
+            'text' => 'UT San Antonio Handbook of Operating Procedures (HOP) 11.10: Web and Digital Accessibility Compliance',
             'url'  => 'https://www.utsa.edu/hop/chapter11/11.10.html',
         ],
         [
@@ -358,68 +358,116 @@ function eaer_gen_token(): string {
  *
  * Runs inline in <head> rather than at the end of <body> deliberately: if it
  * ran later the page would paint in the wrong theme first and visibly flash.
- * Dark is the default — an unset, unreadable, or unrecognised stored value
- * all resolve to dark, so the only way to get light is to have explicitly
- * chosen it. Contributors fill this form repeatedly, so the low-glare theme
- * is the one that should require no action.
+ *
+ * Two separate attributes, because the setting and the result differ:
+ *   data-theme-pref  auto | light | dark   what the person chose
+ *   data-theme       light | dark          what is actually showing
+ * Only data-theme drives the CSS, so "auto" needs no rules of its own.
+ *
+ * Default is auto. The system query asks for *light* specifically, so a
+ * browser that expresses no preference, or does not support the query,
+ * falls back to dark rather than light.
  */
 function eaer_theme_boot(): void {
     ?>
     <script>
-    (function () {
-        var t;
-        try { t = localStorage.getItem('eaer-theme'); } catch (e) { /* private mode / blocked storage */ }
-        document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
-    })();
+    function eaerSystemTheme() {
+        try {
+            return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        } catch (e) { return 'dark'; }
+    }
 
-    function eaerSyncToggle(theme) {
-        // The button advertises what it will do, not what is currently active —
-        // "Switch to light mode" while dark is showing.
-        var label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
-        var glyph = theme === 'dark' ? '☀' : '☾';
+    function eaerApplyTheme(pref) {
+        var root = document.documentElement;
+        root.setAttribute('data-theme-pref', pref);
+        root.setAttribute('data-theme', pref === 'auto' ? eaerSystemTheme() : pref);
+        eaerSyncToggle(pref);
+    }
+
+    function eaerCycleTheme() {
+        var order = ['auto', 'light', 'dark'];
+        var cur = document.documentElement.getAttribute('data-theme-pref') || 'auto';
+        var next = order[(order.indexOf(cur) + 1) % order.length];
+        try { localStorage.setItem('eaer-theme', next); } catch (e) { /* preference just won't persist */ }
+        eaerApplyTheme(next);
+    }
+
+    function eaerSyncToggle(pref) {
+        var order = ['auto', 'light', 'dark'];
+        var meta = {
+            auto:  { glyph: '◐', label: 'Auto',  said: 'Auto, following your system setting' },
+            light: { glyph: '☀', label: 'Light', said: 'Light' },
+            dark:  { glyph: '☾', label: 'Dark',  said: 'Dark' }
+        };
+        var cur = meta[pref] || meta.auto;
+        var nextPref = order[(order.indexOf(pref) + 1) % order.length];
+        // The accessible name contains the visible label ("Auto"), which is
+        // what SC 2.5.3 Label in Name requires of a control like this.
+        var said = 'Colour theme: ' + cur.said + '. Activate for ' + meta[nextPref].label + '.';
         document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
-            btn.setAttribute('aria-label', label);
-            btn.setAttribute('title', label);
+            btn.setAttribute('aria-label', said);
+            btn.setAttribute('title', said);
             var icon = btn.querySelector('[data-theme-icon]');
-            if (icon) icon.textContent = glyph;
+            var text = btn.querySelector('[data-theme-label]');
+            if (icon) icon.textContent = cur.glyph;
+            if (text) text.textContent = cur.label;
         });
     }
 
-    function eaerToggleTheme() {
-        var el = document.documentElement;
-        var next = el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        el.setAttribute('data-theme', next);
-        try { localStorage.setItem('eaer-theme', next); } catch (e) { /* preference just won't persist */ }
-        eaerSyncToggle(next);
-    }
+    (function () {
+        var pref;
+        try { pref = localStorage.getItem('eaer-theme'); } catch (e) { /* private mode / blocked storage */ }
+        if (pref !== 'light' && pref !== 'dark') pref = 'auto';
+        var root = document.documentElement;
+        root.setAttribute('data-theme-pref', pref);
+        root.setAttribute('data-theme', pref === 'auto' ? eaerSystemTheme() : pref);
+    })();
+
+    // Track the OS flipping (e.g. a scheduled dark mode) while set to auto.
+    (function () {
+        try {
+            var mq = window.matchMedia('(prefers-color-scheme: light)');
+            var onChange = function () {
+                if (document.documentElement.getAttribute('data-theme-pref') === 'auto') {
+                    eaerApplyTheme('auto');
+                }
+            };
+            if (mq.addEventListener) { mq.addEventListener('change', onChange); }
+            else if (mq.addListener) { mq.addListener(onChange); }
+        } catch (e) { /* no matchMedia: stays on whatever booted */ }
+    })();
 
     document.addEventListener('DOMContentLoaded', function () {
-        eaerSyncToggle(document.documentElement.getAttribute('data-theme'));
+        eaerSyncToggle(document.documentElement.getAttribute('data-theme-pref') || 'auto');
     });
     </script>
     <?php
 }
 
 /**
- * Theme toggle button. $inTopbar picks the colour set: the topbar sits on the
- * navy --topbar surface, everywhere else sits on the page background.
+ * Theme toggle: a three-state control cycling Auto -> Light -> Dark. The
+ * label is visible rather than icon-only, because "Auto" is not something a
+ * sun or moon glyph can convey on its own. $inTopbar picks the colour set:
+ * the topbar sits on the navy --topbar surface, everywhere else on the page
+ * background.
  */
 function eaer_theme_toggle(bool $inTopbar = true): string {
     $classes = $inTopbar
         ? 'border-[var(--topbar-border)] text-[var(--topbar-subtle)] hover:text-[var(--topbar-text)]'
         : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]';
-    return '<button type="button" data-theme-toggle onclick="eaerToggleTheme()"
-            class="inline-flex items-center justify-center w-8 h-8 rounded-lg border text-sm leading-none flex-shrink-0 ' . $classes . '"
-            aria-label="Switch colour theme" title="Switch colour theme">
-            <span data-theme-icon aria-hidden="true">&#9728;</span>
+    return '<button type="button" data-theme-toggle onclick="eaerCycleTheme()"
+            class="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs leading-none flex-shrink-0 whitespace-nowrap ' . $classes . '"
+            aria-label="Colour theme" title="Colour theme">
+            <span data-theme-icon aria-hidden="true">&#9680;</span>
+            <span data-theme-label>Auto</span>
         </button>';
 }
 
 /**
- * Shared <head> assets: theme boot + tokens, UTSA brand fonts, and the
+ * Shared <head> assets: theme boot + tokens, UT San Antonio brand fonts, and the
  * skip-link/focus-visible accessibility pattern originally copied verbatim
  * from app.php's WCAG 2.1 AA pass. The light token set below is that same
- * contrast-checked palette; the dark set is its counterpart, with UTSA navy
+ * contrast-checked palette; the dark set is its counterpart, with UT San Antonio navy
  * demoted from a text colour to a background-only one (see --heading).
  */
 function eaer_head_assets(): void {
@@ -449,9 +497,9 @@ function eaer_head_assets(): void {
             --text:              #E6E3DE;
             --muted:             #A29C92;
 
-            /* UTSA navy (#032044) is unreadable as text on a dark ground;
+            /* UT San Antonio navy (#032044) is unreadable as text on a dark ground;
                these are its legible counterparts. Navy survives as --topbar,
-               where it is a background and still reads as UTSA. */
+               where it is a background and still reads as UT San Antonio. */
             --heading:           #BFD4F5;
             --topbar:            #0A1830;
             --topbar-text:       #F0F3F8;

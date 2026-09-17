@@ -82,7 +82,7 @@ function eaer_display_value(array $field, $val): string {
         <img src="utsa-logo.svg" alt="UT San Antonio" height="18">
     </div>
     <h1 class="font-brand text-xl font-bold text-[var(--heading)] mb-1">Electronic and Information Resources (EIR) Accessibility Exception Request</h1>
-    <p class="text-sm text-[var(--muted)] mb-1">Per UTSA Handbook of Operating Procedures (HOP) 11.10 and Texas Administrative Code (TAC) 213.37</p>
+    <p class="text-sm text-[var(--muted)] mb-1">Per UT San Antonio Handbook of Operating Procedures (HOP) 11.10 and Texas Administrative Code (TAC) 213.37</p>
     <p class="text-xs text-[var(--muted)] mb-6">
         Status: <?= $record['status'] === 'exported' ? 'Exported' : 'Draft' ?>
         <?php if ($record['exported_at']): ?> · Exported <?= h(date('M j, Y g:ia', strtotime($record['exported_at']))) ?><?php endif; ?>
