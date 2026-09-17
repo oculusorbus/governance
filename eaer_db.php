@@ -329,29 +329,233 @@ function eaer_gen_token(): string {
 }
 
 /**
- * Shared <head> assets: UTSA brand fonts + the skip-link/focus-visible
- * accessibility pattern, copied verbatim from app.php's proven WCAG 2.1 AA
- * pass so the EAER pages inherit the same contrast-checked palette rather
- * than re-deriving it.
+ * Resolves and applies the colour theme before anything paints.
+ *
+ * Runs inline in <head> rather than at the end of <body> deliberately: if it
+ * ran later the page would paint in the wrong theme first and visibly flash.
+ * Dark is the default — an unset, unreadable, or unrecognised stored value
+ * all resolve to dark, so the only way to get light is to have explicitly
+ * chosen it. Contributors fill this form repeatedly, so the low-glare theme
+ * is the one that should require no action.
+ */
+function eaer_theme_boot(): void {
+    ?>
+    <script>
+    (function () {
+        var t;
+        try { t = localStorage.getItem('eaer-theme'); } catch (e) { /* private mode / blocked storage */ }
+        document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    })();
+
+    function eaerSyncToggle(theme) {
+        // The button advertises what it will do, not what is currently active —
+        // "Switch to light mode" while dark is showing.
+        var label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+        var glyph = theme === 'dark' ? '☀' : '☾';
+        document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+            btn.setAttribute('aria-label', label);
+            btn.setAttribute('title', label);
+            var icon = btn.querySelector('[data-theme-icon]');
+            if (icon) icon.textContent = glyph;
+        });
+    }
+
+    function eaerToggleTheme() {
+        var el = document.documentElement;
+        var next = el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        el.setAttribute('data-theme', next);
+        try { localStorage.setItem('eaer-theme', next); } catch (e) { /* preference just won't persist */ }
+        eaerSyncToggle(next);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        eaerSyncToggle(document.documentElement.getAttribute('data-theme'));
+    });
+    </script>
+    <?php
+}
+
+/**
+ * Theme toggle button. $inTopbar picks the colour set: the topbar sits on the
+ * navy --topbar surface, everywhere else sits on the page background.
+ */
+function eaer_theme_toggle(bool $inTopbar = true): string {
+    $classes = $inTopbar
+        ? 'border-[var(--topbar-border)] text-[var(--topbar-subtle)] hover:text-[var(--topbar-text)]'
+        : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]';
+    return '<button type="button" data-theme-toggle onclick="eaerToggleTheme()"
+            class="inline-flex items-center justify-center w-8 h-8 rounded-lg border text-sm leading-none flex-shrink-0 ' . $classes . '"
+            aria-label="Switch colour theme" title="Switch colour theme">
+            <span data-theme-icon aria-hidden="true">&#9728;</span>
+        </button>';
+}
+
+/**
+ * Shared <head> assets: theme boot + tokens, UTSA brand fonts, and the
+ * skip-link/focus-visible accessibility pattern originally copied verbatim
+ * from app.php's WCAG 2.1 AA pass. The light token set below is that same
+ * contrast-checked palette; the dark set is its counterpart, with UTSA navy
+ * demoted from a text colour to a background-only one (see --heading).
  */
 function eaer_head_assets(): void {
+    eaer_theme_boot();
     ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Arsenal:wght@400;700&family=Libre+Franklin:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Libre Franklin', system-ui, sans-serif; }
+        /* ── Theme tokens ─────────────────────────────────────────────── */
+        /* The EAER pages reference every colour as bg-[var(--token)] /
+           text-[var(--token)] instead of a literal hex, so both themes are
+           defined here once and nowhere else. Adding a colour to a page means
+           adding a token here, not a dark: variant at the call site.
+
+           :root carries the dark values so the default still holds if the
+           boot script above is blocked and no data-theme is ever set. */
+        :root,
+        [data-theme="dark"] {
+            color-scheme: dark;
+
+            --bg:                #14161A;
+            --surface:           #1D2026;
+            --surface-2:         #262A31;
+            --border:            #363B44;
+            --text:              #E6E3DE;
+            --muted:             #A29C92;
+
+            /* UTSA navy (#032044) is unreadable as text on a dark ground;
+               these are its legible counterparts. Navy survives as --topbar,
+               where it is a background and still reads as UTSA. */
+            --heading:           #BFD4F5;
+            --topbar:            #0A1830;
+            --topbar-text:       #F0F3F8;
+            --topbar-subtle:     #9DBAE8;
+            --topbar-border:     #2A3C58;
+
+            --accent:            #7BA5FF;
+            --on-accent:         #10141A;
+            --accent-deep:       #2E5FA8;
+            --accent-deep-hover: #3B72C4;
+
+            --btn-primary:       #E9551A;
+            --btn-primary-hover: #FF6B2C;
+
+            --warn:              #D9A441;
+            --danger:            #EF4444;
+            --danger-hover:      #DC2626;
+            --success:           #4ADE80;
+
+            --pill-bg:           #2A2F37;
+            --pill-warn-bg:      #3A2F1B;
+            --pill-draft-bg:     #1E2A43;
+            --pill-draft-text:   #A8C5F5;
+
+            --input-bg:          #171A1F;
+            --status-ok-bg:      #14301F;
+            --status-ok-text:    #86EFAC;
+            --status-ok-border:  #2F6B45;
+            --status-err-bg:     #3A1A1A;
+            --status-err-text:   #FCA5A5;
+            --status-err-border: #8A3A3A;
+        }
+
+        [data-theme="light"] {
+            color-scheme: light;
+
+            --bg:                #F8F4F1;
+            --surface:           #FFFFFF;
+            --surface-2:         #F8F4F1;
+            --border:            #EBE6E2;
+            --text:              #332F21;
+            --muted:             #6B6355;
+
+            --heading:           #032044;
+            --topbar:            #032044;
+            --topbar-text:       #FFFFFF;
+            --topbar-subtle:     #C8DCFF;
+            --topbar-border:     #1B3A6B;
+
+            --accent:            #265BF7;
+            --on-accent:         #FFFFFF;
+            --accent-deep:       #1B3A6B;
+            --accent-deep-hover: #254E8F;
+
+            --btn-primary:       #D3430D;
+            --btn-primary-hover: #B94700;
+
+            --warn:              #A06620;
+            --danger:            #DC2626;
+            --danger-hover:      #B91C1C;
+            --success:           #15803D;
+
+            --pill-bg:           #FFFFFF;
+            --pill-warn-bg:      #F5ECDD;
+            --pill-draft-bg:     #E4ECFE;
+            --pill-draft-text:   #1B3A6B;
+
+            --input-bg:          #FFFFFF;
+            --status-ok-bg:      #F0FDF4;
+            --status-ok-text:    #166534;
+            --status-ok-border:  #15803D;
+            --status-err-bg:     #FEF2F2;
+            --status-err-text:   #991B1B;
+            --status-err-border: #B91C1C;
+        }
+
+        /* Print always uses the light palette regardless of the on-screen
+           theme. eaer_export.php output is attached to the DocuSign exception
+           memo — a dark-background PDF would be unreadable as a printed
+           record and would flood a printer with toner. */
+        @media print {
+            :root,
+            [data-theme="dark"],
+            [data-theme="light"] {
+                color-scheme: light;
+                --bg:              #FFFFFF;
+                --surface:         #FFFFFF;
+                --surface-2:       #F8F4F1;
+                --border:          #EBE6E2;
+                --text:            #332F21;
+                --muted:           #6B6355;
+                --heading:         #032044;
+                --accent:          #265BF7;
+                --accent-deep:     #1B3A6B;
+                --warn:            #A06620;
+                --pill-bg:         #FFFFFF;
+                --pill-warn-bg:    #F5ECDD;
+                --pill-draft-bg:   #E4ECFE;
+                --pill-draft-text: #1B3A6B;
+                --input-bg:        #FFFFFF;
+            }
+        }
+
+        body {
+            font-family: 'Libre Franklin', system-ui, sans-serif;
+            color: var(--text);
+        }
         .font-brand { font-family: 'Arsenal', system-ui, sans-serif; }
+
+        /* Tailwind's preflight leaves text inputs on the user-agent default
+           background, which stays white under a dark theme in some browsers.
+           Set it explicitly rather than relying on color-scheme alone. The
+           read-only:bg-* utility at the call site still wins on specificity. */
+        input[type="text"],
+        textarea {
+            background-color: var(--input-bg);
+            color: var(--text);
+        }
+        input[type="text"]::placeholder,
+        textarea::placeholder { color: var(--muted); }
 
         /* ── Accessibility: skip link + focus visibility (from app.php) ── */
         .skip-link {
             position:absolute; left:8px; top:-40px; z-index:1000;
-            background:#032044; color:#fff; padding:8px 14px; border-radius:0 0 6px 6px;
+            background:var(--topbar); color:var(--topbar-text); padding:8px 14px; border-radius:0 0 6px 6px;
             font-size:13px; font-weight:600; text-decoration:none; transition:top .15s;
         }
         .skip-link:focus { top:0; }
         :focus-visible {
-            outline:2px solid #265BF7 !important;
+            outline:2px solid var(--accent) !important;
             outline-offset:2px;
         }
     </style>
