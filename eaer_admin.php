@@ -102,7 +102,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
     <form method="post" class="flex gap-3">
         <label for="create_eir_name" class="sr-only">Software, hardware, or resource name</label>
         <input type="text" id="create_eir_name" name="create_eir_name" placeholder="Software, hardware, or resource name (optional, can be filled in later)"
-               class="flex-1 border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
+               class="flex-1 border border-[var(--field-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
         <button type="submit" class="bg-[var(--btn-primary)] hover:bg-[var(--btn-primary-hover)] text-white font-medium px-4 py-2 rounded-lg text-sm">
             Create
         </button>
@@ -113,7 +113,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
         <div class="flex gap-2 items-center">
             <label for="new-link-field" class="sr-only">Shareable link</label>
             <input type="text" id="new-link-field" readonly value="<?= h($baseUrl . '/' . $newLink) ?>" onclick="this.select()"
-                   class="flex-1 border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm bg-[var(--input-bg)] font-mono">
+                   class="flex-1 border border-[var(--field-border)] rounded-lg px-3 py-1.5 text-sm bg-[var(--input-bg)] font-mono">
             <a href="<?= h($newLink) ?>" target="_blank" class="text-sm text-[var(--accent)] hover:underline whitespace-nowrap">Open →</a>
         </div>
     </div>
@@ -170,7 +170,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
                     <form method="post" class="inline"
                           onsubmit="return confirm('Permanently delete this exception request<?= $r['eir_name'] ? h(' (' . $r['eir_name'] . ')') : '' ?>? This cannot be undone.');">
                         <input type="hidden" name="delete_token" value="<?= h($r['token']) ?>">
-                        <button type="submit" class="text-[var(--danger)] hover:underline ml-3">Delete</button>
+                        <button type="submit" class="text-[var(--danger-text)] hover:underline ml-3">Delete</button>
                     </form>
                 </td>
             </tr>

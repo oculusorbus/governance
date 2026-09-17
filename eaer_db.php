@@ -420,6 +420,7 @@ function eaer_head_assets(): void {
             --surface:           #1D2026;
             --surface-2:         #262A31;
             --border:            #363B44;
+            --field-border:      #6B7280;
             --text:              #E6E3DE;
             --muted:             #A29C92;
 
@@ -430,19 +431,20 @@ function eaer_head_assets(): void {
             --topbar:            #0A1830;
             --topbar-text:       #F0F3F8;
             --topbar-subtle:     #9DBAE8;
-            --topbar-border:     #2A3C58;
+            --topbar-border:     #5E76A6;
 
             --accent:            #7BA5FF;
             --on-accent:         #10141A;
             --accent-deep:       #2E5FA8;
             --accent-deep-hover: #3B72C4;
 
-            --btn-primary:       #E9551A;
-            --btn-primary-hover: #FF6B2C;
+            --btn-primary:       #D3430D;
+            --btn-primary-hover: #B94700;
 
             --warn:              #D9A441;
-            --danger:            #EF4444;
-            --danger-hover:      #DC2626;
+            --danger:            #DC2626;
+            --danger-hover:      #B91C1C;
+            --danger-text:       #F87171;
             --success:           #4ADE80;
 
             --pill-bg:           #2A2F37;
@@ -466,6 +468,7 @@ function eaer_head_assets(): void {
             --surface:           #FFFFFF;
             --surface-2:         #F8F4F1;
             --border:            #EBE6E2;
+            --field-border:      #EBE6E2;
             --text:              #332F21;
             --muted:             #6B6355;
 
@@ -473,7 +476,7 @@ function eaer_head_assets(): void {
             --topbar:            #032044;
             --topbar-text:       #FFFFFF;
             --topbar-subtle:     #C8DCFF;
-            --topbar-border:     #1B3A6B;
+            --topbar-border:     #5A79B5;
 
             --accent:            #265BF7;
             --on-accent:         #FFFFFF;
@@ -486,6 +489,7 @@ function eaer_head_assets(): void {
             --warn:              #A06620;
             --danger:            #DC2626;
             --danger-hover:      #B91C1C;
+            --danger-text:       #DC2626;
             --success:           #15803D;
 
             --pill-bg:           #FFFFFF;
@@ -521,6 +525,8 @@ function eaer_head_assets(): void {
                 --accent:          #265BF7;
                 --accent-deep:     #1B3A6B;
                 --warn:            #A06620;
+                --danger-text:     #DC2626;
+                --field-border:    #EBE6E2;
                 --pill-bg:         #FFFFFF;
                 --pill-warn-bg:    #F5ECDD;
                 --pill-draft-bg:   #E4ECFE;

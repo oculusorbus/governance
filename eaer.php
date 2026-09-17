@@ -85,7 +85,7 @@ if ($contributorName === ''): ?>
         <form method="post">
             <label for="contributor_name" class="block text-sm font-medium text-[var(--text)] mb-1">Your Name</label>
             <input type="text" id="contributor_name" name="contributor_name" autofocus required
-                   class="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] mb-4">
+                   class="w-full border border-[var(--field-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] mb-4">
             <button type="submit"
                     class="w-full bg-[var(--btn-primary)] hover:bg-[var(--btn-primary-hover)] text-white font-medium py-2 rounded-lg text-sm">
                 Continue
@@ -241,12 +241,12 @@ $isExported  = $record['status'] === 'exported';
             <?php if ($field['type'] === 'textarea'): ?>
                 <textarea id="<?= h($domId) ?>" name="<?= h($fieldKey) ?>" rows="3" <?= $isExported ? 'readonly' : '' ?>
                     oninput="autoGrow(this)"
-                    class="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] read-only:bg-[var(--surface-2)] resize-none overflow-hidden"
+                    class="w-full border border-[var(--field-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] read-only:bg-[var(--surface-2)] resize-none overflow-hidden"
                     data-field="<?= h($fieldKey) ?>"><?= h($val) ?></textarea>
             <?php else: ?>
                 <input type="text" id="<?= h($domId) ?>" name="<?= h($fieldKey) ?>" value="<?= h($val) ?>" data-field="<?= h($fieldKey) ?>"
                        <?= $isExported ? 'readonly' : '' ?>
-                       class="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] read-only:bg-[var(--surface-2)]">
+                       class="w-full border border-[var(--field-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] read-only:bg-[var(--surface-2)]">
             <?php endif; ?>
         </div>
         <?php endif; ?>
