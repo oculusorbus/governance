@@ -7,14 +7,35 @@ if (!empty($_SESSION['auth'])) {
     exit;
 }
 
+/**
+ * The shared-password login predates SSO and is kept only as a fallback for
+ * the Web Team while SSO settles.
+ *
+ * Set APP_PASSWORD_LOGIN to false in config.php to turn it off completely —
+ * the form is not rendered AND the POST is refused, because hiding the
+ * markup while leaving the handler live would not actually disable
+ * anything.
+ *
+ * It defaults to ENABLED when the constant is absent, deliberately. A
+ * default of off would disable the only non-SSO way in the moment this code
+ * is deployed, which is exactly the wrong failure mode if Entra, the VPN,
+ * or the SAML configuration turns out to be broken. Re-enabling is a
+ * one-line edit to config.php over RDP.
+ */
+$passwordLoginEnabled = !defined('APP_PASSWORD_LOGIN') || APP_PASSWORD_LOGIN;
+
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['password']) && hash_equals(APP_PASSWORD, $_POST['password'])) {
+    if (!$passwordLoginEnabled) {
+        http_response_code(403);
+        $error = 'Password sign-in is disabled. Please use single sign-on.';
+    } elseif (isset($_POST['password']) && hash_equals(APP_PASSWORD, $_POST['password'])) {
         $_SESSION['auth'] = true;
         header('Location: app.php');
         exit;
+    } else {
+        $error = 'Invalid password.';
     }
-    $error = 'Invalid password.';
 }
 ?>
 <!DOCTYPE html>
@@ -43,10 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ssoReturn = isset($_GET['return']) ? '?return=' . rawurlencode((string)$_GET['return']) : '';
         ?>
         <a href="saml/login.php<?= htmlspecialchars($ssoReturn, ENT_QUOTES) ?>"
-           class="block w-full bg-[#0F3B82] hover:bg-[#15509E] text-white font-medium py-2 rounded-lg text-sm text-center transition-colors mb-5">
+           class="block w-full bg-[#0F3B82] hover:bg-[#15509E] text-white font-medium py-2 rounded-lg text-sm text-center transition-colors<?= $passwordLoginEnabled ? ' mb-5' : '' ?>">
             Sign in with UT San Antonio
         </a>
 
+        <?php if ($passwordLoginEnabled): ?>
         <div class="flex items-center gap-3 mb-5" aria-hidden="true">
             <span class="h-px bg-gray-200 flex-1"></span>
             <span class="text-xs text-gray-400">or</span>
@@ -62,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Sign In
             </button>
         </form>
+        <?php endif; ?>
     </div>
 </body>
 </html>
