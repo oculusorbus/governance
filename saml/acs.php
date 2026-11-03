@@ -18,23 +18,43 @@
 require_once __DIR__ . '/_init.php';
 require_once __DIR__ . '/../config.php';
 
+/**
+ * Every failure past this point gets a short reference the user can quote,
+ * with the detail going to the log rather than the browser.
+ *
+ * Sign-in failures are reported by people who cannot read the server log,
+ * often hours later ("it 500'd around 4:17"). Without a reference, matching
+ * a report to a log line means guessing from timestamps.
+ */
+function acs_fail(string $context, Throwable|string $detail, int $code = 500): never {
+    $ref = strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+    $msg = $detail instanceof Throwable
+        ? get_class($detail) . ': ' . $detail->getMessage()
+          . ' @ ' . $detail->getFile() . ':' . $detail->getLine()
+        : $detail;
+    error_log("SAML ACS [{$ref}] {$context}: {$msg}");
+    http_response_code($code);
+    exit(
+        "Sign-in could not be completed.\n\n"
+        . "Reference: {$ref}\n\n"
+        . "Please pass that reference to the Web Team — it identifies this exact failure in the server log."
+    );
+}
+
 $auth = saml_auth();
 
 try {
     $auth->processResponse();
-} catch (Exception $e) {
-    http_response_code(400);
-    error_log('SAML ACS exception: ' . $e->getMessage());
-    exit('Could not process the sign-in response.');
+} catch (Throwable $e) {
+    acs_fail('processResponse', $e, 400);
 }
 
 $errors = $auth->getErrors();
 if (!empty($errors)) {
-    http_response_code(400);
     // Detail goes to the log, not the browser: getLastErrorReason() can echo
     // back parts of the assertion.
-    error_log('SAML ACS error: ' . implode(', ', $errors) . ' | ' . $auth->getLastErrorReason());
-    exit('Sign-in failed. Please try again, or contact the Web Team if it persists.');
+    acs_fail('assertion rejected',
+             implode(', ', $errors) . ' | ' . $auth->getLastErrorReason(), 400);
 }
 
 if (!$auth->isAuthenticated()) {
@@ -125,6 +145,9 @@ if ($objectId === null || $objectId === '') {
     exit('Sign-in failed: no unique identifier was provided. Contact the Web Team.');
 }
 
+// Everything from here to the redirect is wrapped. Previously only the
+// connection was guarded, so a failure in any later query — or any PHP
+// Error — became a bare 500 with nothing recorded.
 try {
     $pdo = new PDO(
         'sqlsrv:Server=' . DB_HOST . ';Database=' . DB_NAME,
@@ -132,11 +155,11 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
          PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
     );
-} catch (PDOException $e) {
-    http_response_code(500);
-    error_log('SAML ACS DB error: ' . $e->getMessage());
-    exit('Sign-in failed: database unavailable.');
+} catch (Throwable $e) {
+    acs_fail('database connection', $e);
 }
+
+try {
 
 // Durable key. Never look a user up by email or UPN — both can change.
 $stmt = $pdo->prepare("SELECT TOP (1) * FROM users WHERE entra_object_id = ?");
@@ -180,6 +203,10 @@ if ($user) {
         'SAML: provisioned user id=%d email=%s employee_id=%s role=viewer',
         $user['id'], (string)$mail, $employeeId === null ? 'none' : (string)$employeeId
     ));
+}
+
+} catch (Throwable $e) {
+    acs_fail('user provisioning', $e);
 }
 
 if (empty($user['is_active'])) {
