@@ -797,7 +797,9 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
     <button id="btn-add"          onclick="addSite()">+ Add Site</button>
+    <?php if ($canEdit): ?>
     <a href="/dubbot/"><button id="btn-dubbot" type="button">DubBot</button></a>
+    <?php endif; ?>
     <?php if ($isAdmin): ?>
     <a href="eaer_admin.php"><button id="btn-eaer" type="button">EIR Exceptions</button></a>
     <a href="users_admin.php"><button id="btn-users" type="button">Users</button></a>
