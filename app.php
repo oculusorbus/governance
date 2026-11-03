@@ -768,7 +768,7 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
          JS re-applies localStorage prefs on DOMContentLoaded. -->
     <style id="col-hide-defaults">.col-description,.col-site { display:none; }</style>
 </head>
-<body>
+<body class="<?= $canEdit ? 'role-can-edit' : 'role-viewer' ?><?= $isAdmin ? ' role-admin' : '' ?>">
 
 <a href="#table-wrap" class="skip-link">Skip to site table</a>
 
@@ -776,6 +776,12 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 <div id="cell-tooltip"></div>
 
 <!-- ── Top bar ──────────────────────────────────────────────────────────── -->
+<?php if (!$canEdit): ?>
+<div id="readonly-banner" role="status">
+    You have read-only access to the directory. Ask a Web Team administrator if you need to make changes.
+</div>
+<?php endif; ?>
+
 <div id="topbar" role="banner">
     <img src="utsa-logo.svg" alt="UT San Antonio" height="20" style="flex-shrink:0">
     <h1>Website Governance Directory</h1>
@@ -1325,6 +1331,25 @@ $defaultHidden = ['site', 'description'];
     </div>
 </div>
 
+<style>
+    /* Read-only mode. Any employee can sign in, so most people land here
+       until an admin grants them a role. Hide what they cannot use rather
+       than letting them discover it via a 403. */
+    body.role-viewer #btn-add,
+    body.role-viewer .site-edit-btn,
+    body.role-viewer .db-refresh-btn { display: none !important; }
+
+    /* The EAER admin panel requires 'admin', not merely 'editor'. */
+    body:not(.role-admin) #btn-eaer { display: none !important; }
+
+    /* Cells that open an edit modal lose their affordance cues. */
+    body.role-viewer td[onclick] { cursor: default; }
+
+    #readonly-banner {
+        background: #FDF6E3; border-bottom: 1px solid #E8D9A8; color: #6B5518;
+        font-size: 12px; padding: 6px 16px; text-align: center;
+    }
+</style>
 <script>
 // Mirrors the server-side role. Advisory only — api.php enforces this
 // independently, so tampering with it gains nothing but a 403.
@@ -2140,6 +2165,7 @@ async function saveFkEdit(td, val, lookupKey, fkField) {
 let linkState = {};
 
 function editLink(siteId, linkType, currentUrl, platform) {
+    if (!CAN_EDIT) return;
     rememberFocus();
     linkState = { siteId, linkType, currentUrl: currentUrl || '', platform: platform || null };
     const label = linkType === 'intake' ? 'Support Intake URL' : 'Datastudio URL';
@@ -2320,6 +2346,7 @@ document.addEventListener('keydown', e => {
 // delegated listener was removed to avoid double-firing.
 
 async function openPeopleModal(siteId, role, cell) {
+    if (!CAN_EDIT) return;
     rememberFocus();
     modalState = { siteId, role, cell };
 
@@ -2539,6 +2566,7 @@ function toggleNewPersonForm() {
 }
 
 async function createAndAddEmployee() {
+    if (!CAN_EDIT) return;
     const first = document.getElementById('np-first').value.trim();
     const last  = document.getElementById('np-last').value.trim();
     const email = document.getElementById('np-email').value.trim();
@@ -2618,6 +2646,7 @@ function refreshRoleCell(siteId, role) {
 
 // ── VP Lead modal (reuses people modal UI, different API actions) ──────────
 async function openVpLeadModal(siteId, vpAreaId, cell) {
+    if (!CAN_EDIT) return;
     if (!vpAreaId) { alert('Assign a VP Area to this site first.'); return; }
     modalState = { siteId, role: '_vp_lead', vpAreaId, cell, isVpLead: true };
 
@@ -2725,6 +2754,7 @@ let siteEditId       = null;
 let siteEditIsActive = true;
 
 function openSiteEditModal(siteId, siteName, url, isActive) {
+    if (!CAN_EDIT) return;
     rememberFocus();
     siteEditId       = siteId;
     siteEditIsActive = isActive !== 0 && isActive !== false;
@@ -2951,6 +2981,7 @@ async function saveSiteEditModal() {
 
 // ── Add new site ───────────────────────────────────────────────────────────
 function addSite() {
+    if (!CAN_EDIT) return;
     rememberFocus();
     const overlay = document.getElementById('add-site-overlay');
     const input   = document.getElementById('add-site-input');
@@ -3092,6 +3123,7 @@ function dbFillRow(row, site) {
 }
 
 async function loadDubBotData() {
+    if (!CAN_EDIT) return;
     dbSetStatus('loading', 'Connecting…');
 
     // ── Step 1: discover accounts and their sites ──────────────────────────
