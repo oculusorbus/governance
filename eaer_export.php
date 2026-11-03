@@ -7,11 +7,11 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/eaer_db.php';
+require_once __DIR__ . '/auth.php';
 
-if (empty($_SESSION['auth'])) {
-    header('Location: index.php');
-    exit;
-}
+// The printable record attached to the DocuSign memo. Reached from the
+// admin panel and gated the same way.
+require_role('admin');
 
 function h(mixed $v): string {
     return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');

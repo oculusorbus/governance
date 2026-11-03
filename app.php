@@ -1,11 +1,15 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/auth.php';
 
-if (empty($_SESSION['auth'])) {
-    header('Location: index.php');
-    exit;
-}
+// Any signed-in employee may VIEW the directory. Editing requires a role an
+// admin has granted — see auth.php. The server-side gate that matters is in
+// api.php; $canEdit below only shapes the UI so viewers aren't offered
+// controls that would fail.
+$currentUser = require_login();
+$canEdit     = can_edit();
+$isAdmin     = is_admin();
 
 try {
     $pdo = new PDO(
@@ -1322,6 +1326,10 @@ $defaultHidden = ['site', 'description'];
 </div>
 
 <script>
+// Mirrors the server-side role. Advisory only — api.php enforces this
+// independently, so tampering with it gains nothing but a 403.
+const CAN_EDIT = <?= $canEdit ? 'true' : 'false' ?>;
+const IS_ADMIN = <?= $isAdmin ? 'true' : 'false' ?>;
 // ── Data from PHP ──────────────────────────────────────────────────────────
 const LOOKUPS        = <?= $lookupsJson ?>;
 const EMPLOYEES      = <?= $employeesJson ?>;

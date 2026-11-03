@@ -13,6 +13,7 @@
  */
 session_start();
 require_once __DIR__ . '/eaer_db.php';
+require_once __DIR__ . '/auth.php';
 
 header('Content-Type: application/json');
 
@@ -26,8 +27,15 @@ function eaer_fail(int $code, string $msg): never {
     exit;
 }
 
+/**
+ * Administering exception requests — creating, exporting, reopening,
+ * deleting — is admin-only. These act on records attached to signed
+ * compliance memos, so a signed-in employee with no granted role must not
+ * reach them. Contributing to a record is separate and governed by holding
+ * its token.
+ */
 function eaer_require_admin(): void {
-    if (empty($_SESSION['auth'])) eaer_fail(401, 'Unauthorized');
+    api_require_role('admin');
 }
 
 function eaer_find_by_token(PDO $pdo, string $token): ?array {

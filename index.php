@@ -35,6 +35,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?= htmlspecialchars($error) ?>
             </div>
         <?php endif; ?>
+        <?php
+        // SSO is the primary route. The shared password stays as a fallback
+        // until SSO is proven in daily use — it is also the only way in if
+        // Entra or the VPN path to it is unavailable. Remove it, and the
+        // APP_PASSWORD branch in auth.php, once that confidence exists.
+        $ssoReturn = isset($_GET['return']) ? '?return=' . rawurlencode((string)$_GET['return']) : '';
+        ?>
+        <a href="saml/login.php<?= htmlspecialchars($ssoReturn, ENT_QUOTES) ?>"
+           class="block w-full bg-[#0F3B82] hover:bg-[#15509E] text-white font-medium py-2 rounded-lg text-sm text-center transition-colors mb-5">
+            Sign in with UT San Antonio
+        </a>
+
+        <div class="flex items-center gap-3 mb-5" aria-hidden="true">
+            <span class="h-px bg-gray-200 flex-1"></span>
+            <span class="text-xs text-gray-400">or</span>
+            <span class="h-px bg-gray-200 flex-1"></span>
+        </div>
+
         <form method="post" autocomplete="off">
             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input type="password" name="password" autofocus

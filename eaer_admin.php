@@ -7,11 +7,11 @@
 session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/eaer_db.php';
+require_once __DIR__ . '/auth.php';
 
-if (empty($_SESSION['auth'])) {
-    header('Location: index.php');
-    exit;
-}
+// Admin-only: this panel creates, exports, reopens and permanently deletes
+// exception requests that are attached to signed compliance memos.
+require_role('admin');
 
 function h(mixed $v): string {
     return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');

@@ -1,12 +1,7 @@
 <?php
 session_start();
 require_once 'config.php';
-
-if (empty($_SESSION['auth'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Unauthorized']);
-    exit;
-}
+require_once __DIR__ . '/auth.php';
 
 header('Content-Type: application/json');
 
@@ -24,6 +19,25 @@ try {
 
 $input  = json_decode(file_get_contents('php://input'), true) ?? [];
 $action = $input['action'] ?? ($_GET['action'] ?? '');
+
+// ── Authorisation ────────────────────────────────────────────────────────
+// This is the real security boundary. UTS restricts the Entra app to
+// employees, so any employee can authenticate — authentication proves
+// employment, not trust. Hiding buttons in app.php is UX; these checks are
+// what actually stops a viewer editing the directory.
+//
+// Default-deny by omission: an action not named below requires 'editor', so
+// a new action added later is gated until someone decides otherwise.
+const API_READ_ACTIONS  = ['get_roles', 'search_employees', 'get_vp_leads'];
+const API_ADMIN_ACTIONS = ['delete_site'];
+
+if (in_array($action, API_ADMIN_ACTIONS, true)) {
+    api_require_role('admin');
+} elseif (in_array($action, API_READ_ACTIONS, true)) {
+    api_require_role('viewer');
+} else {
+    api_require_role('editor');
+}
 
 // Whitelisted direct text columns on sites
 const TEXT_FIELDS = ['url', 'site_name', 'description'];
