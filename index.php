@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="min-h-screen bg-gray-100 flex items-center justify-center">
     <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
         <h1 class="text-2xl font-bold text-gray-800 mb-1 text-center">Website Governance</h1>
-        <p class="text-sm text-gray-400 text-center mb-6">UTSA Web Directory</p>
+        <p class="text-sm text-gray-400 text-center mb-6">UT San Antonio Web Directory</p>
         <?php if ($error): ?>
             <div class="bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-3 mb-4 text-sm">
                 <?= htmlspecialchars($error) ?>
