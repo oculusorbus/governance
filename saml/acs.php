@@ -3,14 +3,17 @@
  * Assertion Consumer Service — where Entra POSTs the signed assertion.
  *
  * Identity model (see DEPLOYMENT.md "SSO"):
- *   - `objectid` is the durable key. UTS warned that UPN is NOT permanent in
- *     their environment (it changes on a name or role change), so UPN and
- *     email are both unsafe as long-term identifiers.
- *   - `mail` (@utsa.edu) is used ONCE, on first login, to match the assertion
- *     to an existing `employees` row — it is the only field the table has in
- *     common with the assertion. After that match, entra_object_id is stored
- *     and every later login keys off it, so a subsequent UPN or email change
- *     does not orphan the account or its audit history.
+ *   - `objectid` is the durable key. UTS warned UPN is NOT permanent in
+ *     their environment, and this tenant does not release a UPN claim at
+ *     all (verified against a live assertion 2026-11-03).
+ *   - A `users` row is created on FIRST login, at role 'viewer'. UTS limits
+ *     the Entra app to employees, so authentication proves employment and
+ *     nothing more; an admin elevates deliberately. Nobody is ever refused
+ *     for not being pre-registered — that would duplicate the access control
+ *     UTS already maintains and put onboarding on the Web Team.
+ *   - `employees` is directory CONTENT, not identity. The one-time match on
+ *     `mail` links a user to their directory row when one exists, but a
+ *     missing match is normal and never blocks sign-in.
  */
 require_once __DIR__ . '/_init.php';
 require_once __DIR__ . '/../config.php';
@@ -129,35 +132,47 @@ try {
     exit('Sign-in failed: database unavailable.');
 }
 
-// Durable key first.
-$stmt = $pdo->prepare("SELECT TOP (1) id, first_name, last_name, email FROM employees WHERE entra_object_id = ?");
+// Durable key. Never look a user up by email or UPN — both can change.
+$stmt = $pdo->prepare("SELECT TOP (1) * FROM users WHERE entra_object_id = ?");
 $stmt->execute([$objectId]);
-$employee = $stmt->fetch();
+$user = $stmt->fetch();
 
-// First login for this account: fall back to the one-time email match, then
-// record the object id so this branch is never needed again for this person.
-if (!$employee && $mail) {
-    $stmt = $pdo->prepare("SELECT TOP (1) id, first_name, last_name, email FROM employees WHERE email = ?");
-    $stmt->execute([$mail]);
-    $employee = $stmt->fetch();
-
-    if ($employee) {
-        $pdo->prepare("UPDATE employees SET entra_object_id = ? WHERE id = ?")
-            ->execute([$objectId, $employee['id']]);
+if ($user) {
+    // Refresh the cosmetic fields; a name or address change must never
+    // affect identity, which is anchored on entra_object_id.
+    $pdo->prepare("UPDATE users SET email = ?, display_name = ?, last_login_at = SYSUTCDATETIME() WHERE id = ?")
+        ->execute([$mail, $displayName, $user['id']]);
+    $user['email']        = $mail;
+    $user['display_name'] = $displayName;
+} else {
+    // First sign-in. Link to a directory row if one shares this address —
+    // a convenience for "my sites", not a requirement. 22 employees have no
+    // email at all, so a null link is an ordinary outcome, not an error.
+    $employeeId = null;
+    if ($mail) {
+        $stmt = $pdo->prepare("SELECT TOP (1) id FROM employees WHERE email = ?");
+        $stmt->execute([$mail]);
+        $employeeId = $stmt->fetchColumn() ?: null;
     }
+
+    $pdo->prepare(
+        "INSERT INTO users (entra_object_id, email, display_name, employee_id, role, last_login_at)
+         VALUES (?, ?, ?, ?, 'viewer', SYSUTCDATETIME())"
+    )->execute([$objectId, $mail, $displayName, $employeeId]);
+
+    $stmt = $pdo->prepare("SELECT TOP (1) * FROM users WHERE entra_object_id = ?");
+    $stmt->execute([$objectId]);
+    $user = $stmt->fetch();
+
+    error_log(sprintf(
+        'SAML: provisioned user id=%d email=%s employee_id=%s role=viewer',
+        $user['id'], (string)$mail, $employeeId === null ? 'none' : (string)$employeeId
+    ));
 }
 
-// Authenticated by UTS but not in the directory. Deliberately refused rather
-// than auto-created: employees rows carry site roles and VP-area assignments
-// that a self-created stub would not have, and silently creating them would
-// corrupt the directory this app exists to keep accurate.
-if (!$employee) {
+if (empty($user['is_active'])) {
     http_response_code(403);
-    error_log(sprintf('SAML: no employees row for objectId=%s mail=%s upn=%s', $objectId, (string)$mail, (string)$upn ?: '(not released)'));
-    exit(
-        'You signed in successfully, but your account is not in the Website Governance directory yet. '
-        . 'Please contact the Web Team to be added.'
-    );
+    exit('Your access to this tool has been disabled. Contact the Web Team.');
 }
 
 // Session fixation: the pre-login session id may have been supplied by an
@@ -165,24 +180,14 @@ if (!$employee) {
 session_regenerate_id(true);
 
 $_SESSION['auth']            = true;
-$_SESSION['employee_id']     = (int)$employee['id'];
+$_SESSION['user_id']         = (int)$user['id'];
+$_SESSION['user_role']       = (string)$user['role'];
+$_SESSION['user_email']      = $user['email'];
+$_SESSION['user_name']       = $user['display_name'] ?: (string)$mail;
+$_SESSION['employee_id']     = $user['employee_id'] !== null ? (int)$user['employee_id'] : null;
 $_SESSION['entra_object_id'] = $objectId;
-$_SESSION['user_email']      = $employee['email'];
-$_SESSION['user_name']       = $displayName ?: trim($employee['first_name'] . ' ' . $employee['last_name']);
 $_SESSION['saml_name_id']    = $auth->getNameId();
 $_SESSION['saml_session_ix'] = $auth->getSessionIndex();
 
-// RelayState decides where we land. Restrict to same-origin paths: an
-// unchecked value here is an open redirect carrying a fresh session.
-$dest = '/app.php';
-if (!empty($_POST['RelayState'])) {
-    $path = parse_url((string)$_POST['RelayState'], PHP_URL_PATH) ?: '/app.php';
-    $host = parse_url((string)$_POST['RelayState'], PHP_URL_HOST);
-    if (($host === null || $host === $_SERVER['HTTP_HOST'])
-        && preg_match('#^/[A-Za-z0-9_\-./]*$#', $path) && !str_contains($path, '..')) {
-        $dest = $path;
-    }
-}
-
-header('Location: ' . $dest);
+header('Location: ' . saml_safe_return($_POST['RelayState'] ?? null));
 exit;

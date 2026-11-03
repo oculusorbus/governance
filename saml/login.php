@@ -1,16 +1,10 @@
 <?php
 /**
- * Starts an SSO login. Optionally carries a RelayState so the user lands
- * where they were heading rather than always on app.php.
+ * Starts an SSO login, carrying the caller's destination as RelayState so
+ * the user lands where they were heading rather than always on app.php.
  */
 require_once __DIR__ . '/_init.php';
 
-// Only allow same-origin relative paths as a return target — an open
-// redirect here would let a crafted link bounce an authenticated user to
-// an attacker's page carrying their session.
-$return = (string)($_GET['return'] ?? '/app.php');
-if (!preg_match('#^/[A-Za-z0-9_\-./]*$#', $return) || str_contains($return, '..')) {
-    $return = '/app.php';
-}
+$return = saml_safe_return($_GET['return'] ?? null);
 
 saml_auth()->login('https://' . $_SERVER['HTTP_HOST'] . $return);
