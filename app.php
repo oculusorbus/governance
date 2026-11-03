@@ -797,8 +797,9 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
     <button id="btn-add"          onclick="addSite()">+ Add Site</button>
-    <a href="eaer_admin.php"><button id="btn-eaer" type="button">EIR Exceptions</button></a>
+    <a href="/dubbot/"><button id="btn-dubbot" type="button">DubBot</button></a>
     <?php if ($isAdmin): ?>
+    <a href="eaer_admin.php"><button id="btn-eaer" type="button">EIR Exceptions</button></a>
     <a href="users_admin.php"><button id="btn-users" type="button">Users</button></a>
     <?php endif; ?>
     <div id="export-wrap">
@@ -1343,9 +1344,6 @@ $defaultHidden = ['site', 'description'];
     body.role-viewer #btn-add,
     body.role-viewer .site-edit-btn,
     body.role-viewer .db-refresh-btn { display: none !important; }
-
-    /* The EAER admin panel requires 'admin', not merely 'editor'. */
-    body:not(.role-admin) #btn-eaer { display: none !important; }
 
     /* Cells that open an edit modal lose their affordance cues. */
     body.role-viewer td[onclick] { cursor: default; }
