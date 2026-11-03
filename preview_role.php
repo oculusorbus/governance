@@ -14,10 +14,15 @@ session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
 
-require_role('admin');
+// Deliberately require_login() and NOT require_role('admin'): require_role
+// resolves against the PREVIEWED role, so asking it for 'admin' here would
+// lock this page the instant a preview was active — including the "exit
+// preview" link, which loops straight back to it.
+//
+// can_preview_roles() reads the real granted role out of the session, so it
+// still refuses anyone who is not genuinely an admin.
+require_login();
 
-// Guard on the REAL role, not the previewed one — otherwise an admin who
-// had already previewed as viewer could not switch back or clear.
 if (!can_preview_roles()) {
     http_response_code(403);
     exit('Only administrators can preview roles.');
