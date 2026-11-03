@@ -6,7 +6,9 @@
  * access control for this prototype).
  */
 session_start();
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/eaer_db.php';
+require_once __DIR__ . '/auth.php';
 
 function h(mixed $v): string {
     return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
@@ -55,7 +57,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contributor_name'])) 
     }
 }
 
-$contributorName = trim((string)($_SESSION['eaer_name'][$token] ?? ''));
+// A signed-in employee contributes under their verified identity and is
+// never asked to type their own name. The token still decides WHICH record
+// they may work on — SSO proves who you are, the token proves what you may
+// touch, and signing in does not grant access to every exception request.
+$me              = current_user();
+$isVerified      = $me !== null;
+$contributorName = $isVerified
+    ? ((string)($_SESSION['user_name'] ?? '') ?: (string)($_SESSION['user_email'] ?? ''))
+    : trim((string)($_SESSION['eaer_name'][$token] ?? ''));
 
 if ($contributorName === ''): ?>
 <!DOCTYPE html>
@@ -82,6 +92,21 @@ if ($contributorName === ''): ?>
             SSO is not yet available for this tool, so this is a self-reported name,
             not an authenticated login.
         </p>
+        <a href="saml/login.php?return=<?= h(rawurlencode($_SERVER['REQUEST_URI'] ?? '')) ?>"
+           class="block w-full bg-[var(--accent-deep)] hover:bg-[var(--accent-deep-hover)] text-white font-medium py-2 rounded-lg text-sm text-center mb-1">
+            Sign in with UT San Antonio
+        </a>
+        <p class="text-xs text-[var(--muted)] mb-4">
+            Signing in attributes your contributions to a verified identity, which is
+            stronger evidence on the official record than a typed name.
+        </p>
+
+        <div class="flex items-center gap-3 mb-4" aria-hidden="true">
+            <span class="h-px bg-[var(--border)] flex-1"></span>
+            <span class="text-xs text-[var(--muted)]">or continue without signing in</span>
+            <span class="h-px bg-[var(--border)] flex-1"></span>
+        </div>
+
         <form method="post">
             <label for="contributor_name" class="block text-sm font-medium text-[var(--text)] mb-1">Your Name</label>
             <input type="text" id="contributor_name" name="contributor_name" autofocus required
@@ -127,7 +152,12 @@ $isExported  = $record['status'] === 'exported';
             <img src="utsa-logo.svg" alt="UT San Antonio" height="18" class="flex-shrink-0">
             <div>
                 <h1 class="font-brand text-base font-bold text-[var(--topbar-text)] leading-tight">Electronic and Information Resource (EIR) Accessibility Exception Request</h1>
-                <p class="text-xs text-[var(--topbar-subtle)]">Signed in as <strong><?= h($contributorName) ?></strong></p>
+                <p class="text-xs text-[var(--topbar-subtle)]">
+                    Signed in as <strong><?= h($contributorName) ?></strong><?php
+                    if ($isVerified): ?> <span title="Verified by UT San Antonio single sign-on">&#10003; verified</span><?php
+                    else: ?> <span title="Self-reported name, not verified by sign-in">(self-reported)</span><?php
+                    endif; ?>
+                </p>
             </div>
         </div>
         <div class="flex items-center gap-3">

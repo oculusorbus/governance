@@ -12,6 +12,7 @@
  *     the separate DocuSign exception-request memo (VP IMT + EIRAC).
  */
 session_start();
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/eaer_db.php';
 require_once __DIR__ . '/auth.php';
 
@@ -151,8 +152,20 @@ switch ($action) {
         $rec = eaer_find_by_token($pdo, $token);
         if (!$rec) eaer_fail(404, 'Not found');
 
-        $name = empty($_SESSION['auth']) ? eaer_require_contributor($token)
-                                          : trim((string)($_SESSION['eaer_name'][$token] ?? 'Admin'));
+        // A signed-in employee contributes under their verified identity.
+        // Anyone else falls back to the self-reported name gate, and the
+        // record keeps the distinction: entra_object_id NULL means the
+        // attribution was not verified.
+        $me        = current_user();
+        $objectId  = null;
+        $email     = null;
+        if ($me !== null && !empty($_SESSION['entra_object_id'])) {
+            $objectId = (string)$_SESSION['entra_object_id'];
+            $email    = $_SESSION['user_email'] ?? null;
+            $name     = trim((string)($_SESSION['user_name'] ?? '')) ?: (string)$email;
+        } else {
+            $name = eaer_require_contributor($token);
+        }
 
         $sections = eaer_sections();
         if (!isset($sections[$sectionKey])) eaer_fail(400, 'Unknown section');
@@ -171,6 +184,11 @@ switch ($action) {
                 ->execute($vals);
         }
 
+        // Still keyed on the name, not the object id: the unique constraint
+        // predates SSO and a self-reported contributor has no object id to
+        // key on. The identity columns are refreshed on match so a
+        // previously self-reported contribution becomes verified once that
+        // person signs in and saves again.
         $pdo->prepare("
             MERGE eaer_contributions AS target
             USING (SELECT ? AS eaer_id, ? AS section_key, ? AS contributor_name) AS src
@@ -178,11 +196,13 @@ switch ($action) {
                AND target.section_key = src.section_key
                AND target.contributor_name = src.contributor_name
             WHEN MATCHED THEN
-                UPDATE SET updated_at = SYSUTCDATETIME()
+                UPDATE SET updated_at = SYSUTCDATETIME(),
+                           entra_object_id = ?,
+                           contributor_email = ?
             WHEN NOT MATCHED THEN
-                INSERT (eaer_id, section_key, contributor_name)
-                VALUES (src.eaer_id, src.section_key, src.contributor_name);
-        ")->execute([$rec['id'], $sectionKey, $name]);
+                INSERT (eaer_id, section_key, contributor_name, entra_object_id, contributor_email)
+                VALUES (src.eaer_id, src.section_key, src.contributor_name, ?, ?);
+        ")->execute([$rec['id'], $sectionKey, $name, $objectId, $email, $objectId, $email]);
 
         echo json_encode(['success' => true]);
         break;

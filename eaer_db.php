@@ -77,6 +77,26 @@ function eaer_pdo(): PDO {
         )
     ");
 
+    // Identity CAPTURED on the contribution, not joined to governance.users.
+    // Two reasons. An audit record must still name who acted even after the
+    // account is deleted, so a foreign key to a mutable identity row would be
+    // wrong here. And SQL Server cannot enforce foreign keys across
+    // databases, so a cross-database reference would buy nothing anyway while
+    // coupling EAER to governance — the coupling its separate database exists
+    // to avoid.
+    //
+    // entra_object_id NULL means the contribution was self-reported through
+    // the token name gate rather than verified by SSO. That distinction is
+    // itself audit-relevant and is surfaced in the UI.
+    $pdo->exec("
+        IF COL_LENGTH('eaer_contributions','entra_object_id') IS NULL
+            ALTER TABLE eaer_contributions ADD entra_object_id NVARCHAR(64) NULL
+    ");
+    $pdo->exec("
+        IF COL_LENGTH('eaer_contributions','contributor_email') IS NULL
+            ALTER TABLE eaer_contributions ADD contributor_email NVARCHAR(255) NULL
+    ");
+
     // Schema evolution for already-deployed eaer_requests tables — the
     // CREATE TABLE guard above only fires once, so later columns need an
     // explicit ALTER guard (same pattern app.php uses for `employees`).
