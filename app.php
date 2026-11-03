@@ -796,6 +796,9 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
     <button id="btn-add"          onclick="addSite()">+ Add Site</button>
     <a href="eaer_admin.php"><button id="btn-eaer" type="button">EIR Exceptions</button></a>
+    <?php if ($isAdmin): ?>
+    <a href="users_admin.php"><button id="btn-users" type="button">Users</button></a>
+    <?php endif; ?>
     <div id="export-wrap">
         <button id="btn-export" onclick="toggleExportMenu(event)">Export ▾</button>
         <div id="export-menu">
