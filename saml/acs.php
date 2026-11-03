@@ -64,15 +64,29 @@ $mail = claim($attrs, [
     'emailaddress', 'email', 'mail',
 ]);
 
+// Confirmed 2026-11-03 against a live assertion: this tenant does NOT
+// release a UPN claim, despite UTS believing it did. Kept as an optional
+// lookup in case that changes; nothing depends on it. Deliberately NOT
+// falling back to the 'name' claim, which carries the email here, not a UPN.
 $upn = claim($attrs, [
     'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn',
     'upn', 'userprincipalname',
 ]);
 
+// 'name' is deliberately absent from this chain. At this tenant the 'name'
+// claim holds the email address, so using it as a fallback would silently
+// put "jeremiah.barber@utsa.edu" in the topbar if the displayname claim ever
+// went away. givenname/surname are both released and degrade sensibly.
 $displayName = claim($attrs, [
     'http://schemas.microsoft.com/identity/claims/displayname',
-    'displayname', 'name',
+    'displayname', 'DisplayName',
 ]);
+
+if ($displayName === null) {
+    $given   = claim($attrs, ['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname', 'givenname']);
+    $surname = claim($attrs, ['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname', 'surname']);
+    $displayName = trim((string)$given . ' ' . (string)$surname) ?: null;
+}
 
 // ── First-run diagnostic ─────────────────────────────────────────────────
 // Set SAML_DEBUG_ASSERTION in config.php for the first test login. Prints
@@ -139,8 +153,7 @@ if (!$employee && $mail) {
 // corrupt the directory this app exists to keep accurate.
 if (!$employee) {
     http_response_code(403);
-    error_log(sprintf('SAML: no employees row for objectId=%s mail=%s upn=%s', $objectId, (string)$mail, (string)$upn));
-    http_response_code(403);
+    error_log(sprintf('SAML: no employees row for objectId=%s mail=%s upn=%s', $objectId, (string)$mail, (string)$upn ?: '(not released)'));
     exit(
         'You signed in successfully, but your account is not in the Website Governance directory yet. '
         . 'Please contact the Web Team to be added.'
