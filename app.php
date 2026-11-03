@@ -776,6 +776,8 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
 <div id="cell-tooltip"></div>
 
 <!-- ── Top bar ──────────────────────────────────────────────────────────── -->
+<?php require __DIR__ . '/preview_bar.php'; ?>
+
 <?php if (!$canEdit): ?>
 <div id="readonly-banner" role="status">
     You have read-only access to the directory. Ask a Web Team administrator if you need to make changes.

@@ -81,6 +81,8 @@ $isExported  = $record['status'] === 'exported';
 
 <a href="#main-content" class="skip-link">Skip to form</a>
 
+<?php require __DIR__ . '/preview_bar.php'; ?>
+
 <div id="topbar" role="banner" class="bg-[var(--topbar)] sticky top-0 z-10 shadow-sm">
     <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">

@@ -81,6 +81,8 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://'
 
 <a href="#main-content" class="skip-link">Skip to exception requests</a>
 
+<?php require __DIR__ . '/preview_bar.php'; ?>
+
 <div id="topbar" role="banner" class="bg-[var(--topbar)] shadow-sm">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
