@@ -46,11 +46,22 @@ function eaer_find_by_token(PDO $pdo, string $token): ?array {
     return $row ?: null;
 }
 
-/** Token-authenticated requests also need an established contributor name. */
-function eaer_require_contributor(string $token): string {
-    $name = trim((string)($_SESSION['eaer_name'][$token] ?? ''));
-    if ($name === '') eaer_fail(403, 'No contributor name set for this token');
-    return $name;
+/**
+ * Contributing requires a verified identity. Self-reported names were
+ * removed once UTS restricted the Entra app to employees: every legitimate
+ * contributor can now sign in, so an unverified attribution on a record
+ * that becomes evidence in a compliance audit has no remaining
+ * justification.
+ *
+ * The token is still what scopes access to a single record — signing in
+ * does not grant access to every exception request.
+ */
+function eaer_require_contributor(string $token): array {
+    $me = current_user();
+    if ($me === null || empty($_SESSION['entra_object_id'])) {
+        eaer_fail(401, 'Please sign in to contribute to this request.');
+    }
+    return $me;
 }
 
 switch ($action) {
@@ -125,7 +136,7 @@ switch ($action) {
         $token = (string)($input['token'] ?? ($_GET['token'] ?? ''));
         $rec   = eaer_find_by_token($pdo, $token);
         if (!$rec) eaer_fail(404, 'Not found');
-        if (empty($_SESSION['auth'])) eaer_require_contributor($token);
+        eaer_require_contributor($token);
 
         $stmt = $pdo->prepare("
             SELECT section_key, contributor_name, updated_at
@@ -152,20 +163,11 @@ switch ($action) {
         $rec = eaer_find_by_token($pdo, $token);
         if (!$rec) eaer_fail(404, 'Not found');
 
-        // A signed-in employee contributes under their verified identity.
-        // Anyone else falls back to the self-reported name gate, and the
-        // record keeps the distinction: entra_object_id NULL means the
-        // attribution was not verified.
-        $me        = current_user();
-        $objectId  = null;
-        $email     = null;
-        if ($me !== null && !empty($_SESSION['entra_object_id'])) {
-            $objectId = (string)$_SESSION['entra_object_id'];
-            $email    = $_SESSION['user_email'] ?? null;
-            $name     = trim((string)($_SESSION['user_name'] ?? '')) ?: (string)$email;
-        } else {
-            $name = eaer_require_contributor($token);
-        }
+        // Verified identity only — see eaer_require_contributor().
+        eaer_require_contributor($token);
+        $objectId = (string)$_SESSION['entra_object_id'];
+        $email    = $_SESSION['user_email'] ?? null;
+        $name     = trim((string)($_SESSION['user_name'] ?? '')) ?: (string)$email;
 
         $sections = eaer_sections();
         if (!isset($sections[$sectionKey])) eaer_fail(400, 'Unknown section');

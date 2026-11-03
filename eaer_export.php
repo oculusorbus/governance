@@ -24,7 +24,7 @@ $stmt->execute([$token]);
 $record = $stmt->fetch();
 if (!$record) { http_response_code(404); die('Not found.'); }
 
-$contribStmt = $pdo->prepare("SELECT section_key, contributor_name, updated_at FROM eaer_contributions WHERE eaer_id = ? ORDER BY updated_at");
+$contribStmt = $pdo->prepare("SELECT section_key, contributor_name, updated_at, entra_object_id FROM eaer_contributions WHERE eaer_id = ? ORDER BY updated_at");
 $contribStmt->execute([$record['id']]);
 $contributions = [];
 foreach ($contribStmt->fetchAll() as $c) {
@@ -103,7 +103,11 @@ function eaer_display_value(array $field, $val): string {
         <p class="text-xs text-[var(--muted)] mt-2">
             Contributed by:
             <?= h(implode('; ', array_map(
-                fn($c) => $c['contributor_name'] . ' (' . date('M j, Y g:ia', strtotime($c['updated_at'])) . ')',
+                // Unverified attributions are labelled rather than presented
+                // as equivalent — this document is audit evidence.
+                fn($c) => $c['contributor_name']
+                        . ' (' . date('M j, Y g:ia', strtotime($c['updated_at'])) . ')'
+                        . (empty($c['entra_object_id']) ? ' [self-reported]' : ''),
                 $contributions[$sectionKey]
             ))) ?>
         </p>
@@ -127,8 +131,9 @@ function eaer_display_value(array $field, $val): string {
 
     <div class="text-xs text-[var(--muted)] border-t border-[var(--border)] pt-4">
         <p class="mb-1">
-            Contributor names above are self-reported; SSO-based authentication was not yet available
-            for this tool at the time of submission.
+            Contributors are authenticated through UT San Antonio single sign-on, and each
+            attribution above records a verified identity. Attributions recorded before single
+            sign-on was introduced were self-reported and are marked as such.
         </p>
         <p>
             Formal approval of this exception request is captured via the associated DocuSign

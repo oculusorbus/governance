@@ -38,6 +38,15 @@ function eaer_help_text(array $field, string $domId): string {
     return '<p id="' . h($helpId) . '" class="hidden text-xs text-[var(--muted)] bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-3 py-2 mb-1">' . h($field['help']) . '</p>';
 }
 
+// Verified identity required before anything else. Running this ahead of
+// the record lookup means token validity is not discoverable without
+// signing in. The token still decides WHICH record may be worked on — SSO
+// proves who you are, the token proves what you may touch — so signing in
+// grants no access to other exception requests.
+$me              = require_login();
+$isVerified      = true;
+$contributorName = (string)($_SESSION['user_name'] ?? '') ?: (string)($_SESSION['user_email'] ?? '');
+
 $token = (string)($_GET['token'] ?? '');
 if ($token === '') { http_response_code(400); die('Missing token.'); }
 
@@ -47,81 +56,7 @@ $stmt->execute([$token]);
 $record = $stmt->fetch();
 if (!$record) { http_response_code(404); die('This link is not valid. Confirm you have the correct URL.'); }
 
-// ── Name gate (session-scoped per token; self-reported, no SSO yet) ────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contributor_name'])) {
-    $name = trim((string)$_POST['contributor_name']);
-    if ($name !== '') {
-        $_SESSION['eaer_name'][$token] = $name;
-        header('Location: eaer.php?token=' . urlencode($token));
-        exit;
-    }
-}
-
-// A signed-in employee contributes under their verified identity and is
-// never asked to type their own name. The token still decides WHICH record
-// they may work on — SSO proves who you are, the token proves what you may
-// touch, and signing in does not grant access to every exception request.
-$me              = current_user();
-$isVerified      = $me !== null;
-$contributorName = $isVerified
-    ? ((string)($_SESSION['user_name'] ?? '') ?: (string)($_SESSION['user_email'] ?? ''))
-    : trim((string)($_SESSION['eaer_name'][$token] ?? ''));
-
-if ($contributorName === ''): ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EAER: Identify Yourself</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <?php eaer_head_assets(); ?>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-[var(--bg)] flex items-center justify-center">
-    <a href="#main-content" class="skip-link">Skip to form</a>
-    <main id="main-content" class="bg-[var(--surface)] rounded-xl shadow-lg p-8 w-full max-w-md">
-        <div class="flex items-center justify-between gap-2 mb-1">
-            <img src="utsa-logo.svg" alt="UT San Antonio" height="18">
-            <?= eaer_theme_toggle(false) ?>
-        </div>
-        <h1 class="font-brand text-xl font-bold text-[var(--heading)] mb-1">Electronic and Information Resource (EIR) Accessibility Exception Request</h1>
-        <p class="text-sm text-[var(--muted)] mb-6"><?= h($record['eir_name'] ?: 'Untitled request') ?></p>
-        <p class="text-xs text-[var(--muted)] mb-4">
-            Enter your name so your contributions to this form can be attributed.
-            SSO is not yet available for this tool, so this is a self-reported name,
-            not an authenticated login.
-        </p>
-        <a href="saml/login.php?return=<?= h(rawurlencode($_SERVER['REQUEST_URI'] ?? '')) ?>"
-           class="block w-full bg-[var(--accent-deep)] hover:bg-[var(--accent-deep-hover)] text-white font-medium py-2 rounded-lg text-sm text-center mb-1">
-            Sign in with UT San Antonio
-        </a>
-        <p class="text-xs text-[var(--muted)] mb-4">
-            Signing in attributes your contributions to a verified identity, which is
-            stronger evidence on the official record than a typed name.
-        </p>
-
-        <div class="flex items-center gap-3 mb-4" aria-hidden="true">
-            <span class="h-px bg-[var(--border)] flex-1"></span>
-            <span class="text-xs text-[var(--muted)]">or continue without signing in</span>
-            <span class="h-px bg-[var(--border)] flex-1"></span>
-        </div>
-
-        <form method="post">
-            <label for="contributor_name" class="block text-sm font-medium text-[var(--text)] mb-1">Your Name</label>
-            <input type="text" id="contributor_name" name="contributor_name" autofocus required
-                   class="w-full border border-[var(--field-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] mb-4">
-            <button type="submit"
-                    class="w-full bg-[var(--btn-primary)] hover:bg-[var(--btn-primary-hover)] text-white font-medium py-2 rounded-lg text-sm">
-                Continue
-            </button>
-        </form>
-    </main>
-</body>
-</html>
-<?php exit; endif;
-
-$contribStmt = $pdo->prepare("SELECT section_key, contributor_name, updated_at FROM eaer_contributions WHERE eaer_id = ? ORDER BY updated_at");
+$contribStmt = $pdo->prepare("SELECT section_key, contributor_name, updated_at, entra_object_id FROM eaer_contributions WHERE eaer_id = ? ORDER BY updated_at");
 $contribStmt->execute([$record['id']]);
 $contributions = [];
 foreach ($contribStmt->fetchAll() as $c) {
@@ -153,10 +88,7 @@ $isExported  = $record['status'] === 'exported';
             <div>
                 <h1 class="font-brand text-base font-bold text-[var(--topbar-text)] leading-tight">Electronic and Information Resource (EIR) Accessibility Exception Request</h1>
                 <p class="text-xs text-[var(--topbar-subtle)]">
-                    Signed in as <strong><?= h($contributorName) ?></strong><?php
-                    if ($isVerified): ?> <span title="Verified by UT San Antonio single sign-on">&#10003; verified</span><?php
-                    else: ?> <span title="Self-reported name, not verified by sign-in">(self-reported)</span><?php
-                    endif; ?>
+                    Signed in as <strong><?= h($contributorName) ?></strong>
                 </p>
             </div>
         </div>
@@ -296,7 +228,10 @@ $isExported  = $record['status'] === 'exported';
             Contributed by:
             <span data-contrib-list>
             <?php foreach ($contributions[$sectionKey] ?? [] as $c): ?>
-                <span class="inline-block mr-2" data-contrib-name="<?= h($c['contributor_name']) ?>"><?= h($c['contributor_name']) ?> (<?= h(date('M j, Y g:ia', strtotime($c['updated_at']))) ?>)</span>
+                <span class="inline-block mr-2" data-contrib-name="<?= h($c['contributor_name']) ?>"><?= h($c['contributor_name']) ?> (<?= h(date('M j, Y g:ia', strtotime($c['updated_at']))) ?>)<?php
+                    // Predates SSO. The record must not present an unverified
+                    // attribution as equivalent to a verified one.
+                    if (empty($c['entra_object_id'])): ?><span class="text-[var(--warn)]" title="Recorded before single sign-on; name was self-reported and not verified."> · self-reported</span><?php endif; ?></span>
             <?php endforeach; ?>
             </span>
         </div>
@@ -336,8 +271,8 @@ $isExported  = $record['status'] === 'exported';
 
 <p class="text-xs text-[var(--muted)] text-center">
     Formal approval of this exception is captured separately via the DocuSign exception-request memo
-    (VP IMT and EIRAC signatures). Contributor names on this form are self-reported; SSO-based
-    authentication is not yet available for this tool.
+    (VP IMT and EIRAC signatures). Contributors are authenticated through UT San Antonio single
+    sign-on, so each attribution below records a verified identity.
 </p>
 
 </main>
