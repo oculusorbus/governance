@@ -66,6 +66,18 @@ $steps = [
         CONSTRAINT FK_users_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
     )",
 
+// Added after the table shipped, so guarded rather than inlined above.
+// The assertion carries givenname and surname as separate claims; storing
+// only display_name would be lossy, since splitting a rendered name later
+// cannot reliably recover middle names, suffixes, multi-word surnames, or
+// a "Surname, Given" ordering. employees is keyed on first/last name, so
+// the parts are what a future directory-entry match or create would need.
+"IF COL_LENGTH('users','first_name') IS NULL
+    ALTER TABLE users ADD first_name NVARCHAR(100) NULL",
+
+"IF COL_LENGTH('users','last_name') IS NULL
+    ALTER TABLE users ADD last_name NVARCHAR(100) NULL",
+
 // Lookup path for the one-time email match at first login.
 "IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_users_email')
     CREATE INDEX IX_users_email ON users(email)",

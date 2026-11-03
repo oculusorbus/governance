@@ -85,10 +85,14 @@ $displayName = claim($attrs, [
     'displayname', 'DisplayName',
 ]);
 
+// Captured in their own right, not just as a display-name fallback:
+// employees is keyed on first/last name, and a rendered display name
+// cannot be split back into parts reliably.
+$firstName = claim($attrs, ['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname', 'givenname']);
+$lastName  = claim($attrs, ['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname', 'surname']);
+
 if ($displayName === null) {
-    $given   = claim($attrs, ['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname', 'givenname']);
-    $surname = claim($attrs, ['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname', 'surname']);
-    $displayName = trim((string)$given . ' ' . (string)$surname) ?: null;
+    $displayName = trim((string)$firstName . ' ' . (string)$lastName) ?: null;
 }
 
 // ── First-run diagnostic ─────────────────────────────────────────────────
@@ -107,7 +111,9 @@ if (defined('SAML_DEBUG_ASSERTION') && SAML_DEBUG_ASSERTION) {
     echo "  objectId    : ", var_export($objectId, true), "\n";
     echo "  mail        : ", var_export($mail, true), "\n";
     echo "  upn         : ", var_export($upn, true), "\n";
-    echo "  displayName : ", var_export($displayName, true), "\n\n";
+    echo "  displayName : ", var_export($displayName, true), "\n";
+    echo "  firstName   : ", var_export($firstName, true), "\n";
+    echo "  lastName    : ", var_export($lastName, true), "\n\n";
     echo "All attributes as sent:\n";
     print_r($attrs);
     exit;
@@ -140,10 +146,15 @@ $user = $stmt->fetch();
 if ($user) {
     // Refresh the cosmetic fields; a name or address change must never
     // affect identity, which is anchored on entra_object_id.
-    $pdo->prepare("UPDATE users SET email = ?, display_name = ?, last_login_at = SYSUTCDATETIME() WHERE id = ?")
-        ->execute([$mail, $displayName, $user['id']]);
+    $pdo->prepare(
+        "UPDATE users SET email = ?, display_name = ?, first_name = ?, last_name = ?,
+                          last_login_at = SYSUTCDATETIME()
+         WHERE id = ?"
+    )->execute([$mail, $displayName, $firstName, $lastName, $user['id']]);
     $user['email']        = $mail;
     $user['display_name'] = $displayName;
+    $user['first_name']   = $firstName;
+    $user['last_name']    = $lastName;
 } else {
     // First sign-in. Link to a directory row if one shares this address —
     // a convenience for "my sites", not a requirement. 22 employees have no
@@ -156,9 +167,10 @@ if ($user) {
     }
 
     $pdo->prepare(
-        "INSERT INTO users (entra_object_id, email, display_name, employee_id, role, last_login_at)
-         VALUES (?, ?, ?, ?, 'viewer', SYSUTCDATETIME())"
-    )->execute([$objectId, $mail, $displayName, $employeeId]);
+        "INSERT INTO users (entra_object_id, email, display_name, first_name, last_name,
+                            employee_id, role, last_login_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'viewer', SYSUTCDATETIME())"
+    )->execute([$objectId, $mail, $displayName, $firstName, $lastName, $employeeId]);
 
     $stmt = $pdo->prepare("SELECT TOP (1) * FROM users WHERE entra_object_id = ?");
     $stmt->execute([$objectId]);
