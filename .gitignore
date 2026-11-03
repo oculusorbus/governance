@@ -5,3 +5,5 @@
 *.txt
 .DS_Store
 config.php
+saml/settings.php
+saml/lib/
