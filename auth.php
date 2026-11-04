@@ -8,8 +8,12 @@
  * allowed to do.
  *
  * Roles
- *   viewer  default for every newly provisioned user. Read-only.
- *   editor  may change directory records.
+ *   pending default for a new user with no directory entry. Authenticated
+ *           but approved for nothing — sees only the holding page.
+ *   viewer  read-only. Auto-granted when the address matches an employees
+ *           row, since being recorded as a site contact is evidence enough
+ *           to look at the directory.
+ *   editor  may change directory records. Always granted deliberately.
  *   admin   may administer EAER and assign roles.
  *
  * Why read-only by default: UTS restricts the Entra app to employees, so any
@@ -19,7 +23,9 @@
  * signed compliance memos.
  */
 
-const ROLE_RANK = ['viewer' => 1, 'editor' => 2, 'admin' => 3];
+// 'pending' outranks nothing: a pending account is authenticated but
+// approved for nothing, so every user_has_role() check fails for it.
+const ROLE_RANK = ['pending' => 0, 'viewer' => 1, 'editor' => 2, 'admin' => 3];
 
 /**
  * The signed-in user, or null.
@@ -117,6 +123,13 @@ function require_login(): array {
     if ($user === null) {
         $return = $_SERVER['REQUEST_URI'] ?? '/app.php';
         header('Location: /saml/login.php?return=' . urlencode($return));
+        exit;
+    }
+    // Authenticated but approved for nothing. Send them somewhere that
+    // explains the situation rather than letting them bounce off a 403 on
+    // whichever page they happened to land on.
+    if (($user['role'] ?? '') === 'pending') {
+        header('Location: /pending.php');
         exit;
     }
     return $user;

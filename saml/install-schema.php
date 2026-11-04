@@ -78,6 +78,38 @@ $steps = [
 "IF COL_LENGTH('users','last_name') IS NULL
     ALTER TABLE users ADD last_name NVARCHAR(100) NULL",
 
+// ── 'pending' role, added 2026-11-03 ─────────────────────────────────
+// New users land on 'pending' and see nothing until a decision is made,
+// rather than getting read access by default. Exception: if their address
+// matches an employees row they are auto-granted 'viewer', because being
+// recorded as a site contact is evidence enough to look at the directory.
+//
+// Deliberately NOT auto-granting 'editor' on that match. employees is
+// content any editor can add rows to, so auto-editor would let editors
+// mint editors through ordinary content work. Roles are also global, so a
+// contact for one site would gain edit rights over all 374 records.
+"IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_users_role')
+    ALTER TABLE users DROP CONSTRAINT CK_users_role",
+"ALTER TABLE users ADD CONSTRAINT CK_users_role
+    CHECK (role IN ('pending','viewer','editor','admin'))",
+
+"IF EXISTS (SELECT 1 FROM sys.default_constraints WHERE name = 'DF_users_role')
+    ALTER TABLE users DROP CONSTRAINT DF_users_role",
+"ALTER TABLE users ADD CONSTRAINT DF_users_role DEFAULT 'pending' FOR role",
+
+// Provenance. "Why does this person have edit access?" needs a better
+// answer than "they appeared in a table", especially for a tool that
+// exists to satisfy an audit action plan.
+//   role_granted_by NULL + role_granted_at set  = granted automatically
+//   role_granted_by set                         = granted by that admin
+"IF COL_LENGTH('users','role_granted_by') IS NULL
+    ALTER TABLE users ADD role_granted_by INT NULL",
+"IF COL_LENGTH('users','role_granted_at') IS NULL
+    ALTER TABLE users ADD role_granted_at DATETIME2 NULL",
+"IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_users_role_granted_by')
+    ALTER TABLE users ADD CONSTRAINT FK_users_role_granted_by
+        FOREIGN KEY (role_granted_by) REFERENCES users(id)",
+
 // Lookup path for the one-time email match at first login.
 "IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_users_email')
     CREATE INDEX IX_users_email ON users(email)",
@@ -91,6 +123,6 @@ foreach ($steps as $sql) {
 
 $count = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 echo "\nDone. users table ready ({$count} row(s)).\n";
-echo "Remember: the first person to sign in lands on 'viewer' like everyone\n";
-echo "else. Promote yourself directly in SQL to bootstrap the first admin:\n";
+echo "Remember: new users land on 'pending' (or 'viewer' if their address\n";
+echo "matches an employees row). Promote the first admin directly in SQL:\n";
 echo "  UPDATE users SET role = 'admin' WHERE email = 'you@utsa.edu';\n";

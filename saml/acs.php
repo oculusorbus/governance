@@ -179,9 +179,7 @@ if ($user) {
     $user['first_name']   = $firstName;
     $user['last_name']    = $lastName;
 } else {
-    // First sign-in. Link to a directory row if one shares this address —
-    // a convenience for "my sites", not a requirement. 22 employees have no
-    // email at all, so a null link is an ordinary outcome, not an error.
+    // First sign-in. Does this address already appear in the directory?
     $employeeId = null;
     if ($mail) {
         $stmt = $pdo->prepare("SELECT TOP (1) id FROM employees WHERE email = ?");
@@ -189,19 +187,36 @@ if ($user) {
         $employeeId = $stmt->fetchColumn() ?: null;
     }
 
+    // Already recorded as a site contact — owner, tech lead, admin contact —
+    // so they have demonstrable involvement and gatekeeping a read-only view
+    // of a directory they are listed in is busywork. Auto-granted 'viewer'.
+    //
+    // Deliberately NOT 'editor'. employees is content that any editor can
+    // add rows to, so auto-editor would let editors mint editors through
+    // ordinary content work. Roles are global too, so a contact for one
+    // site would gain edit rights over all 374 records — far wider than the
+    // responsibility their listing actually evidences.
+    //
+    // Everyone else starts at 'pending': authenticated, approved for
+    // nothing, and shown a holding page until an admin decides.
+    $role = $employeeId !== null ? 'viewer' : 'pending';
+
+    // role_granted_by NULL with role_granted_at set reads as "granted
+    // automatically"; an admin's grant records their id instead.
     $pdo->prepare(
         "INSERT INTO users (entra_object_id, email, display_name, first_name, last_name,
-                            employee_id, role, last_login_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'viewer', SYSUTCDATETIME())"
-    )->execute([$objectId, $mail, $displayName, $firstName, $lastName, $employeeId]);
+                            employee_id, role, role_granted_by, role_granted_at, last_login_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, SYSUTCDATETIME(), SYSUTCDATETIME())"
+    )->execute([$objectId, $mail, $displayName, $firstName, $lastName, $employeeId, $role]);
 
     $stmt = $pdo->prepare("SELECT TOP (1) * FROM users WHERE entra_object_id = ?");
     $stmt->execute([$objectId]);
     $user = $stmt->fetch();
 
     error_log(sprintf(
-        'SAML: provisioned user id=%d email=%s employee_id=%s role=viewer',
-        $user['id'], (string)$mail, $employeeId === null ? 'none' : (string)$employeeId
+        'SAML: provisioned user id=%d email=%s employee_id=%s role=%s',
+        $user['id'], (string)$mail,
+        $employeeId === null ? 'none' : (string)$employeeId, $role
     ));
 }
 
@@ -227,6 +242,13 @@ $_SESSION['employee_id']     = $user['employee_id'] !== null ? (int)$user['emplo
 $_SESSION['entra_object_id'] = $objectId;
 $_SESSION['saml_name_id']    = $auth->getNameId();
 $_SESSION['saml_session_ix'] = $auth->getSessionIndex();
+
+// A pending account goes to the holding page regardless of where it was
+// heading — otherwise it would land on the requested page and bounce.
+if (($user['role'] ?? '') === 'pending') {
+    header('Location: /pending.php');
+    exit;
+}
 
 header('Location: ' . saml_safe_return($_POST['RelayState'] ?? null));
 exit;

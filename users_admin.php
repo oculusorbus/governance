@@ -44,7 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($isSelf && $newRole !== 'admin') {
             $error = 'You cannot remove your own admin access. Ask another administrator to do it.';
         } else {
-            $pdo->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$newRole, $targetId]);
+            // Record who decided and when. An auto-grant leaves
+            // role_granted_by NULL, so this distinguishes the two.
+            $pdo->prepare(
+                "UPDATE users SET role = ?, role_granted_by = ?, role_granted_at = SYSUTCDATETIME()
+                 WHERE id = ?"
+            )->execute([$newRole, $me['id'], $targetId]);
             $notice = 'Role updated. It takes effect the next time they sign in.';
         }
     } elseif (isset($_POST['toggle_active'])) {
@@ -61,20 +66,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $users = $pdo->query("
     SELECT u.id, u.email, u.display_name, u.first_name, u.last_name,
            u.role, u.is_active, u.created_at, u.last_login_at,
-           u.employee_id, e.first_name AS emp_first, e.last_name AS emp_last
+           u.employee_id, e.first_name AS emp_first, e.last_name AS emp_last,
+           u.role_granted_by, u.role_granted_at,
+           g.display_name AS granted_by_name
     FROM users u
     LEFT JOIN employees e ON e.id = u.employee_id
-    ORDER BY CASE u.role WHEN 'admin' THEN 1 WHEN 'editor' THEN 2 ELSE 3 END,
-             u.last_name, u.first_name, u.email
+    LEFT JOIN users     g ON g.id = u.role_granted_by
+    -- Pending first: it is the only row type that needs a decision.
+    ORDER BY CASE u.role WHEN 'pending' THEN 0 WHEN 'admin' THEN 1
+                         WHEN 'editor'  THEN 2 ELSE 3 END,
+             u.created_at DESC
 ")->fetchAll();
 
-$counts = ['admin' => 0, 'editor' => 0, 'viewer' => 0];
+$counts = ['pending' => 0, 'admin' => 0, 'editor' => 0, 'viewer' => 0];
 foreach ($users as $u) { $counts[$u['role']] = ($counts[$u['role']] ?? 0) + 1; }
 
 $ROLE_HELP = [
-    'viewer' => 'View the directory. Cannot change anything.',
-    'editor' => 'Edit site records, roles and VP leads.',
-    'admin'  => 'Everything, plus EIR exceptions and these role assignments.',
+    'pending' => 'Signed in, but approved for nothing. Sees a holding page only.',
+    'viewer'  => 'View the directory. Cannot change anything.',
+    'editor'  => 'Edit site records, roles and VP leads.',
+    'admin'   => 'Everything, plus EIR exceptions and these role assignments.',
 ];
 ?>
 <!DOCTYPE html>
@@ -119,8 +130,14 @@ $ROLE_HELP = [
     <h2 class="font-brand font-bold text-[var(--heading)] mb-2">How access works here</h2>
     <p class="text-sm text-[var(--text)] mb-3">
         Any UT San Antonio employee can sign in — UTS controls that, not this application.
-        Everyone starts as a <strong>Viewer</strong> and appears in this list automatically after
-        their first sign-in. Granting someone more than read access is the only thing done here.
+        What they can do here is decided on this page.
+    </p>
+    <p class="text-sm text-[var(--text)] mb-3">
+        A new account starts as <strong>Pending</strong> and sees nothing but a holding page.
+        The exception is someone whose email already appears in the
+        <strong>employees</strong> directory: they are auto-granted <strong>Viewer</strong>,
+        since being recorded as a site contact is evidence enough to look at a directory they
+        are listed in. Edit access is never automatic.
     </p>
     <ul class="text-sm text-[var(--text)] list-disc list-outside pl-5 space-y-1">
         <?php foreach ($ROLE_HELP as $r => $desc): ?>
@@ -142,19 +159,21 @@ $ROLE_HELP = [
                 <th scope="col" class="px-4 py-3">Email</th>
                 <th scope="col" class="px-4 py-3">Directory entry</th>
                 <th scope="col" class="px-4 py-3">Last sign-in</th>
+                <th scope="col" class="px-4 py-3">Granted</th>
                 <th scope="col" class="px-4 py-3">Role</th>
                 <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-[var(--border)]">
             <?php if (!$users): ?>
-            <tr><td colspan="6" class="px-4 py-6 text-center text-[var(--muted)]">
+            <tr><td colspan="7" class="px-4 py-6 text-center text-[var(--muted)]">
                 Nobody has signed in yet. Users appear here after their first sign-in.
             </td></tr>
             <?php endif; ?>
             <?php foreach ($users as $u):
                 $isSelf = $me['id'] !== null && (int)$u['id'] === (int)$me['id']; ?>
-            <tr<?= empty($u['is_active']) ? ' class="opacity-50"' : '' ?>>
+            <tr<?= empty($u['is_active']) ? ' class="opacity-50"'
+                     : ($u['role'] === 'pending' ? ' class="bg-[var(--pill-warn-bg)]"' : '') ?>>
                 <td class="px-4 py-3">
                     <div class="font-medium text-[var(--text)]">
                         <?= h($u['display_name'] ?: trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? '')) ?: '—') ?>
@@ -174,6 +193,17 @@ $ROLE_HELP = [
                 </td>
                 <td class="px-4 py-3 text-[var(--muted)]">
                     <?= $u['last_login_at'] ? h(date('M j, Y g:ia', strtotime($u['last_login_at']))) : '—' ?>
+                </td>
+                <td class="px-4 py-3 text-[var(--muted)] text-xs">
+                    <?php if ($u['role'] === 'pending'): ?>
+                        <span class="text-[var(--warn)] font-medium">Awaiting decision</span>
+                    <?php elseif ($u['role_granted_by']): ?>
+                        by <?= h($u['granted_by_name'] ?: ('user ' . $u['role_granted_by'])) ?>
+                    <?php elseif ($u['role_granted_at']): ?>
+                        <span title="Granted automatically because this address matched an employees row.">automatic</span>
+                    <?php else: ?>
+                        —
+                    <?php endif; ?>
                 </td>
                 <td class="px-4 py-3">
                     <form method="post" class="inline">
