@@ -813,8 +813,11 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         <button id="btn-mine" type="button" aria-pressed="false"
                 <?= $myEmployeeId === null ? 'disabled title="Your account is not currently associated with a directory entry."' : '' ?>
                 onclick="toggleMineFilter()">My Sites</button>
-        <label class="sr-only" for="mine-role">Limit to a specific role</label>
-        <select id="mine-role" onchange="setMineRole(this.value)" style="display:none">
+        <!-- aria-label rather than a visually-hidden <label>: app.php has its
+             own stylesheet and does not load Tailwind, so an .sr-only class
+             here is undefined and the label simply renders on screen. -->
+        <select id="mine-role" aria-label="Limit to a specific role"
+                onchange="setMineRole(this.value)" style="display:none">
             <option value="any">Any role</option>
             <option value="site_owner">Owner</option>
             <option value="tech_lead">Tech Lead</option>
