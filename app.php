@@ -485,6 +485,14 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         .status-filter-btn:not(:last-child) { border-right:1px solid rgba(255,255,255,.2); }
         .status-filter-btn.active { background:rgba(255,255,255,.15); color:#fff; }
         .status-filter-btn:hover:not(.active) { background:rgba(255,255,255,.08); color:#fff; }
+        #mine-filter { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+        #btn-mine { background:transparent; color:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.25);
+                    padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; }
+        #btn-mine.active { background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.4); }
+        #btn-mine:hover:not(.active):not(:disabled) { background:rgba(255,255,255,.08); color:#fff; }
+        #btn-mine:disabled { opacity:.4; cursor:not-allowed; }
+        #mine-role { font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.25);
+                     background:#0E2A52; color:#fff; }
 
         /* ── Inactive row styling ─────────────────────────────────────── */
         /* Inactive rows are already unambiguously marked by the explicit
@@ -793,6 +801,28 @@ $filterPeopleJson = json_encode($filterPeople,  JSON_HEX_TAG | JSON_HEX_APOS);
         <button class="status-filter-btn" data-status="active"   aria-pressed="false" onclick="setStatusFilter('active')">Active</button>
         <button class="status-filter-btn" data-status="inactive" aria-pressed="false" onclick="setStatusFilter('inactive')">Inactive</button>
         <button class="status-filter-btn" data-status="all"      aria-pressed="false" onclick="setStatusFilter('all')">All</button>
+    </div>
+    <?php
+    // The link to a directory row is optional — 22 employees have no email to
+    // match on, and anyone not listed at all has none. The control is still
+    // rendered when unlinked, but disabled and explained: a missing button is
+    // a mystery, a disabled one with a reason is an answer.
+    $myEmployeeId = $currentUser['employee_id'] ?? null;
+    ?>
+    <div id="mine-filter" role="group" aria-label="Filter to sites you are listed on">
+        <button id="btn-mine" type="button" aria-pressed="false"
+                <?= $myEmployeeId === null ? 'disabled title="Your account is not currently associated with a directory entry."' : '' ?>
+                onclick="toggleMineFilter()">My Sites</button>
+        <label class="sr-only" for="mine-role">Limit to a specific role</label>
+        <select id="mine-role" onchange="setMineRole(this.value)" style="display:none">
+            <option value="any">Any role</option>
+            <option value="site_owner">Owner</option>
+            <option value="tech_lead">Tech Lead</option>
+            <option value="content_lead">Content Lead</option>
+            <option value="admin_contact">Admin Contact</option>
+            <option value="college_communicator">Communicator</option>
+            <option value="vp_lead">VP Lead</option>
+        </select>
     </div>
     <button id="btn-cols"         onclick="toggleColPanel()">Columns</button>
     <button id="btn-clear-filters" onclick="clearAllFilters()" style="display:none">✕ Filters</button>
@@ -1566,6 +1596,53 @@ let searchQuery      = '';  // global search box
 let filterPopCol     = null;
 let filterPopPending = null;
 
+// ── "My Sites" filter ─────────────────────────────────────────────────────
+// Rows already carry the employee ids behind each role column, pipe
+// delimited, because the per-column people filters match on them. So this
+// needs no new query and no schema — just the viewer's own employee id,
+// which acs.php puts in the session when their address matches a directory
+// entry at first sign-in.
+const MY_EMPLOYEE_ID = <?= $myEmployeeId === null ? 'null' : (int)$myEmployeeId ?>;
+
+const MINE_ROLE_KEYS = ['vp_lead', 'college_communicator', 'site_owner',
+                        'content_lead', 'tech_lead', 'admin_contact'];
+
+let mineFilterOn   = MY_EMPLOYEE_ID !== null && localStorage.getItem('mineFilter') === '1';
+let mineFilterRole = localStorage.getItem('mineFilterRole') || 'any';
+
+function rowIsMine(row) {
+    if (MY_EMPLOYEE_ID === null) return false;
+    const mine = String(MY_EMPLOYEE_ID);
+    const keys = mineFilterRole === 'any' ? MINE_ROLE_KEYS : [mineFilterRole];
+    return keys.some(k => (row.dataset[k] || '').split('|').includes(mine));
+}
+
+function syncMineUI() {
+    const btn = document.getElementById('btn-mine');
+    const sel = document.getElementById('mine-role');
+    if (!btn) return;
+    btn.classList.toggle('active', mineFilterOn);
+    btn.setAttribute('aria-pressed', mineFilterOn ? 'true' : 'false');
+    if (sel) {
+        sel.style.display = mineFilterOn ? '' : 'none';
+        sel.value = mineFilterRole;
+    }
+}
+
+function toggleMineFilter() {
+    if (MY_EMPLOYEE_ID === null) return;
+    mineFilterOn = !mineFilterOn;
+    localStorage.setItem('mineFilter', mineFilterOn ? '1' : '0');
+    syncMineUI();
+    applyFilters();
+}
+
+function setMineRole(val) {
+    mineFilterRole = val;
+    localStorage.setItem('mineFilterRole', val);
+    applyFilters();
+}
+
 // ── Active / inactive status filter ───────────────────────────────────────
 let activeStatusFilter = localStorage.getItem('statusFilter') || 'active';
 
@@ -1582,6 +1659,7 @@ function setStatusFilter(val) {
 
 // Initialise button state on load (called after DOMContentLoaded)
 function initStatusFilter() {
+    syncMineUI();
     document.querySelectorAll('.status-filter-btn').forEach(btn => {
         const on = btn.dataset.status === activeStatusFilter;
         btn.classList.toggle('active', on);
@@ -1602,6 +1680,7 @@ function applyFilters() {
         if (activeStatusFilter === 'active'   && !isActive) show = false;
         if (activeStatusFilter === 'inactive' &&  isActive) show = false;
         if (searchQuery && !(row.dataset.search || '').includes(searchQuery)) show = false;
+        if (mineFilterOn && !rowIsMine(row)) show = false;
         for (const [col, f] of Object.entries(activeFilters)) {
             if (f.type === 'text') {
                 let match;
@@ -1629,7 +1708,7 @@ function applyFilters() {
     });
     updateRowCount(visible);
     document.getElementById('btn-clear-filters').style.display =
-        (Object.keys(activeFilters).length || searchQuery) ? '' : 'none';
+        (Object.keys(activeFilters).length || searchQuery || mineFilterOn) ? '' : 'none';
 }
 
 function clearAllFilters() {
@@ -1639,6 +1718,9 @@ function clearAllFilters() {
     }
     searchQuery = '';
     document.getElementById('global-search').value = '';
+    mineFilterOn = false;
+    localStorage.setItem('mineFilter', '0');
+    syncMineUI();
     applyFilters();
 }
 
